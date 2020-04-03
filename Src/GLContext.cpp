@@ -29,14 +29,14 @@ GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data)
 /**
 * バーテックス・アレイ・オブジェクト(VAO)を作成する.
 *
-* @param positionBuffer VAOに関連付けられる座標データ.
-* @param colorBuffer    VAOに関連付けられるカラーデータ.
+* @param vboPosition VAOに関連付けられる座標データ.
+* @param vboColor    VAOに関連付けられるカラーデータ.
 *
 * @return 作成したVAO.
 */
-GLuint CreateVertexArray(GLuint positionBuffer, GLuint colorBuffer)
+GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor)
 {
-  if (!positionBuffer || !colorBuffer) {
+  if (!vboPosition || !vboColor) {
     return 0;
   }
 
@@ -48,14 +48,14 @@ GLuint CreateVertexArray(GLuint positionBuffer, GLuint colorBuffer)
   glEnableVertexArrayAttrib(id, positionIndex);
   glVertexArrayAttribFormat(id, positionIndex, 3, GL_FLOAT, GL_FALSE, 0);
   glVertexArrayAttribBinding(id, positionIndex, positionBindingIndex);
-  glVertexArrayVertexBuffer(id, positionBindingIndex, positionBuffer, 0, sizeof(Position));
+  glVertexArrayVertexBuffer(id, positionBindingIndex, vboPosition, 0, sizeof(Position));
 
   const GLuint colorIndex = 1;
   const GLuint colorBindingIndex = 1;
   glEnableVertexArrayAttrib(id, colorIndex);
   glVertexArrayAttribFormat(id, colorIndex, 4, GL_FLOAT, GL_FALSE, 0);
   glVertexArrayAttribBinding(id, colorIndex, colorBindingIndex);
-  glVertexArrayVertexBuffer(id, colorBindingIndex, colorBuffer, 0, sizeof(Color));
+  glVertexArrayVertexBuffer(id, colorBindingIndex, vboColor, 0, sizeof(Color));
 
   return id;
 }
