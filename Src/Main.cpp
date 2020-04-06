@@ -11,16 +11,62 @@
 
 /// 座標データ.
 const Position positions[] = {
-  {-0.33f, -0.5f, 0.5f},
-  { 0.33f, -0.5f, 0.5f},
-  { 0.0f,  0.5f, 0.5f},
+  {-0.3f, -0.3f, 0.5f},
+  { 0.2f, -0.3f, 0.5f},
+  { 0.2f,  0.5f, 0.5f},
+  {-0.3f,  0.5f, 0.5f},
+
+  {-0.2f, -0.5f, 0.5f},
+  { 0.3f, -0.5f, 0.5f},
+  { 0.3f,  0.3f, 0.5f},
+  { 0.3f,  0.3f, 0.5f},
+  {-0.2f,  0.3f, 0.5f},
+  {-0.2f, -0.5f, 0.5f},
+
+  {-0.33f, 0.5f, 0.5f},
+  { 0.33f, 0.5f, 0.5f},
+  { 0.0f,  -0.5f, 0.5f},
+
+  {-0.33f - 0.5f, -0.5f, 0.5f},
+  { 0.33f - 0.5f, -0.5f, 0.5f},
+  { 0.0f - 0.5f,  0.5f, 0.5f},
+
+  {-0.33f + 0.5f, -0.5f, 0.5f},
+  { 0.33f + 0.5f, -0.5f, 0.5f},
+  { 0.0f + 0.5f,  0.5f, 0.5f},
 };
 
 /// 色データ.
 const Color colors[] = {
+  {0.0f, 1.0f, 0.0f, 1.0f},
+  {0.0f, 0.0f, 1.0f, 1.0f},
+  {1.0f, 0.0f, 0.0f, 1.0f},
+  {0.0f, 0.0f, 1.0f, 1.0f},
+
+  {1.0f, 0.0f, 0.0f, 1.0f},
+  {1.0f, 1.0f, 0.0f, 1.0f},
+  {1.0f, 0.0f, 0.0f, 1.0f},
+  {0.0f, 0.0f, 1.0f, 1.0f},
+  {0.0f, 1.0f, 1.0f, 1.0f},
+  {0.0f, 0.0f, 1.0f, 1.0f},
+
+  {0.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 0.0f, 1.0f},
+  {1.0f, 0.0f, 1.0f, 1.0f},
+
   {0.0f, 0.0f, 1.0f, 1.0f},
   {0.0f, 1.0f, 0.0f, 1.0f},
   {1.0f, 0.0f, 0.0f, 1.0f},
+
+  {0.5f, 0.5f, 0.5f, 1.0f},
+  {0.0f, 0.0f, 0.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+};
+
+/// インデックスデータ.
+const GLushort indices[] = {
+  0, 1, 2, 2, 3, 0,
+  4, 5, 6, 7, 8, 9,
 };
 
 /// 頂点シェーダー.
@@ -143,7 +189,8 @@ int main()
   // VAOを作成する.
   const GLuint positionBuffer = GLContext::CreateBuffer(sizeof(positions), positions);
   const GLuint colorBuffer = GLContext::CreateBuffer(sizeof(colors), colors);
-  const GLuint vao = GLContext::CreateVertexArray(positionBuffer, colorBuffer);
+  const GLuint ibo = GLContext::CreateBuffer(sizeof(indices), indices);
+  const GLuint vao = GLContext::CreateVertexArray(positionBuffer, colorBuffer, ibo);
   if (!vao) {
     return 1;
   }
@@ -163,7 +210,7 @@ int main()
 
     glBindProgramPipeline(pipeline);
     glBindVertexArray(vao);
-    glDrawArrays(GL_TRIANGLES, 0, sizeof(positions)/sizeof(positions[0]));
+    glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(indices[0]), GL_UNSIGNED_SHORT, 0);
 
     glfwPollEvents();
     glfwSwapBuffers(window);
