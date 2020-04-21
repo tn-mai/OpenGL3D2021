@@ -24,6 +24,7 @@ GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor, GLuint vboTexcoord
 GLuint CreateProgram(GLenum type, const GLchar* code);
 GLuint CreatePipeline(GLuint vp, GLuint fp);
 GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data);
+GLuint CreateImage2D(const char* filename);
 GLuint CreateSampler();
 
 } // namespace GLContext
