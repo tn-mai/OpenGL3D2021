@@ -153,11 +153,12 @@ GLuint CreateSampler()
 * @param width   テクスチャの幅(ピクセル数).
 * @param height  テクスチャの高さ(ピクセル数).
 * @param data    テクスチャデータへのポインタ.
+* @param pixelFormat  テクスチャデータ形式(GL_BGRAなど).
 *
 * @retval 0以外  作成したテクスチャ・オブジェクトのID.
 * @retval 0      テクスチャの作成に失敗.
 */
-GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data)
+GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data, GLenum pixelFormat)
 {
   GLuint id;
 
@@ -166,7 +167,7 @@ GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data)
   glTextureStorage2D(id, 1, GL_RGBA8, width, height);
 
   // GPUメモリにデータを転送する.
-  glTextureSubImage2D(id, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+  glTextureSubImage2D(id, 0, 0, 0, width, height, pixelFormat, GL_UNSIGNED_BYTE, data);
   const GLenum result = glGetError();
   if (result != GL_NO_ERROR) {
     std::cerr << "[エラー]" << __func__ << "テクスチャの作成に失敗\n";
@@ -176,10 +177,6 @@ GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data)
 
   // テクスチャのパラメータを設定する.
   glTextureParameteri(id, GL_TEXTURE_MAX_LEVEL, 0);
-  glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//  glTextureParameteri(id, GL_TEXTURE_WRAP_S, GL_REPEAT);
-//  glTextureParameteri(id, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   return id;
 }
@@ -227,7 +224,7 @@ GLuint CreateImage2D(const char* filename)
   ifs.read(reinterpret_cast<char*>(buf.data()), imageSize);
 
   // 読み込んだ画像データからテクスチャを作成する.
-  return CreateImage2D(width, height, buf.data());
+  return CreateImage2D(width, height, buf.data(), GL_BGRA);
 }
 
 } // namespace GLContext

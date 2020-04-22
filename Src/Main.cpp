@@ -407,7 +407,7 @@ int main()
   if (!texGround) {
     return 1;
   }
-  const GLuint texTree = GLContext::CreateImage2D(imageWidth, imageHeight, imageTree);
+  const GLuint texTree = GLContext::CreateImage2D(imageWidth, imageHeight, imageTree, GL_RGBA);
 
   // ƒƒCƒ“ƒ‹[ƒv.
   while (!glfwWindowShouldClose(window)) {
