@@ -52,5 +52,8 @@
     <Image Include="Res\Ground.tga">
       <Filter>リソース ファイル</Filter>
     </Image>
+    <Image Include="Res\House.tga">
+      <Filter>リソース ファイル</Filter>
+    </Image>
   </ItemGroup>
 </Project>

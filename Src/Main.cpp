@@ -30,25 +30,28 @@ const Position positions[] = {
   { 0.31f, 0.0f, 0.18f},
 
   // 家
-  { 2.8f, 0.0f, 3.0f}, 
-  { 3.0f, 4.0f, 3.0f}, 
-  { 0.0f, 6.0f, 3.0f}, 
-  {-3.0f, 4.0f, 3.0f}, 
-  {-2.8f, 0.0f, 3.0f}, 
+  { 2.8f, 0.0f, 3.0f},
+  { 3.0f, 4.0f, 3.0f},
+  { 0.0f, 6.0f, 3.0f},
+  {-3.0f, 4.0f, 3.0f},
+  {-2.8f, 0.0f, 3.0f},
 
-  {-2.8f, 0.0f,-3.0f}, 
-  {-3.0f, 4.0f,-3.0f}, 
-  { 0.0f, 6.0f,-3.0f}, 
-  { 3.0f, 4.0f,-3.0f}, 
-  { 2.8f, 0.0f,-3.0f}, 
+  {-2.8f, 0.0f,-3.0f},
+  {-3.0f, 4.0f,-3.0f},
+  { 0.0f, 6.0f,-3.0f},
+  { 3.0f, 4.0f,-3.0f},
+  { 2.8f, 0.0f,-3.0f},
 
-  { 3.0f, 4.0f, 3.0f}, 
-  { 0.0f, 6.0f, 3.0f}, 
-  {-3.0f, 4.0f, 3.0f}, 
-  {-3.0f, 4.0f,-3.0f}, 
-  { 0.0f, 6.0f,-3.0f}, 
-  { 3.0f, 4.0f,-3.0f}, 
+  { 2.8f, 0.0f, 3.0f},
+  { 3.0f, 4.0f, 3.0f},
 
+  { 0.0f, 6.0f, 3.0f},
+  { 0.0f, 6.0f,-3.0f},
+
+  { 0.0f, 6.0f,-3.0f},
+  { 0.0f, 6.0f, 3.0f},
+
+  // 四角形、三角形
   {-0.3f, -0.3f, 0.5f},
   { 0.2f, -0.3f, 0.5f},
   { 0.2f,  0.5f, 0.5f},
@@ -93,26 +96,24 @@ const Color colors[] = {
   {0.5f, 0.3f, 0.2f, 1.0f},
 
   // 家
-  {0.4f, 0.3f, 0.2f, 1.0f},
-  {0.6f, 0.5f, 0.3f, 1.0f},
-  {0.5f, 0.4f, 0.2f, 1.0f},
-  {0.6f, 0.5f, 0.3f, 1.0f},
-  {0.4f, 0.3f, 0.2f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
 
-  {0.4f, 0.3f, 0.2f, 1.0f},
-  {0.6f, 0.5f, 0.3f, 1.0f},
-  {0.5f, 0.4f, 0.2f, 1.0f},
-  {0.6f, 0.5f, 0.3f, 1.0f},
-  {0.4f, 0.3f, 0.2f, 1.0f},
-
-  {0.2f, 0.1f, 0.1f, 1.0f},
-  {0.3f, 0.2f, 0.2f, 1.0f},
-  {0.2f, 0.1f, 0.1f, 1.0f},
-  {0.2f, 0.1f, 0.1f, 1.0f},
-  {0.3f, 0.2f, 0.2f, 1.0f},
-  {0.2f, 0.1f, 0.1f, 1.0f},
-
-
+  // 四角形、三角形
   {0.0f, 1.0f, 0.0f, 1.0f},
   {0.0f, 0.0f, 1.0f, 1.0f},
   {1.0f, 0.0f, 0.0f, 1.0f},
@@ -157,24 +158,22 @@ const glm::vec2 texcoords[] = {
   { 1.0f, 0.0f },
 
   // 家
-  { 1.000f, 1.00f },
-  { 1.000f, 0.31f },
-  { 0.875f, 0.00f },
-  { 0.750f, 0.31f },
-  { 0.750f, 1.00f },
-
-  { 0.500f, 1.00f },
-  { 0.500f, 0.31f },
-  { 0.375f, 0.00f },
-  { 0.250f, 0.31f },
-  { 0.250f, 1.00f },
-
-  { 0.750f, 0.31f },
-  { 0.750f, 0.00f },
-  { 0.750f, 0.31f },
-  { 0.500f, 0.31f },
-  { 0.500f, 0.00f },
-  { 0.500f, 0.31f },
+  { 1.000f, 0.00f},
+  { 1.000f, 0.69f},
+  { 0.875f, 1.00f},
+  { 0.750f, 0.69f},
+  { 0.750f, 0.00f},
+  { 0.500f, 0.00f},
+  { 0.500f, 0.69f},
+  { 0.375f, 1.00f},
+  { 0.250f, 0.69f},
+  { 0.250f, 0.00f},
+  { 0.000f, 0.00f},
+  { 0.000f, 0.69f},
+  { 0.750f, 1.00f},
+  { 0.500f, 1.00f},
+  { 0.250f, 1.00f},
+  { 0.000f, 1.00f},
 };
 
 /// インデックスデータ.
@@ -188,14 +187,11 @@ const GLushort indices[] = {
 
   // 家
   0, 1, 3, 3, 4, 0, 1, 2, 3,
-  5, 6, 8, 8, 9, 5, 6, 7, 8,
-  9, 8, 1, 1, 0, 9,
   4, 3, 6, 6, 5, 4,
-  15, 14, 11, 11, 10, 15,
-  12, 11, 14, 14, 13, 12,
-
-  0, 1, 2, 2, 3, 0,
-  4, 5, 6, 7, 8, 9,
+  3, 12, 13, 13, 6, 3,
+  5, 6, 8, 8, 9, 5, 6, 7, 8,
+  9, 8, 11, 11, 10, 9,
+  8, 14, 15, 15, 11, 8,
 };
 
 /// 描画データリスト.
@@ -404,10 +400,11 @@ int main()
 
   //const GLuint texGround = GLContext::CreateImage2D(imageWidth, imageHeight, imageGround);
   const GLuint texGround = GLContext::CreateImage2D("Res/Ground.tga");
-  if (!texGround) {
+  const GLuint texHouse = GLContext::CreateImage2D("Res/House.tga");
+  if (!texGround || !texHouse) {
     return 1;
   }
-  const GLuint texTree = GLContext::CreateImage2D(imageWidth, imageHeight, imageTree, GL_RGBA);
+  const GLuint texTree = GLContext::CreateImage2D(imageWidth, imageHeight, imageTree, GL_RGBA, GL_UNSIGNED_BYTE);
 
   // メインループ.
   while (!glfwWindowShouldClose(window)) {
@@ -434,6 +431,7 @@ int main()
 
     glBindProgramPipeline(pipeline);
     glBindVertexArray(vao);
+    glBindSampler(0, sampler);
 
     //primTree.Draw();
 
@@ -463,10 +461,17 @@ int main()
       const glm::mat4 matMVP = matProj * matView * matModel;
       glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
       glBindTextureUnit(0, texGround);
-      glBindSampler(0, sampler);
       primGround.Draw();
     }
-    primHouse.Draw();
+
+    // 家を描画.
+    {
+      const glm::mat4 matModel = glm::mat4(1);
+      const glm::mat4 matMVP = matProj * matView * matModel;
+      glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+      glBindTextureUnit(0, texHouse);
+      primHouse.Draw();
+    }
 
     glBindTextureUnit(0, 0);
     glBindSampler(0, 0);
@@ -477,6 +482,7 @@ int main()
 
   // 後始末.
   glDeleteTextures(1, &texTree);
+  glDeleteTextures(1, &texHouse);
   glDeleteTextures(1, &texGround);
   glDeleteSamplers(1, &sampler);
   glDeleteProgramPipelines(1, &pipeline);
