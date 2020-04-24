@@ -51,6 +51,22 @@ const Position positions[] = {
   { 0.0f, 6.0f,-3.0f},
   { 0.0f, 6.0f, 3.0f},
 
+  // 立方体.
+  { 1,-1, 1},
+  {-1,-1, 1},
+  {-1, 1, 1},
+  {-1,-1, 1},
+  { 1,-1, 1},
+  { 1, 1, 1},
+  { 1,-1, 1},
+  { 1,-1,-1},
+  { 1, 1,-1},
+  { 1,-1,-1},
+  {-1,-1,-1},
+  {-1, 1,-1},
+  {-1,-1,-1},
+  { 1,-1,-1},
+
   // 四角形、三角形
   {-0.3f, -0.3f, 0.5f},
   { 0.2f, -0.3f, 0.5f},
@@ -113,6 +129,22 @@ const Color colors[] = {
   {1.0f, 1.0f, 1.0f, 1.0f},
   {1.0f, 1.0f, 1.0f, 1.0f},
 
+  // 立方体
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+  {1,1,1,1},
+
   // 四角形、三角形
   {0.0f, 1.0f, 0.0f, 1.0f},
   {0.0f, 0.0f, 1.0f, 1.0f},
@@ -174,6 +206,22 @@ const glm::vec2 texcoords[] = {
   { 0.500f, 1.00f},
   { 0.250f, 1.00f},
   { 0.000f, 1.00f},
+
+  // 立方体
+  { 0.0f / 4.0f, 1.0f / 3.0f},
+  { 1.0f / 4.0f, 1.0f / 3.0f},
+  { 2.0f / 4.0f, 1.0f / 3.0f},
+  { 2.0f / 4.0f, 0.0f / 3.0f},
+  { 3.0f / 4.0f, 0.0f / 3.0f},
+  { 3.0f / 4.0f, 1.0f / 3.0f},
+  { 4.0f / 4.0f, 1.0f / 3.0f},
+  { 4.0f / 4.0f, 2.0f / 3.0f},
+  { 3.0f / 4.0f, 2.0f / 3.0f},
+  { 3.0f / 4.0f, 3.0f / 3.0f},
+  { 2.0f / 4.0f, 3.0f / 3.0f},
+  { 2.0f / 4.0f, 2.0f / 3.0f},
+  { 1.0f / 4.0f, 2.0f / 3.0f},
+  { 0.0f / 4.0f, 2.0f / 3.0f},
 };
 
 /// インデックスデータ.
@@ -192,12 +240,28 @@ const GLushort indices[] = {
   5, 6, 8, 8, 9, 5, 6, 7, 8,
   9, 8, 11, 11, 10, 9,
   8, 14, 15, 15, 11, 8,
+
+  // 立方体
+  //       10-09
+  //        |  |
+  // 13-12-11-08-07
+  //  |  |  |  |  |
+  // 00-01-02-05-06
+  //        |  |
+  //       03-04
+  0, 1, 12, 12, 13, 0,
+  1, 2, 11, 11, 12, 1,
+  2, 5, 8, 8, 11, 2,
+  3, 4, 5, 5, 2, 3,
+  5, 6, 7, 7, 8, 5,
+  11, 8, 9, 9, 10, 11,
 };
 
 /// 描画データリスト.
 const Primitive primGround(GL_TRIANGLES, 6, 0, 0); // 地面
 const Primitive primTree(GL_TRIANGLES, 21, 6 * sizeof(GLushort), 4); // 木
 const Primitive primHouse(GL_TRIANGLES, 42, 27 * sizeof(GLushort), 12);
+const Primitive primCube(GL_TRIANGLES, 36, 69 * sizeof(GLushort), 28);
 
 // 画像データ.
 const int imageWidth = 8; // 画像の幅.
@@ -401,6 +465,7 @@ int main()
   //const GLuint texGround = GLContext::CreateImage2D(imageWidth, imageHeight, imageGround);
   const GLuint texGround = GLContext::CreateImage2D("Res/Ground.tga");
   const GLuint texHouse = GLContext::CreateImage2D("Res/House.tga");
+  const GLuint texCube = GLContext::CreateImage2D("Res/Rock.tga");
   if (!texGround || !texHouse) {
     return 1;
   }
@@ -473,6 +538,15 @@ int main()
       primHouse.Draw();
     }
 
+    // 立方体を描画.
+    {
+      const glm::mat4 matModel = glm::translate(glm::mat4(1), glm::vec3(10, 1, 0));
+      const glm::mat4 matMVP = matProj * matView * matModel;
+      glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+      glBindTextureUnit(0, texCube);
+      primCube.Draw();
+    }
+
     glBindTextureUnit(0, 0);
     glBindSampler(0, 0);
 
@@ -484,6 +558,7 @@ int main()
   glDeleteTextures(1, &texTree);
   glDeleteTextures(1, &texHouse);
   glDeleteTextures(1, &texGround);
+  glDeleteTextures(1, &texCube);
   glDeleteSamplers(1, &sampler);
   glDeleteProgramPipelines(1, &pipeline);
   glDeleteProgram(fp);
