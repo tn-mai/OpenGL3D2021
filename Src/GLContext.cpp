@@ -25,7 +25,7 @@ GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data)
 {
   GLuint id = 0;
   glCreateBuffers(1, &id);
-  glNamedBufferData(id, size, data, GL_STATIC_DRAW);
+  glNamedBufferStorage(id, size, data, 0);
   return id;
 }
 
