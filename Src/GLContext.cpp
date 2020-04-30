@@ -227,10 +227,10 @@ GLuint CreateImage2D(const char* filename)
   }
 
   // ‰æ‘œƒf[ƒ^‚ğ“Ç‚İ‚Ş.
-  const size_t width = tgaHeader[12] + tgaHeader[13] * 0x100;
-  const size_t height = tgaHeader[14] + tgaHeader[15] * 0x100;
-  const size_t pixelDepth = tgaHeader[16];
-  const size_t imageSize = width * height * pixelDepth / 8;
+  const int width = tgaHeader[12] + tgaHeader[13] * 0x100;
+  const int height = tgaHeader[14] + tgaHeader[15] * 0x100;
+  const int pixelDepth = tgaHeader[16];
+  const int imageSize = width * height * pixelDepth / 8;
   std::vector<uint8_t> buf(imageSize);
   ifs.read(reinterpret_cast<char*>(buf.data()), imageSize);
 
@@ -240,7 +240,7 @@ GLuint CreateImage2D(const char* filename)
     std::vector<uint8_t> tmp(imageSize);
     std::vector<uint8_t>::iterator source = buf.begin();
     std::vector<uint8_t>::iterator destination = tmp.end();
-    for (size_t i = 0; i < height; ++i) {
+    for (int i = 0; i < height; ++i) {
       destination -= lineSize;
       std::copy(source, source + lineSize, destination);
       source += lineSize;
