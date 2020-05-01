@@ -429,13 +429,13 @@ int main()
   glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   //const GLuint texGround = GLContext::CreateImage2D(imageWidth, imageHeight, imageGround);
-  const GLuint texGround = GLContext::CreateImage2D("Res/Ground.tga");
-  const GLuint texHouse = GLContext::CreateImage2D("Res/House.tga");
-  const GLuint texCube = GLContext::CreateImage2D("Res/Rock.tga");
+  const GLContext::Image2DPtr texGround = GLContext::CreateImage2D("Res/Ground.tga");
+  const GLContext::Image2DPtr texHouse = GLContext::CreateImage2D("Res/House.tga");
+  const GLContext::Image2DPtr texCube = GLContext::CreateImage2D("Res/Rock.tga");
   if (!texGround || !texHouse) {
     return 1;
   }
-  const GLuint texTree = GLContext::CreateImage2D(imageWidth, imageHeight, imageTree, GL_RGBA, GL_UNSIGNED_BYTE);
+  const GLContext::Image2DPtr texTree = GLContext::CreateImage2D(imageWidth, imageHeight, imageTree, GL_RGBA, GL_UNSIGNED_BYTE);
 
   // メインループ.
   while (!glfwWindowShouldClose(window)) {
@@ -468,7 +468,7 @@ int main()
 
     // 木を描画.
 #if 1
-    glBindTextureUnit(0, texTree);
+    texTree->Bind(0);
     for (float j = 0; j < 4; ++j) {
       const glm::mat4 matRot = glm::rotate(glm::mat4(1), glm::radians(90.0f) * j, glm::vec3(0, 1, 0));
       DrawLineOfTrees(primitiveBuffer.Get(1), vp, locMatMVP, matProj * matView, matRot * glm::vec4(-19, 0, 19, 1), matRot * glm::vec4(2, 0, 0, 1));
@@ -491,7 +491,7 @@ int main()
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
       glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
-      glBindTextureUnit(0, texGround);
+      texGround->Bind(0);
       primitiveBuffer.Get(0).Draw();
     }
 
@@ -500,7 +500,7 @@ int main()
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
       glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
-      glBindTextureUnit(0, texHouse);
+      texHouse->Bind(0);
       primitiveBuffer.Get(2).Draw();
     }
 
@@ -509,11 +509,10 @@ int main()
       const glm::mat4 matModel = glm::translate(glm::mat4(1), glm::vec3(10, 1, 0));
       const glm::mat4 matMVP = matProj * matView * matModel;
       glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
-      glBindTextureUnit(0, texCube);
+      texCube->Bind(0);
       primitiveBuffer.Get(3).Draw();
     }
-
-    glBindTextureUnit(0, 0);
+    GLContext::UnbindAllTextures();
     glBindSampler(0, 0);
     glBindProgramPipeline(0);
     primitiveBuffer.UnbindVertexArray();
@@ -523,10 +522,6 @@ int main()
   }
 
   // 後始末.
-  glDeleteTextures(1, &texTree);
-  glDeleteTextures(1, &texHouse);
-  glDeleteTextures(1, &texGround);
-  glDeleteTextures(1, &texCube);
   glDeleteSamplers(1, &sampler);
   glDeleteProgramPipelines(1, &pipeline);
   glDeleteProgram(fp);
