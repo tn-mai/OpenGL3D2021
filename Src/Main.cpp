@@ -429,10 +429,10 @@ int main()
   glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   //const GLuint texGround = GLContext::CreateImage2D(imageWidth, imageHeight, imageGround);
-  const Image2D texGround("Res/Ground.tga");
-  const Image2D texTree(imageWidth, imageHeight, imageTree, GL_RGBA, GL_UNSIGNED_BYTE);
-  const Image2D texHouse("Res/House.tga");
-  const Image2D texCube("Res/Rock.tga");
+  const Texture::Image2D texGround("Res/Ground.tga");
+  const Texture::Image2D texTree(imageWidth, imageHeight, imageTree, GL_RGBA, GL_UNSIGNED_BYTE);
+  const Texture::Image2D texHouse("Res/House.tga");
+  const Texture::Image2D texCube("Res/Rock.tga");
   if (!texGround ||!texTree || !texHouse || !texCube) {
     return 1;
   }
@@ -512,7 +512,7 @@ int main()
       texCube.Bind(0);
       primitiveBuffer.Get(3).Draw();
     }
-    UnbindAllTextures();
+    Texture::UnbindAllTextures();
     glBindSampler(0, 0);
     Shader::UnbindPipeline();
     primitiveBuffer.UnbindVertexArray();

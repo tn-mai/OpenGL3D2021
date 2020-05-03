@@ -5,6 +5,11 @@
 #include "GLContext.h"
 #include <iostream>
 
+/**
+* テクスチャ関連の機能を格納する名前空間.
+*/
+namespace Texture {
+
 namespace /* unnamed */ {
 
 /**
@@ -114,3 +119,6 @@ GLsizei Image2D::Height() const
 {
   return height;
 }
+
+} // namespace Texture
+

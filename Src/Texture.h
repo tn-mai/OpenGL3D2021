@@ -5,6 +5,8 @@
 #define TEXTURE_H_INCLUDED
 #include <glad/glad.h>
 
+namespace Texture {
+
 /**
 * 2Dテクスチャ.
 */
@@ -31,5 +33,7 @@ private:
   GLsizei height = 0;
 };
 void UnbindAllTextures();
+
+} // namespace Texture
 
 #endif // TEXTURE_H_INCLUDED
