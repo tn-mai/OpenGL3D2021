@@ -150,6 +150,7 @@
     <ClCompile Include="Src\GLContext.cpp" />
     <ClCompile Include="Src\Main.cpp" />
     <ClCompile Include="Src\Mesh.cpp" />
+    <ClCompile Include="Src\Shader.cpp" />
     <ClCompile Include="Src\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -160,6 +161,7 @@
     <ClInclude Include="Src\glad\include\KHR\khrplatform.h" />
     <ClInclude Include="Src\GLContext.h" />
     <ClInclude Include="Src\Mesh.h" />
+    <ClInclude Include="Src\Shader.h" />
     <ClInclude Include="Src\Texture.h" />
   </ItemGroup>
   <ItemGroup>

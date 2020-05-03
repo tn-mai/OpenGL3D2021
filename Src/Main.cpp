@@ -5,6 +5,7 @@
 #include "GLContext.h"
 #include "Mesh.h"
 #include "Texture.h"
+#include "Shader.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
 #include <string>
@@ -312,7 +313,7 @@ void GLAPIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum seve
 /**
 * 並木を描画する.
 */
-void DrawLineOfTrees(const Primitive& prim, GLint vp, GLint locMatMVP, const glm::mat4& matVP, const glm::vec3& start, const glm::vec3& direction)
+void DrawLineOfTrees(const Primitive& prim, Shader::Pipeline& pipeline, const glm::mat4& matVP, const glm::vec3& start, const glm::vec3& direction)
 {
   glm::vec3 offset = start;
   for (float i = 0; i < 19; ++i) {
@@ -321,7 +322,7 @@ void DrawLineOfTrees(const Primitive& prim, GLint vp, GLint locMatMVP, const glm
     const glm::mat4 matModelR = glm::rotate(glm::mat4(1), glm::radians(i * 90), glm::vec3(0, 1, 0));
     const glm::mat4 matModel = matModelT * matModelR;
     const glm::mat4 matMVP = matVP * matModel;
-    glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+    pipeline.SetMVP(matMVP);
     prim.Draw();
   }
 }
@@ -409,9 +410,7 @@ int main()
   primitiveBuffer.Add(std::size(posCube), posCube, colCube, tcCube, std::size(indexCube), indexCube);
 
   // パイプライン・オブジェクトを作成する.
-  const GLuint vp = GLContext::CreateProgram(GL_VERTEX_SHADER, vsCode);
-  const GLuint fp = GLContext::CreateProgram(GL_FRAGMENT_SHADER, fsCode);
-  const GLuint pipeline = GLContext::CreatePipeline(vp, fp);
+  Shader::Pipeline pipeline(vsCode, fsCode);
   if (!pipeline) {
     return 1;
   }
@@ -462,7 +461,7 @@ int main()
     //glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
 
     primitiveBuffer.BindVertexArray();
-    glBindProgramPipeline(pipeline);
+    pipeline.Bind();
     glBindSampler(0, sampler);
 
     //primTree.Draw();
@@ -472,7 +471,7 @@ int main()
     texTree.Bind(0);
     for (float j = 0; j < 4; ++j) {
       const glm::mat4 matRot = glm::rotate(glm::mat4(1), glm::radians(90.0f) * j, glm::vec3(0, 1, 0));
-      DrawLineOfTrees(primitiveBuffer.Get(1), vp, locMatMVP, matProj * matView, matRot * glm::vec4(-19, 0, 19, 1), matRot * glm::vec4(2, 0, 0, 1));
+      DrawLineOfTrees(primitiveBuffer.Get(1), pipeline, matProj * matView, matRot * glm::vec4(-19, 0, 19, 1), matRot * glm::vec4(2, 0, 0, 1));
     }
 #else
     for (float i = 0; i < 19; ++i) {
@@ -491,7 +490,7 @@ int main()
     {
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
-      glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+      pipeline.SetMVP(matMVP);
       texGround.Bind(0);
       primitiveBuffer.Get(0).Draw();
     }
@@ -500,7 +499,7 @@ int main()
     {
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
-      glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+      pipeline.SetMVP(matMVP);
       texHouse.Bind(0);
       primitiveBuffer.Get(2).Draw();
     }
@@ -509,13 +508,13 @@ int main()
     {
       const glm::mat4 matModel = glm::translate(glm::mat4(1), glm::vec3(10, 1, 0));
       const glm::mat4 matMVP = matProj * matView * matModel;
-      glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+      pipeline.SetMVP(matMVP);
       texCube.Bind(0);
       primitiveBuffer.Get(3).Draw();
     }
     UnbindAllTextures();
     glBindSampler(0, 0);
-    glBindProgramPipeline(0);
+    Shader::UnbindPipeline();
     primitiveBuffer.UnbindVertexArray();
 
     glfwPollEvents();
@@ -524,9 +523,6 @@ int main()
 
   // 後始末.
   glDeleteSamplers(1, &sampler);
-  glDeleteProgramPipelines(1, &pipeline);
-  glDeleteProgram(fp);
-  glDeleteProgram(vp);
 
   // GLFWの終了.
   glfwTerminate();
