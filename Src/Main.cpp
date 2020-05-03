@@ -313,7 +313,7 @@ void GLAPIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum seve
 /**
 * •À–Ø‚ð•`‰æ‚·‚é.
 */
-void DrawLineOfTrees(const Primitive& prim, Shader::Pipeline& pipeline, const glm::mat4& matVP, const glm::vec3& start, const glm::vec3& direction)
+void DrawLineOfTrees(const Mesh::Primitive& prim, Shader::Pipeline& pipeline, const glm::mat4& matVP, const glm::vec3& start, const glm::vec3& direction)
 {
   glm::vec3 offset = start;
   for (float i = 0; i < 19; ++i) {
@@ -400,7 +400,7 @@ int main()
 #undef Output
   }
 
-  PrimitiveBuffer primitiveBuffer;
+  Mesh::PrimitiveBuffer primitiveBuffer;
   if (!primitiveBuffer.Allocate(20'000, 80'000)) {
     return 1;
   }

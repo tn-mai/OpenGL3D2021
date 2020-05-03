@@ -7,6 +7,11 @@
 #include <iostream>
 
 /**
+* 図形データに関する名前空間.
+*/
+namespace Mesh {
+
+/**
 * データをバッファオブジェクトにコピーする.
 *
 * @param id          コピー先となるバッファオブジェクトID.
@@ -196,4 +201,6 @@ void PrimitiveBuffer::UnbindVertexArray() const
 {
   glBindVertexArray(0);
 }
+
+} // namespace Mesh
 

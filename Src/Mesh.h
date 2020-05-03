@@ -7,10 +7,12 @@
 #include <glm/glm.hpp>
 #include <vector>
 
+namespace Mesh {
+
 /**
 * プリミティブデータ.
 */
-class Primitive 
+class Primitive
 {
 public:
   Primitive() = default;
@@ -66,5 +68,8 @@ private:
   GLsizei maxIndexCount = 0; // 格納できる最大インデックス数.
   GLsizei curIndexCount = 0; // 格納済みインデックス数.
 };
+
+} // namespace Mesh
+
 
 #endif // MESH_H_INCLUDED
