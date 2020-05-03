@@ -4,6 +4,7 @@
 #ifndef GLCONTEXT_H_INCLUDED
 #define GLCONTEXT_H_INCLUDED
 #include <glad/glad.h>
+#include <string>
 #include <memory>
 
 /// 三次元座標型.
@@ -24,35 +25,50 @@ GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data);
 GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor, GLuint vboTexcoord, GLuint ibo);
 GLuint CreateProgram(GLenum type, const GLchar* code);
 GLuint CreatePipeline(GLuint vp, GLuint fp);
+GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data, GLenum format, GLenum type);
+GLuint CreateImage2D(const char* filename);
+GLuint CreateSampler();
 
+#if 0
 /**
-* 2Dテクスチャ.
+*
 */
-class Image2D
+class ShaderProgram
 {
 public:
-  Image2D() = default;
-  explicit Image2D(GLuint id);
-  ~Image2D();
-  Image2D(const Image2D&) = delete;
-  Image2D& operator=(const Image2D&) = delete;
+  ShaderProgram() = default;
+  explicit ShaderProgram(GLuint id);
+  ~ShaderProgram();
+  ShaderProgram(const ShaderProgram&) = delete;
+  ShaderProgram& operator=(const ShaderProgram&) = delete;
 
-  void Bind(GLuint unit) const;
-  void Unbind() const;
-  GLsizei Width() const;
-  GLsizei Height() const;
+  void SetMVP(const glm::mat4&);
 
 private:
   GLuint id = 0;
-  GLsizei width = 0;
-  GLsizei height = 0;
+  GLint locMatMVP = -1;
 };
-using Image2DPtr = std::shared_ptr<Image2D>;
-Image2DPtr CreateImage2D(GLsizei width, GLsizei height, const void* data, GLenum format, GLenum type);
-Image2DPtr CreateImage2D(const char* filename);
-void UnbindAllTextures();
+using ShaderProgramPtr = std::shared_ptr<ShaderProgram>;
 
-GLuint CreateSampler();
+/**
+*
+*/
+class ShaderPipeline
+{
+public:
+  ShaderPipeline() = default;
+  explicit ShaderPipeline(GLuint id);
+  ~ShaderPipeline();
+  ShaderPipeline(const ShaderPipeline&) = delete;
+  ShaderPipeline& operator=(const ShaderPipeline&) = delete;
+
+private:
+  GLuint id = 0;
+  ShaderProgramPtr vs;
+  ShaderProgramPtr fs;
+};
+using ShaderPipelinePtr = std::shared_ptr<ShaderPipeline>;
+#endif
 
 } // namespace GLContext
 

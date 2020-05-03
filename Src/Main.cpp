@@ -4,6 +4,7 @@
 #include <glad/glad.h>
 #include "GLContext.h"
 #include "Mesh.h"
+#include "Texture.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
 #include <string>
@@ -429,13 +430,13 @@ int main()
   glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   //const GLuint texGround = GLContext::CreateImage2D(imageWidth, imageHeight, imageGround);
-  const GLContext::Image2DPtr texGround = GLContext::CreateImage2D("Res/Ground.tga");
-  const GLContext::Image2DPtr texHouse = GLContext::CreateImage2D("Res/House.tga");
-  const GLContext::Image2DPtr texCube = GLContext::CreateImage2D("Res/Rock.tga");
-  if (!texGround || !texHouse) {
+  const Image2D texGround("Res/Ground.tga");
+  const Image2D texTree(imageWidth, imageHeight, imageTree, GL_RGBA, GL_UNSIGNED_BYTE);
+  const Image2D texHouse("Res/House.tga");
+  const Image2D texCube("Res/Rock.tga");
+  if (!texGround ||!texTree || !texHouse || !texCube) {
     return 1;
   }
-  const GLContext::Image2DPtr texTree = GLContext::CreateImage2D(imageWidth, imageHeight, imageTree, GL_RGBA, GL_UNSIGNED_BYTE);
 
   // ƒƒCƒ“ƒ‹[ƒv.
   while (!glfwWindowShouldClose(window)) {
@@ -468,7 +469,7 @@ int main()
 
     // –Ø‚ð•`‰æ.
 #if 1
-    texTree->Bind(0);
+    texTree.Bind(0);
     for (float j = 0; j < 4; ++j) {
       const glm::mat4 matRot = glm::rotate(glm::mat4(1), glm::radians(90.0f) * j, glm::vec3(0, 1, 0));
       DrawLineOfTrees(primitiveBuffer.Get(1), vp, locMatMVP, matProj * matView, matRot * glm::vec4(-19, 0, 19, 1), matRot * glm::vec4(2, 0, 0, 1));
@@ -491,7 +492,7 @@ int main()
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
       glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
-      texGround->Bind(0);
+      texGround.Bind(0);
       primitiveBuffer.Get(0).Draw();
     }
 
@@ -500,7 +501,7 @@ int main()
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
       glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
-      texHouse->Bind(0);
+      texHouse.Bind(0);
       primitiveBuffer.Get(2).Draw();
     }
 
@@ -509,10 +510,10 @@ int main()
       const glm::mat4 matModel = glm::translate(glm::mat4(1), glm::vec3(10, 1, 0));
       const glm::mat4 matMVP = matProj * matView * matModel;
       glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
-      texCube->Bind(0);
+      texCube.Bind(0);
       primitiveBuffer.Get(3).Draw();
     }
-    GLContext::UnbindAllTextures();
+    UnbindAllTextures();
     glBindSampler(0, 0);
     glBindProgramPipeline(0);
     primitiveBuffer.UnbindVertexArray();
