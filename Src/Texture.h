@@ -34,6 +34,29 @@ private:
 };
 void UnbindAllTextures();
 
+/**
+* ƒTƒ“ƒvƒ‰.
+*/
+class Sampler
+{
+public:
+  Sampler();
+  ~Sampler();
+  Sampler(const Sampler&) = delete;
+  Sampler& operator=(const Sampler&) = delete;
+
+  explicit operator bool() const { return id; }
+
+  void SetWrapMode(GLenum mode);
+  void SetFilter(GLenum filter);
+  void Bind(GLuint unit) const;
+  void Unbind() const;
+
+private:
+  GLuint id = 0;
+};
+void UnbindAllSamplers();
+
 } // namespace Texture
 
 #endif // TEXTURE_H_INCLUDED

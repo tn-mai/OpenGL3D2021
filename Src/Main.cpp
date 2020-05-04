@@ -419,14 +419,12 @@ int main()
   const GLint locMatMVP = 0;
 
   // サンプラ・オブジェクトを作成する.
-  const GLuint sampler = GLContext::CreateSampler();
+  Texture::Sampler sampler;
   if (!sampler) {
     return 1;
   }
-  glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-  glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  sampler.SetWrapMode(GL_REPEAT);
+  sampler.SetFilter(GL_NEAREST);
 
   //const GLuint texGround = GLContext::CreateImage2D(imageWidth, imageHeight, imageGround);
   const Texture::Image2D texGround("Res/Ground.tga");
@@ -462,7 +460,7 @@ int main()
 
     primitiveBuffer.BindVertexArray();
     pipeline.Bind();
-    glBindSampler(0, sampler);
+    sampler.Bind(0);
 
     //primTree.Draw();
 
@@ -513,16 +511,13 @@ int main()
       primitiveBuffer.Get(3).Draw();
     }
     Texture::UnbindAllTextures();
-    glBindSampler(0, 0);
+    Texture::UnbindAllSamplers();
     Shader::UnbindPipeline();
     primitiveBuffer.UnbindVertexArray();
 
     glfwPollEvents();
     glfwSwapBuffers(window);
   }
-
-  // 後始末.
-  glDeleteSamplers(1, &sampler);
 
   // GLFWの終了.
   glfwTerminate();
