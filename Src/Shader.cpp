@@ -4,10 +4,16 @@
 #include "Shader.h"
 #include "GLContext.h"
 
+/**
+* シェーダに関する機能を格納する名前空間.
+*/
 namespace Shader {
 
 /**
+* コンストラクタ.
 *
+* @param vsCode  頂点シェーダー・プログラムのアドレス.
+* @param fsCode  フラグメントシェーダー・プログラムのアドレス.
 */
 Pipeline::Pipeline(const char* vsCode, const char* fsCode)
 {
@@ -17,7 +23,7 @@ Pipeline::Pipeline(const char* vsCode, const char* fsCode)
 }
 
 /**
-*
+* デストラクタ.
 */
 Pipeline::~Pipeline()
 {
@@ -27,7 +33,7 @@ Pipeline::~Pipeline()
 }
 
 /**
-*
+* プログラムパイプラインをバインドする.
 */
 void Pipeline::Bind() const
 {
@@ -35,7 +41,15 @@ void Pipeline::Bind() const
 }
 
 /**
-*
+* プログラムパイプラインのバインドを解除する.
+*/
+void Pipeline::Unbind() const
+{
+  glBindProgramPipeline(0);
+}
+
+/**
+* シェーダにMVP行列を設定する.
 */
 void Pipeline::SetMVP(const glm::mat4& matMVP)
 {

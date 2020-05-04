@@ -10,7 +10,7 @@
 namespace Shader {
 
 /**
-*
+* プログラム・パイプライン.
 */
 class Pipeline
 {
@@ -24,6 +24,7 @@ public:
   explicit operator bool() const { return id; }
 
   void Bind() const;
+  void Unbind() const;
   void SetMVP(const glm::mat4&);
 
 private:
