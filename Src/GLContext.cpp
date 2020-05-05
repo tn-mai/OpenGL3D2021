@@ -119,14 +119,32 @@ GLuint CreateProgram(GLenum type, const GLchar* code)
 GLuint CreatePipeline(GLuint vp, GLuint fp)
 {
   glGetError(); // エラー状態をリセット.
+
   GLuint id;
   glCreateProgramPipelines(1, &id);
   glUseProgramStages(id, GL_VERTEX_SHADER_BIT, vp);
   glUseProgramStages(id, GL_FRAGMENT_SHADER_BIT, fp);
   if (glGetError() != GL_NO_ERROR) {
+   std::cerr << "[エラー]" << __func__ << ":プログラムパイプラインの作成に失敗.\n";
     glDeleteProgramPipelines(1, &id);
     return 0;
   }
+
+  GLint testVp = 0;
+  glGetProgramPipelineiv(id, GL_VERTEX_SHADER, &testVp);
+  if (testVp != vp) {
+    std::cerr << "[エラー]" << __func__ << ":頂点シェーダの設定に失敗.\n";
+    glDeleteProgramPipelines(1, &id);
+    return 0;
+  }
+  GLint testFp = 0;
+  glGetProgramPipelineiv(id, GL_FRAGMENT_SHADER, &testFp);
+  if (testFp != fp) {
+    std::cerr << "[エラー]" << __func__ << ":フラグメントシェーダの設定に失敗.\n";
+    glDeleteProgramPipelines(1, &id);
+    return 0;
+  }
+
   return id;
 }
 
