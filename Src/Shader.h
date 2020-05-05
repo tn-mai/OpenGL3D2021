@@ -24,7 +24,7 @@ public:
 
   void Bind() const;
   void Unbind() const;
-  void SetMVP(const glm::mat4&);
+  bool SetMVP(const glm::mat4&) const;
 
 private:
   GLuint id = 0;

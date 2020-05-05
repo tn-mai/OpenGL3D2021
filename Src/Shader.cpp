@@ -3,6 +3,7 @@
 */
 #include "Shader.h"
 #include "GLContext.h"
+#include <iostream>
 
 /**
 * シェーダに関する機能を格納する名前空間.
@@ -50,11 +51,21 @@ void Pipeline::Unbind() const
 
 /**
 * シェーダにMVP行列を設定する.
+*
+* @retval true  設定成功.
+* @retval false 設定失敗.
 */
-void Pipeline::SetMVP(const glm::mat4& matMVP)
+bool Pipeline::SetMVP(const glm::mat4& matMVP) const
 {
+  glGetError(); // エラー状態をリセット.
+
   const GLint locMatMVP = 0;
   glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":MVP行列の設定に失敗.\n";
+    return false;
+  }
+  return true;
 }
 
 /**
