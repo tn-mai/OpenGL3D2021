@@ -24,6 +24,7 @@ namespace GLContext {
 GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data);
 GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor, GLuint vboTexcoord, GLuint ibo);
 GLuint CreateProgram(GLenum type, const GLchar* code);
+GLuint CreateProgramFromFile(GLenum type, const char* filename);
 GLuint CreatePipeline(GLuint vp, GLuint fp);
 GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data, GLenum format, GLenum type);
 GLuint CreateImage2D(const char* filename);

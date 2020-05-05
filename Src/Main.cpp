@@ -257,36 +257,6 @@ const GLuint imageTree[] = {
   W, G, W, G, W, G, W, G,
 };
 
-/// 頂点シェーダー.
-static const GLchar* const vsCode =
-  "#version 450 \n"
-  "layout(location=0) in vec3 vPosition; \n"
-  "layout(location=1) in vec4 vColor; \n"
-  "layout(location=2) in vec2 vTexcoord; \n"
-  "layout(location=0) out vec4 outColor; \n"
-  "layout(location=1) out vec2 outTexcoord; \n"
-  "out gl_PerVertex { \n"
-  "  vec4 gl_Position; \n"
-  "}; \n"
-  "layout(location=0) uniform mat4 matMVP; \n"
-  "void main() { \n"
-  "  outColor = vColor; \n"
-  "  outTexcoord = vTexcoord; \n"
-  "  gl_Position = matMVP * vec4(vPosition, 1.0); \n"
-  "}";
-
-/// フラグメントシェーダー.
-static const GLchar* const fsCode =
-  "#version 450 \n"
-  "layout(location=0) in vec4 inColor; \n"
-  "layout(location=1) in vec2 inTexcoord; \n"
-  "layout(binding=0) uniform sampler2D texColor; \n"
-  "out vec4 fragColor; \n"
-  "void main() { \n"
-//  "  fragColor = inColor * texture(texColor, gl_FragCoord.xy * 0.01); \n"
-  "  fragColor = inColor * texture(texColor, inTexcoord); \n"
-  "}";
-
 /**
 * OpenGLからのメッセージを処理する.
 *
@@ -410,7 +380,7 @@ int main()
   primitiveBuffer.Add(std::size(posCube), posCube, colCube, tcCube, std::size(indexCube), indexCube);
 
   // パイプライン・オブジェクトを作成する.
-  Shader::Pipeline pipeline(vsCode, fsCode);
+  Shader::Pipeline pipeline("Res/Simple.vert", "Res/Simple.frag");
   if (!pipeline) {
     return 1;
   }

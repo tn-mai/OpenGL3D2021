@@ -15,10 +15,10 @@ namespace Shader {
 * @param vsCode  頂点シェーダー・プログラムのアドレス.
 * @param fsCode  フラグメントシェーダー・プログラムのアドレス.
 */
-Pipeline::Pipeline(const char* vsCode, const char* fsCode)
+Pipeline::Pipeline(const char* vsFilename, const char* fsFilename)
 {
-  vp = GLContext::CreateProgram(GL_VERTEX_SHADER, vsCode);
-  fp = GLContext::CreateProgram(GL_FRAGMENT_SHADER, fsCode);
+  vp = GLContext::CreateProgramFromFile(GL_VERTEX_SHADER, vsFilename);
+  fp = GLContext::CreateProgramFromFile(GL_FRAGMENT_SHADER, fsFilename);
   id = GLContext::CreatePipeline(vp, fp);
 }
 

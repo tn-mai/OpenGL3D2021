@@ -155,6 +155,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Res\Simple.frag" />
+    <None Include="Res\Simple.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\glad\include\glad\glad.h" />

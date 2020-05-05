@@ -39,6 +39,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Res\Simple.vert">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\Simple.frag">
+      <Filter>リソース ファイル</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\glad\include\glad\glad.h">
