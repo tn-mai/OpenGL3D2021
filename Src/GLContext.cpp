@@ -5,9 +5,9 @@
 #include <glm/vec2.hpp>
 #include <cstdint>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <iostream>
-#include <sys/stat.h>
 
 /**
 * OpenGLコンテキストに関する機能を格納する名前空間.
@@ -109,29 +109,24 @@ GLuint CreateProgram(GLenum type, const GLchar* code)
 }
 
 /**
-* シェーダ・プログラムをビルドする.
+* ファイルからシェーダ・プログラムをビルドする.
 *
 * @param type     シェーダの種類.
 * @param filename シェーダファイル名.
 *
 * @retval 0より大きい 作成したプログラム・オブジェクト.
-* @retval 0          プログラム・オブジェクトの作成に失敗.
+* @retval 0           プログラム・オブジェクトの作成に失敗.
 */
 GLuint CreateProgramFromFile(GLenum type, const char* filename)
 {
-  struct stat st;
-  if (stat(filename, &st) != 0) {
-    std::cerr << "[エラー]" << __func__ << ":`" << filename << "`を開けません.\n";
-    return 0;
-  }
   std::ifstream ifs(filename);
   if (!ifs) {
     std::cerr << "[エラー]" << __func__ << ":`" << filename << "`を開けません.\n";
     return 0;
   }
-  std::vector<char> code(st.st_size);
-  ifs.read(code.data(), code.size());
-  return GLContext::CreateProgram(type, code.data());
+  std::stringstream ss;
+  ss << ifs.rdbuf();
+  return GLContext::CreateProgram(type, ss.str().c_str());
 }
 
 /**
