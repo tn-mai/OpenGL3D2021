@@ -36,11 +36,12 @@ GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data)
 * @param vboPosition VAOに関連付けられる座標データ.
 * @param vboColor    VAOに関連付けられるカラーデータ.
 * @param vboTexcoord VAOに関連付けられるテクスチャ座標データ.
+* @param vboNormal   VAOに関連付けられる法線データ.
 * @param ibo         VAOに関連付けられるインデックスデータ.
 *
 * @return 作成したVAO.
 */
-GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor, GLuint vboTexcoord, GLuint ibo)
+GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor, GLuint vboTexcoord, GLuint vboNormal, GLuint ibo)
 {
   if (!vboPosition || !vboColor || !vboTexcoord || !ibo) {
     return 0;
@@ -69,6 +70,13 @@ GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor, GLuint vboTexcoord
   glVertexArrayAttribFormat(id, texcoordIndex, 2, GL_FLOAT, GL_FALSE, 0);
   glVertexArrayAttribBinding(id,texcoordIndex, texcoordBindingIndex);
   glVertexArrayVertexBuffer(id, texcoordBindingIndex, vboTexcoord, 0, sizeof(glm::vec2));
+
+  const GLuint normalIndex = 3;
+  const GLuint normalBindingIndex = 3;
+  glEnableVertexArrayAttrib(id, normalIndex);
+  glVertexArrayAttribFormat(id, normalIndex, 3, GL_FLOAT, GL_FALSE, 0);
+  glVertexArrayAttribBinding(id,normalIndex, normalBindingIndex);
+  glVertexArrayVertexBuffer(id, normalBindingIndex, vboNormal, 0, sizeof(glm::vec3));
 
   glVertexArrayElementBuffer(id, ibo);
 

@@ -195,6 +195,69 @@ const glm::vec2 tcCube[] = {
   { 0.0f / 4.0f, 2.0f / 3.0f},
 };
 
+/// 法線データ: 地面
+const glm::vec3 normGround[] = {
+  { 0, 1, 0 },
+  { 0, 1, 0 },
+  { 0, 1, 0 },
+  { 0, 1, 0 },
+};
+
+/// 法線データ: 木
+const glm::vec3 normTree[] = {
+  { 0.00f, 1.00f, 0.00f},
+  { 0.00f,-0.44f,-0.90f},
+  {-0.90f,-0.44f, 0.00f},
+  { 0.00f,-0.44f, 0.90f},
+  { 0.90f,-0.44f, 0.00f},
+  { 0.00f, 1.00f, 0.00f},
+  { 0.00f, 0.00f,-1.00f},
+  {-0.87f, 0.00f, 0.49f},
+  { 0.87f, 0.00f, 0.49f},
+};
+
+/// 法線データ: 家
+const glm::vec3 normHouse[] = {
+  { 0.7f, 0.0f, 0.7f},
+  { 0.7f, 0.0f, 0.7f},
+  { 0.0f, 0.7f, 0.7f},
+  {-0.7f, 0.0f, 0.7f},
+  {-0.7f, 0.0f, 0.7f},
+
+  {-0.7f, 0.0f,-0.7f},
+  {-0.7f, 0.0f,-0.7f},
+  { 0.0f, 0.7f,-0.7f},
+  { 0.7f, 0.0f,-0.7f},
+  { 0.7f, 0.0f,-0.7f},
+
+  { 0.7f, 0.0f, 0.7f},
+  { 0.7f, 0.0f, 0.7f},
+
+  { 0.0f, 1.0f, 0.0f},
+  { 0.0f, 1.0f,-0.0f},
+
+  { 0.0f, 1.0f,-0.0f},
+  { 0.0f, 1.0f, 0.0f},
+};
+
+/// 法線データ: 立方体
+const glm::vec3 normCube[] = {
+  glm::normalize(glm::vec3{ 1,-1, 1}),
+  glm::normalize(glm::vec3{-1,-1, 1}),
+  glm::normalize(glm::vec3{-1, 1, 1}),
+  glm::normalize(glm::vec3{-1,-1, 1}),
+  glm::normalize(glm::vec3{ 1,-1, 1}),
+  glm::normalize(glm::vec3{ 1, 1, 1}),
+  glm::normalize(glm::vec3{ 1,-1, 1}),
+  glm::normalize(glm::vec3{ 1,-1,-1}),
+  glm::normalize(glm::vec3{ 1, 1,-1}),
+  glm::normalize(glm::vec3{ 1,-1,-1}),
+  glm::normalize(glm::vec3{-1,-1,-1}),
+  glm::normalize(glm::vec3{-1, 1,-1}),
+  glm::normalize(glm::vec3{-1,-1,-1}),
+  glm::normalize(glm::vec3{ 1,-1,-1}),
+};
+
 /// インデックスデータ: 地面
 const GLushort indexGround[] = {
   0, 1, 2, 2, 3, 0,
@@ -292,10 +355,11 @@ void DrawLineOfTrees(const Mesh::Primitive& prim, Shader::Pipeline& pipeline, co
   for (float i = 0; i < 19; ++i) {
     const glm::vec3 offset = start + direction * i;
     const glm::mat4 matModelT = glm::translate(glm::mat4(1), offset);
-    const glm::mat4 matModelR = glm::rotate(glm::mat4(1), glm::radians(i * 90), glm::vec3(0, 1, 0));
+    const glm::mat4 matModelR = glm::rotate(glm::mat4(1), glm::radians(i * 30), glm::vec3(0, 1, 0));
     const glm::mat4 matModel = matModelT * matModelR;
     const glm::mat4 matMVP = matVP * matModel;
     pipeline.SetMVP(matMVP);
+    pipeline.SetNormalMatrix(glm::transpose(glm::inverse(matModel)));
     prim.Draw();
   }
 }
@@ -377,13 +441,13 @@ int main()
   if (!primitiveBuffer.Allocate(20'000, 80'000)) {
     return 1;
   }
-  primitiveBuffer.Add(std::size(posGround), posGround, colGround, tcGround, std::size(indexGround), indexGround);
-  primitiveBuffer.Add(std::size(posTree), posTree, colTree, tcTree, std::size(indexTree), indexTree);
-  primitiveBuffer.Add(std::size(posHouse), posHouse, colHouse, tcHouse, std::size(indexHouse), indexHouse);
-  primitiveBuffer.Add(std::size(posCube), posCube, colCube, tcCube, std::size(indexCube), indexCube);
+  primitiveBuffer.Add(std::size(posGround), posGround, colGround, tcGround, normGround, std::size(indexGround), indexGround);
+  primitiveBuffer.Add(std::size(posTree), posTree, colTree, tcTree, normTree, std::size(indexTree), indexTree);
+  primitiveBuffer.Add(std::size(posHouse), posHouse, colHouse, tcHouse, normHouse, std::size(indexHouse), indexHouse);
+  primitiveBuffer.Add(std::size(posCube), posCube, colCube, tcCube, normCube, std::size(indexCube), indexCube);
 
   // パイプライン・オブジェクトを作成する.
-  Shader::Pipeline pipeline("Res/Simple.vert", "Res/Simple.frag");
+  Shader::Pipeline pipeline("Res/VertexLighting.vert", "Res/Simple.frag");
   if (!pipeline) {
     return 1;
   }
@@ -414,8 +478,15 @@ int main()
     glClearColor(0.1f, 0.3f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // 平行光源を設定する
+    const Shader::DirectionalLight directionalLight{
+      glm::normalize(glm::vec4(3, 2, 2, 0)),
+      glm::vec4(2, 1.9f, 1.8f, 1)
+    };
+    pipeline.SetLight(directionalLight);
+
     // 視点を回転させる.
-    const float degree = static_cast<float>(std::fmod(glfwGetTime() * 30.0, 360.0));
+    const float degree = static_cast<float>(std::fmod(glfwGetTime() * 10.0, 360.0));
     const glm::mat4 matViewRot = glm::rotate(glm::mat4(1), glm::radians(degree), glm::vec3(0, 1, 0));
     const glm::vec3 viewPosition = matViewRot * glm::vec4(20, 30, 20, 1);
 
@@ -462,6 +533,7 @@ int main()
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
       pipeline.SetMVP(matMVP);
+      pipeline.SetNormalMatrix(glm::transpose(glm::inverse(matModel)));
       texGround.Bind(0);
       primitiveBuffer.Get(0).Draw();
     }
@@ -471,6 +543,7 @@ int main()
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
       pipeline.SetMVP(matMVP);
+      pipeline.SetNormalMatrix(glm::transpose(glm::inverse(matModel)));
       texHouse.Bind(0);
       primitiveBuffer.Get(2).Draw();
     }
@@ -480,6 +553,7 @@ int main()
       const glm::mat4 matModel = glm::translate(glm::mat4(1), glm::vec3(10, 1, 0));
       const glm::mat4 matMVP = matProj * matView * matModel;
       pipeline.SetMVP(matMVP);
+      pipeline.SetNormalMatrix(glm::transpose(glm::inverse(matModel)));
       texCube.Bind(0);
       primitiveBuffer.Get(3).Draw();
     }

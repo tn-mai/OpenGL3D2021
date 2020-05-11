@@ -71,6 +71,49 @@ bool Pipeline::SetMVP(const glm::mat4& matMVP) const
 }
 
 /**
+* シェーダに法線行列を設定する.
+*
+* @param matNormal 設定する法線行列.
+*
+* @retval true  設定成功.
+* @retval false 設定失敗.
+*/
+bool Pipeline::SetNormalMatrix(const glm::mat3& matNormal) const
+{
+  glGetError(); // エラー状態をリセット.
+
+  const GLint locMatNormal = 1;
+  glProgramUniformMatrix3fv(vp, locMatNormal, 1, GL_FALSE, &matNormal[0][0]);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":法線行列の設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
+/**
+* シェーダにライトデータを設定する.
+*
+* @param light 設定するライトデータ.
+*
+* @retval true  設定成功.
+* @retval false 設定失敗.
+*/
+bool Pipeline::SetLight(const DirectionalLight& light) const
+{
+  glGetError(); // エラー状態をリセット.
+
+  const GLint locDirLight = 2;
+  glProgramUniform4fv(vp, locDirLight, 1, &light.direction.x);
+  glProgramUniform4fv(vp, locDirLight + 1, 1, &light.color.x);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":並行光源の設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
+/**
 * プログラムパイプラインのバインドを解除する.
 */
 void UnbindPipeline()

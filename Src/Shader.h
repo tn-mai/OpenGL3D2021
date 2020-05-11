@@ -9,6 +9,15 @@
 namespace Shader {
 
 /**
+* 平行光源.
+*/
+struct DirectionalLight
+{
+  glm::vec4 direction; // 向き.
+  glm::vec4 color;     // 色.
+};
+
+/**
 * プログラム・パイプライン.
 */
 class Pipeline
@@ -25,6 +34,8 @@ public:
   void Bind() const;
   void Unbind() const;
   bool SetMVP(const glm::mat4&) const;
+  bool SetNormalMatrix(const glm::mat3&) const;
+  bool SetLight(const DirectionalLight& light) const;
 
 private:
   GLuint id = 0;

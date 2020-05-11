@@ -74,9 +74,10 @@ bool PrimitiveBuffer::Allocate(GLsizei maxVertexCount, GLsizei maxIndexCount)
   vboPosition = GLContext::CreateBuffer(sizeof(glm::vec3) * maxVertexCount, nullptr);
   vboColor = GLContext::CreateBuffer(sizeof(glm::vec4) * maxVertexCount, nullptr);
   vboTexcoord = GLContext::CreateBuffer(sizeof(glm::vec2) * maxVertexCount, nullptr);
+  vboNormal = GLContext::CreateBuffer(sizeof(glm::vec3) * maxVertexCount, nullptr);
   ibo = GLContext::CreateBuffer(sizeof(GLushort) * maxIndexCount, nullptr);
-  vao = GLContext::CreateVertexArray(vboPosition, vboColor, vboTexcoord, ibo);
-  if (!vboPosition || !vboColor || !vboTexcoord || !ibo || !vao) {
+  vao = GLContext::CreateVertexArray(vboPosition, vboColor, vboTexcoord, vboNormal, ibo);
+  if (!vboPosition || !vboColor || !vboTexcoord || !vboNormal || !ibo || !vao) {
     std::cerr << "[エラー]" << __func__ << ": VAOの作成に失敗.\n";
     Free();
     return false;
@@ -118,6 +119,7 @@ void PrimitiveBuffer::Free()
 * @param pPosition   座標データへのポインタ.
 * @param pColor      色データへのポインタ.
 * @param pTexcoord   テクスチャ座標データへのポインタ.
+* @param pNormal     法線データへのポインタ.
 * @param indexCount  追加するインデックスデータの数.
 * @param pIndex      インデックスデータへのポインタ.
 *
@@ -125,7 +127,7 @@ void PrimitiveBuffer::Free()
 * @retval false 追加失敗.
 */
 bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
-  const glm::vec4* pColor, const glm::vec2* pTexcoord, size_t indexCount, const GLushort* pIndex)
+  const glm::vec4* pColor, const glm::vec2* pTexcoord, const glm::vec3* pNormal, size_t indexCount, const GLushort* pIndex)
 {
   if (!vao) {
     std::cerr << "[エラー]" << __func__ << ": VAOが作成されていません.\n";
@@ -153,6 +155,9 @@ bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
     return false;
   }
   if (!CopyData(vboTexcoord, sizeof(glm::vec2), curVertexCount, vertexCount, pTexcoord)) {
+    return false;
+  }
+  if (!CopyData(vboNormal, sizeof(glm::vec3), curVertexCount, vertexCount, pNormal)) {
     return false;
   }
   if (!CopyData(ibo, sizeof(GLushort), curIndexCount, indexCount, pIndex)) {
