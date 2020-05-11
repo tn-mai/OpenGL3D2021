@@ -359,7 +359,7 @@ void DrawLineOfTrees(const Mesh::Primitive& prim, Shader::Pipeline& pipeline, co
     const glm::mat4 matModel = matModelT * matModelR;
     const glm::mat4 matMVP = matVP * matModel;
     pipeline.SetMVP(matMVP);
-    pipeline.SetNormalMatrix(glm::transpose(glm::inverse(matModel)));
+    pipeline.SetModelMatrix(matModel);
     prim.Draw();
   }
 }
@@ -533,7 +533,7 @@ int main()
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
       pipeline.SetMVP(matMVP);
-      pipeline.SetNormalMatrix(glm::transpose(glm::inverse(matModel)));
+      pipeline.SetModelMatrix(matModel);
       texGround.Bind(0);
       primitiveBuffer.Get(0).Draw();
     }
@@ -543,7 +543,7 @@ int main()
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
       pipeline.SetMVP(matMVP);
-      pipeline.SetNormalMatrix(glm::transpose(glm::inverse(matModel)));
+      pipeline.SetModelMatrix(matModel);
       texHouse.Bind(0);
       primitiveBuffer.Get(2).Draw();
     }
@@ -553,7 +553,7 @@ int main()
       const glm::mat4 matModel = glm::translate(glm::mat4(1), glm::vec3(10, 1, 0));
       const glm::mat4 matMVP = matProj * matView * matModel;
       pipeline.SetMVP(matMVP);
-      pipeline.SetNormalMatrix(glm::transpose(glm::inverse(matModel)));
+      pipeline.SetModelMatrix(matModel);
       texCube.Bind(0);
       primitiveBuffer.Get(3).Draw();
     }

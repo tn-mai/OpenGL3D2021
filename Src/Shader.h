@@ -34,7 +34,7 @@ public:
   void Bind() const;
   void Unbind() const;
   bool SetMVP(const glm::mat4&) const;
-  bool SetNormalMatrix(const glm::mat3&) const;
+  bool SetModelMatrix(const glm::mat4&) const;
   bool SetLight(const DirectionalLight& light) const;
 
 private:

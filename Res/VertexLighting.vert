@@ -15,7 +15,7 @@ out gl_PerVertex {
 
 // ユニフォーム変数
 layout(location=0) uniform mat4 matMVP;
-layout(location=1) uniform mat3 matNormal;
+layout(location=1) uniform mat4 matModel;
 
 // 並行光源
 struct DirectionalLight {
@@ -27,9 +27,11 @@ layout(location=2) uniform DirectionalLight directionalLight;
 // 頂点シェーダプログラム
 void main()
 {
-  vec3 normal = matNormal * vNormal;
-  float theta = max(dot(normal, directionalLight.direction.xyz), 0);
-  outColor = vColor * directionalLight.color * theta;
+  mat3 matNormal = transpose(inverse(mat3(matModel)));
+  vec3 worldNormal = matNormal * vNormal;
+  float theta = max(dot(worldNormal, directionalLight.direction.xyz), 0);
+  outColor = vColor;
+  outColor.rgb *= directionalLight.color.rgb * theta;
   outTexcoord = vTexcoord;
   gl_Position = matMVP * vec4(vPosition, 1.0);
 }

@@ -71,21 +71,21 @@ bool Pipeline::SetMVP(const glm::mat4& matMVP) const
 }
 
 /**
-* シェーダに法線行列を設定する.
+* シェーダにモデル行列を設定する.
 *
-* @param matNormal 設定する法線行列.
+* @param matModel 設定する法線行列.
 *
 * @retval true  設定成功.
 * @retval false 設定失敗.
 */
-bool Pipeline::SetNormalMatrix(const glm::mat3& matNormal) const
+bool Pipeline::SetModelMatrix(const glm::mat4& matModel) const
 {
   glGetError(); // エラー状態をリセット.
 
-  const GLint locMatNormal = 1;
-  glProgramUniformMatrix3fv(vp, locMatNormal, 1, GL_FALSE, &matNormal[0][0]);
+  const GLint locMatModel = 1;
+  glProgramUniformMatrix4fv(vp, locMatModel, 1, GL_FALSE, &matModel[0][0]);
   if (glGetError() != GL_NO_ERROR) {
-    std::cerr << "[エラー]" << __func__ << ":法線行列の設定に失敗.\n";
+    std::cerr << "[エラー]" << __func__ << ":モデル行列の設定に失敗.\n";
     return false;
   }
   return true;
