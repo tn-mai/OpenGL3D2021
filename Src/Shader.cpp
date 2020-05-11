@@ -52,6 +52,8 @@ void Pipeline::Unbind() const
 /**
 * シェーダにMVP行列を設定する.
 *
+* @param matMVP 設定するMVP行列.
+*
 * @retval true  設定成功.
 * @retval false 設定失敗.
 */
