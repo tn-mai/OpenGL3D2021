@@ -481,9 +481,16 @@ int main()
     // •½sŒõŒ¹‚ğİ’è‚·‚é
     const Shader::DirectionalLight directionalLight{
       glm::normalize(glm::vec4(3, 2, 2, 0)),
-      glm::vec4(2, 1.9f, 1.8f, 1)
+      glm::vec4(1, 0.9f, 0.8f, 1)
     };
     pipeline.SetLight(directionalLight);
+
+    // “_ŒõŒ¹‚ğİ’è‚·‚é
+    const Shader::PointLight pointLight{
+      glm::vec4(8, 10,-8, 0),
+      glm::vec4(0.4f, 0.7f, 1.0f, 0) * 200.0f
+    };
+    pipeline.SetLight(pointLight);
 
     // ‹“_‚ğ‰ñ“]‚³‚¹‚é.
     const float degree = static_cast<float>(std::fmod(glfwGetTime() * 10.0, 360.0));

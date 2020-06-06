@@ -18,6 +18,14 @@ struct DirectionalLight
 };
 
 /**
+* 点光源
+*/
+struct PointLight {
+  glm::vec4 position; // 位置.
+  glm::vec4 color;    // 色.
+};
+
+/**
 * プログラム・パイプライン.
 */
 class Pipeline
@@ -36,6 +44,7 @@ public:
   bool SetMVP(const glm::mat4&) const;
   bool SetModelMatrix(const glm::mat4&) const;
   bool SetLight(const DirectionalLight& light) const;
+  bool SetLight(const PointLight& light) const;
 
 private:
   GLuint id = 0;

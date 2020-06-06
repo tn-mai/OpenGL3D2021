@@ -24,14 +24,50 @@ struct DirectionalLight {
 };
 layout(location=2) uniform DirectionalLight directionalLight;
 
+// 点光源
+struct PointLight {
+  vec4 position;
+  vec4 color;
+};
+layout(location=4) uniform PointLight pointLight;
+
 // 頂点シェーダプログラム
 void main()
 {
+  vec3 worldPosition = vec3(matModel * vec4(vPosition, 1));
   mat3 matNormal = transpose(inverse(mat3(matModel)));
   vec3 worldNormal = matNormal * vNormal;
-  float theta = max(dot(worldNormal, directionalLight.direction.xyz), 0);
-  outColor = vColor;
-  outColor.rgb *= directionalLight.color.rgb * theta;
+
+  vec3 totalLightColor = vec3(0);
+
+  // 平行光源
+  {
+    float theta = max(dot(worldNormal, directionalLight.direction.xyz), 0);
+    totalLightColor += directionalLight.color.rgb * theta;
+  }
+
+  // 点光源
+  {
+    // フラグメントからライトへ向かうベクトルを計算.
+    vec3 lightVector = pointLight.position.xyz - worldPosition;
+
+    // 距離による明るさの変化量を計算.
+    float lengthSq = dot(lightVector, lightVector);
+    float intensity = 1.0 / (1.0 + lengthSq);
+
+    // 面の傾きによる明るさの変化量を計算.
+    float theta = 1;
+    if (lengthSq > 0) {
+      vec3 direction = normalize(lightVector);
+      theta = max(dot(worldNormal, direction), 0);
+    }
+
+    // 変化量をかけ合わせて明るさを求め、ライトの明るさ変数に加算.
+    totalLightColor += pointLight.color.rgb * theta * intensity;
+  }
+
+  outColor = vec4(vColor.rgb * totalLightColor, vColor.a);
+
   outTexcoord = vTexcoord;
   gl_Position = matMVP * vec4(vPosition, 1.0);
 }
