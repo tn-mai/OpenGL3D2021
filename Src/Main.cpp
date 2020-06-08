@@ -16,10 +16,11 @@
 /// 座標データ: 地面
 const glm::vec3 posGround[] = {
   // 地面
-  {-20, 0, 20},
-  { 20, 0, 20},
-  { 20, 0,-20},
-  {-20, 0,-20},
+  {-20, 0, 20}, {-10, 0, 20}, {  0, 0, 20}, { 10, 0, 20}, { 20, 0, 20},
+  {-20, 0, 10}, {-10, 0, 10}, {  0, 0, 10}, { 10, 0, 10}, { 20, 0, 10},
+  {-20, 0,  0}, {-10, 0,  0}, {  0, 0,  0}, { 10, 0,  0}, { 20, 0,  0},
+  {-20, 0,-10}, {-10, 0,-10}, {  0, 0,-10}, { 10, 0,-10}, { 20, 0,-10},
+  {-20, 0,-20}, {-10, 0,-20}, {  0, 0,-20}, { 10, 0,-20}, { 20, 0,-20},
 };
 
 /// 座標データ: 木
@@ -79,10 +80,13 @@ const glm::vec3 posCube[] = {
 
 /// 色データ: 地面
 const glm::vec4 colGround[] = {
-  {0.8f, 0.7f, 0.5f, 1.0f},
-  {0.8f, 0.7f, 0.5f, 1.0f},
-  {0.8f, 0.7f, 0.5f, 1.0f},
-  {0.8f, 0.7f, 0.5f, 1.0f},
+#define A {0.8f, 0.7f, 0.5f, 1.0f}
+  A, A, A, A, A,
+  A, A, A, A, A,
+  A, A, A, A, A,
+  A, A, A, A, A,
+  A, A, A, A, A,
+#undef A
 };
 
 /// 色データ: 木
@@ -138,10 +142,11 @@ const glm::vec4 colCube[] = {
 
 /// テクスチャ座標データ: 地面
 const glm::vec2 tcGround[] = {
-  {-4.0f,-4.0f },
-  { 4.0f,-4.0f },
-  { 4.0f, 4.0f },
-  {-4.0f, 4.0f },
+  {-4.0f,-4.0f }, {-2.0f,-4.0f }, { 0.0f,-4.0f }, { 2.0f,-4.0f }, { 4.0f,-4.0f },
+  {-4.0f,-2.0f }, {-2.0f,-2.0f }, { 0.0f,-2.0f }, { 2.0f,-2.0f }, { 4.0f,-2.0f },
+  {-4.0f, 0.0f }, {-2.0f, 0.0f }, { 0.0f, 0.0f }, { 2.0f, 0.0f }, { 4.0f, 0.0f },
+  {-4.0f, 2.0f }, {-2.0f, 2.0f }, { 0.0f, 2.0f }, { 2.0f, 2.0f }, { 4.0f, 2.0f },
+  {-4.0f, 4.0f }, {-2.0f, 4.0f }, { 0.0f, 4.0f }, { 2.0f, 4.0f }, { 4.0f, 4.0f },
 };
 
 /// テクスチャ座標データ: 木
@@ -197,10 +202,13 @@ const glm::vec2 tcCube[] = {
 
 /// 法線データ: 地面
 const glm::vec3 normGround[] = {
-  { 0, 1, 0 },
-  { 0, 1, 0 },
-  { 0, 1, 0 },
-  { 0, 1, 0 },
+#define N {0,1,0}
+  N, N, N, N, N,
+  N, N, N, N, N,
+  N, N, N, N, N,
+  N, N, N, N, N,
+  N, N, N, N, N,
+#undef N
 };
 
 /// 法線データ: 木
@@ -260,7 +268,10 @@ const glm::vec3 normCube[] = {
 
 /// インデックスデータ: 地面
 const GLushort indexGround[] = {
-  0, 1, 2, 2, 3, 0,
+  0, 1, 6, 6, 5, 0,  1, 2, 7, 7, 6, 1,  2, 3, 8, 8, 7, 2,  3, 4, 9, 9, 8, 3,
+  5, 6,11,11,10, 5,  6, 7,12,12,11, 6,  7, 8,13,13,12, 7,  8, 9,14,14,13, 8,
+ 10,11,16,16,15,10, 11,12,17,17,16,11, 12,13,18,18,17,12, 13,14,19,19,18,13,
+ 15,16,21,21,20,15, 16,17,22,22,21,16, 17,18,23,23,22,17, 18,19,24,24,23,18,
 };
 
 /// インデックスデータ: 木
@@ -473,13 +484,48 @@ int main()
     return 1;
   }
 
+  // 点光源を設定する
+  Shader::PointLight pointLight{
+    glm::vec4(8, 10,-8, 0),
+    glm::vec4(0.4f, 0.7f, 1.0f, 0) * 200.0f
+  };
+
+  // 経過時間計測開始.
+  double elapsedTime = glfwGetTime();
+
   // メインループ.
   while (!glfwWindowShouldClose(window)) {
+    // 経過時間を計測.
+    const double newElapsedTime = glfwGetTime();
+    float deltaTime = static_cast<float>(newElapsedTime - elapsedTime);
+    if (deltaTime >= 0.1f) {
+      deltaTime = 1.0f / 60.0f;
+    }
+    elapsedTime = newElapsedTime;
+
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_CULL_FACE);
     //glEnable(GL_FRAMEBUFFER_SRGB);
     glClearColor(0.1f, 0.3f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // 点光源を移動させる.
+    const float speed = 10.0f * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+      pointLight.position.x -= speed;
+    } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+      pointLight.position.x += speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+      pointLight.position.z -= speed;
+    } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+      pointLight.position.z += speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+      pointLight.position.y -= speed;
+    } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+      pointLight.position.y += speed;
+    }
 
     // 平行光源を設定する
     const Shader::DirectionalLight directionalLight{
@@ -488,17 +534,9 @@ int main()
     };
     pipeline.SetLight(directionalLight);
 
-    // 点光源を設定する
-    const Shader::PointLight pointLight{
-      glm::vec4(8, 10,-8, 0),
-      glm::vec4(0.4f, 0.7f, 1.0f, 0) * 200.0f
-    };
     pipeline.SetLight(pointLight);
 
-    // 視点を回転させる.
-    const float degree = static_cast<float>(std::fmod(glfwGetTime() * 10.0, 360.0));
-    const glm::mat4 matViewRot = glm::rotate(glm::mat4(1), glm::radians(degree), glm::vec3(0, 1, 0));
-    const glm::vec3 viewPosition = matViewRot * glm::vec4(20, 30, 20, 1);
+    const glm::vec3 viewPosition(20, 30, 30);
 
     // 座標変換行列を作成してシェーダーに転送する.
     int w, h;
@@ -567,6 +605,27 @@ int main()
       texCube.Bind(0);
       primitiveBuffer.Get(3).Draw();
     }
+
+    // 点光源の位置を描画.
+    {
+      // Y軸回転.
+      const float degree = static_cast<float>(std::fmod(glfwGetTime() * 180.0, 360.0));
+      const glm::mat4 matModelR =
+        glm::rotate(glm::mat4(1), glm::radians(degree), glm::vec3(0, 1, 0));
+      // 拡大縮小.
+      const glm::mat4 matModelS =
+        glm::scale(glm::mat4(1), glm::vec3(0.5f, 0.25f, 0.5f));
+      // 平行移動.
+      const glm::mat4 matModelT =
+        glm::translate(glm::mat4(1), glm::vec3(pointLight.position) + glm::vec3(0,-1.25f, 0));
+      // 拡大縮小・回転・平行移動を合成.
+      const glm::mat4 matModel = matModelT * matModelR * matModelS;
+      pipeline.SetMVP(matProj * matView * matModel);
+      pipeline.SetModelMatrix(matModel);
+      texTree.Bind(0);
+      primitiveBuffer.Get(1).Draw();
+    }
+
     Texture::UnbindAllTextures();
     Texture::UnbindAllSamplers();
     Shader::UnbindPipeline();
