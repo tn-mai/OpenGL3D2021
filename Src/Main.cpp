@@ -393,6 +393,7 @@ int main()
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+  //glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
   GLFWwindow* window =
     glfwCreateWindow(1280, 720, "OpenGL3DActionGame", nullptr, nullptr);
   if (!window) {
@@ -475,6 +476,8 @@ int main()
   // ÉÅÉCÉìÉãÅ[Év.
   while (!glfwWindowShouldClose(window)) {
     glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_CULL_FACE);
+    //glEnable(GL_FRAMEBUFFER_SRGB);
     glClearColor(0.1f, 0.3f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

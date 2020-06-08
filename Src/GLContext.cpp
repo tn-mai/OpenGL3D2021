@@ -214,6 +214,7 @@ GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data, GLenum pix
   // テクスチャ・オブジェクトを作成し、GPUメモリを確保する.
   glCreateTextures(GL_TEXTURE_2D, 1, &id);
   glTextureStorage2D(id, 1, GL_RGBA8, width, height);
+  //glTextureStorage2D(id, 1, GL_SRGB8_ALPHA8, width, height);
 
   // GPUメモリにデータを転送する.
   GLint alignment;
