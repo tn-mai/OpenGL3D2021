@@ -459,7 +459,8 @@ int main()
   primitiveBuffer.Add(std::size(posCube), posCube, colCube, tcCube, normCube, std::size(indexCube), indexCube);
 
   // パイプライン・オブジェクトを作成する.
-  Shader::Pipeline pipeline("Res/VertexLighting.vert", "Res/Simple.frag");
+  //Shader::Pipeline pipeline("Res/VertexLighting.vert", "Res/Simple.frag");
+  Shader::Pipeline pipeline("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
   if (!pipeline) {
     return 1;
   }

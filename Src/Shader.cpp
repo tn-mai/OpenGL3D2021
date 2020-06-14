@@ -21,6 +21,13 @@ Pipeline::Pipeline(const char* vsFilename, const char* fsFilename)
   vp = GLContext::CreateProgramFromFile(GL_VERTEX_SHADER, vsFilename);
   fp = GLContext::CreateProgramFromFile(GL_FRAGMENT_SHADER, fsFilename);
   id = GLContext::CreatePipeline(vp, fp);
+
+  // 光源データ転送先のプログラムIDを設定.
+  if (glGetUniformLocation(vp, "directionalLight.direction") >= 0) {
+    lightingProgram = vp;
+  } else if (glGetUniformLocation(fp, "directionalLight.direction") >= 0) {
+    lightingProgram = fp;
+  }
 }
 
 /**
@@ -104,8 +111,9 @@ bool Pipeline::SetLight(const DirectionalLight& light) const
   glGetError(); // エラー状態をリセット.
 
   const GLint locDirLight = 2;
-  glProgramUniform4fv(vp, locDirLight, 1, &light.direction.x);
-  glProgramUniform4fv(vp, locDirLight + 1, 1, &light.color.x);
+
+  glProgramUniform4fv(lightingProgram, locDirLight, 1, &light.direction.x);
+  glProgramUniform4fv(lightingProgram, locDirLight + 1, 1, &light.color.x);
   if (glGetError() != GL_NO_ERROR) {
     std::cerr << "[エラー]" << __func__ << ":平行光源の設定に失敗.\n";
     return false;
@@ -126,8 +134,9 @@ bool Pipeline::SetLight(const PointLight& light) const
   glGetError(); // エラー状態をリセット.
 
   const GLint locPointLight = 4;
-  glProgramUniform4fv(vp, locPointLight, 1, &light.position.x);
-  glProgramUniform4fv(vp, locPointLight + 1, 1, &light.color.x);
+
+  glProgramUniform4fv(lightingProgram, locPointLight, 1, &light.position.x);
+  glProgramUniform4fv(lightingProgram, locPointLight + 1, 1, &light.color.x);
   if (glGetError() != GL_NO_ERROR) {
     std::cerr << "[エラー]" << __func__ << ":点光源の設定に失敗.\n";
     return false;

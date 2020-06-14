@@ -50,6 +50,8 @@ private:
   GLuint id = 0;
   GLuint vp = 0;
   GLuint fp = 0;
+
+  GLuint lightingProgram = 0; // 光源データ転送先のプログラムID.
 };
 
 void UnbindPipeline();
