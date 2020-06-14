@@ -32,7 +32,13 @@ GLuint samplerBindingState[16] = {};
 void UnbindAllTextures()
 {
   for (GLuint i = 0; i < std::size(textureBindingState); ++i) {
+    // インテルグラフィックスドライバのバグによりglBindTextureUnit(i, 0)が機能しないことへの対応.
+#if 0
     glBindTextureUnit(i, 0);
+#else
+    glActiveTexture(GL_TEXTURE0 + i);
+    glBindTexture(GL_TEXTURE_2D, 0);
+#endif
     textureBindingState[i] = 0;
   }
 }
