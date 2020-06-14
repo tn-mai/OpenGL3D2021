@@ -17,7 +17,7 @@ out gl_PerVertex {
 layout(location=0) uniform mat4 matMVP;
 layout(location=1) uniform mat4 matModel;
 
-// •ÀsŒõŒ¹
+// •½sŒõŒ¹
 struct DirectionalLight {
   vec4 direction;
   vec4 color;
