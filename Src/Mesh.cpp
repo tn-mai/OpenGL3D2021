@@ -1,9 +1,14 @@
 /**
 * @file Mesh.cpp
 */
+#define _CRT_SECURE_NO_WARNINGS
 #include "Mesh.h"
 #include "GLContext.h"
 #include <glm/glm.hpp>
+#include <fstream>
+#include <string>
+#include <unordered_map>
+#include <stdio.h>
 #include <iostream>
 
 /**
@@ -171,6 +176,214 @@ bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
   curIndexCount += static_cast<GLsizei>(indexCount);
 
   return true;
+}
+
+/**
+* プリミティブを追加する.
+*
+* @param filename ロードするOBJファイル名.
+*
+* @retval true  追加成功.
+* @retval false 追加失敗.
+*/
+bool PrimitiveBuffer::AddFromObjFile(const char* filename)
+{
+  std::ifstream ifs(filename);
+  if (!ifs) {
+    std::cerr << "[エラー]" << __func__ << ":`" << filename << "`を開けません.\n";
+    return false;
+  }
+
+  // データ読み取り用の変数を準備.
+  std::vector<glm::vec3> positionList;
+  std::vector<glm::vec2> texcoordList;
+  std::vector<glm::vec3> normalList;
+  struct Face {
+    int v;
+    int vt;
+    int vn;
+
+    bool operator==(const Face& o) const {
+      return v == o.v && vt == o.vt && vn == o.vn;
+    }
+  };
+  std::vector<Face> faceList;
+
+  // 容量を予約.
+  positionList.reserve(1000);
+  texcoordList.reserve(1000);
+  normalList.reserve(1000);
+  faceList.reserve(1000);
+
+  // ファイルからモデルのデータを読み込む.
+  size_t lineNo = 0; // 読み込んだ行数.
+  while (!ifs.eof()) {
+    std::string line;
+    std::getline(ifs, line);
+    ++lineNo;
+
+    // 空行は無視.
+    if (line.empty()) {
+      continue;
+    }
+
+    const std::string type = line.substr(0, line.find(' '));
+
+    // コメント行は無視.
+    if (type == "#") {
+      continue;
+    }
+
+    const char* p = line.c_str() + type.size();
+    if (type == "v") { // 頂点座標.
+      glm::vec3 v(0);
+      if (sscanf(p, "%f %f %f", &v.x, &v.y, &v.z) != 3) {
+        std::cerr << "[エラー]" << __func__ << ":頂点座標の読み取りに失敗.\n" <<
+          "  " << filename << "(" << lineNo << "行目): " << line << "\n";
+      }
+      positionList.push_back(v);
+    } else if (type == "vt") { // テクスチャ座標.
+      glm::vec2 vt(0);
+      if (sscanf(p, "%f %f", &vt.x, &vt.y) != 2) {
+        std::cerr << "[エラー]" << __func__ << ":テクスチャ座標の読み取りに失敗.\n" <<
+          "  " << filename << "(" << lineNo << "行目): " << line << "\n";
+      }
+      texcoordList.push_back(vt);
+    } else if (type == "vn") { // 法線.
+      glm::vec3 vn(0);
+      if (sscanf(p, "%f %f %f", &vn.x, &vn.y, &vn.z) != 3) {
+        std::cerr << "[エラー]" << __func__ << ":法線の読み取りに失敗.\n" <<
+          "  " << filename << "(" << lineNo << "行目): " << line << "\n";
+      }
+      // 法線を正規化.
+      if (glm::dot(vn, vn) > 0) {
+        vn = glm::normalize(vn);
+      } else {
+        vn = glm::vec3(0, 1, 0);
+      }
+      normalList.push_back(vn);
+    } else if (type == "f") { // 面.
+      // 三角形と四角形のみ対応.
+      Face f[4];
+      const int n = sscanf(p, "%d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d",
+        &f[0].v, &f[0].vt, &f[0].vn,
+        &f[1].v, &f[1].vt, &f[1].vn,
+        &f[2].v, &f[2].vt, &f[2].vn,
+        &f[3].v, &f[3].vt, &f[3].vn);
+      // インデックスが負数の場合、現在のデータ位置からの相対オフセットとして扱う.
+      for (int i = 0; i < n / 3; ++i) {
+        if (f[i].v < 0) {
+          f[i].v += static_cast<int>(positionList.size());
+        }
+        if (f[i].vt < 0) {
+          f[i].vt += static_cast<int>(texcoordList.size());
+        }
+        if (f[i].vn < 0) {
+          f[i].vn += static_cast<int>(normalList.size());
+        }
+      }
+
+      // データ数が9のときは三角形、12のときは四角形.
+      if (n == 9) {
+        for (int i = 0; i < 3; ++i) {
+          faceList.push_back(f[i]);
+        }
+      } else if (n == 12) {
+        static const int indices[] = { 0, 1, 2, 2, 3, 0 };
+        for (int i = 0; i < 6; ++i) {
+          faceList.push_back(f[indices[i]]);
+        }
+      } else {
+        std::cerr << "[警告]" << __func__ << ":面の頂点数は3または4でなくてはなりません(頂点数=" << n << "). " << filename << "(" << lineNo << "行目).\n";
+      }
+    } else {
+      std::cerr << "[警告]" << __func__ << ":未対応の形式です.\n" <<
+        "  " << filename << "(" << lineNo << "行目): " << line << "\n";
+    }
+  }
+
+  // 頂点データとインデックスデータ用の変数を準備.
+  std::vector<glm::vec3> positions;
+  std::vector<glm::vec2> texcoords;
+  std::vector<glm::vec3> normals;
+  std::vector<GLushort> indices;
+
+  const size_t indexCount = faceList.size();
+  positions.reserve(indexCount / 3);
+  texcoords.reserve(indexCount / 3);
+  normals.reserve(indexCount / 3);
+  indices.reserve(indexCount);
+
+  // 共有頂点検索用の連想配列.
+  struct FaceHash {
+    size_t operator()(const Face& f) const {
+      const std::hash<int> hash;
+      return hash(f.v) ^ hash(f.vt << 10) ^ hash(f.vn << 20);
+    }
+  };
+  std::unordered_map<Face, GLushort, FaceHash> shareableVertexMap;
+
+  // モデルのデータを頂点データとインデックスデータに変換する.
+  for (size_t i = 0; i < indexCount; ++i) {
+    // 共有可能なデータを検索.
+    const auto itr = shareableVertexMap.find(faceList[i]);
+    if (itr != shareableVertexMap.end()) {
+      // 共有可能な面データが見つかったら、その面データのインデックスを使う.
+      indices.push_back(itr->second);
+      continue;
+    }
+
+    // 共有可能な面データが見つからなければ、新しいインデックスと頂点データを作成する.
+    indices.push_back(static_cast<GLushort>(positions.size()));
+
+    // 新しい面データとインデックスを共有可能な面データとして追加.
+    shareableVertexMap.emplace(faceList[i], static_cast<GLushort>(positions.size()));
+  
+    // 頂点座標を変換.
+    const int v = faceList[i].v - 1;
+    if (v < static_cast<int>(positionList.size())) {
+      positions.push_back(positionList[v]);
+    } else {
+      std::cerr << "[警告]" << __func__ << ":頂点座標インデックス" << v <<
+        "は範囲[0, " << positionList.size() - 1 << "]の外を指しています.\n" <<
+        "  " << filename << "\n";
+      positions.push_back(glm::vec3(0));
+    }
+
+    // テクスチャ座標を変換.
+    const int vt = faceList[i].vt - 1;
+    if (vt < static_cast<int>(texcoordList.size())) {
+      texcoords.push_back(texcoordList[vt]);
+    } else {
+      std::cerr << "[警告]" << __func__ << ":テクスチャ座標インデックス" << vt <<
+        "は範囲[0, " << texcoordList.size() - 1 << "]の外を指しています.\n" <<
+        "  " << filename << "\n";
+      texcoords.push_back(glm::vec2(0));
+    }
+
+    // 法線を変換.
+    const int vn = faceList[i].vn - 1;
+    if (vn < static_cast<int>(normalList.size())) {
+      normals.push_back(normalList[vn]);
+    } else {
+      std::cerr << "[警告]" << __func__ << ":法線インデックス" << vn <<
+        "は範囲[0, " <<normalList.size() - 1 << "]の外を指しています.\n" <<
+        "  " << filename << "\n";
+      normals.push_back(glm::vec3(0, 1, 0));
+    }
+  }
+
+  // プリミティブを追加する.
+  const std::vector<glm::vec4> colors(positions.size(), glm::vec4(1));
+  const bool result = Add(positions.size(), positions.data(), colors.data(),
+    texcoords.data(), normals.data(), indices.size(), indices.data());
+  if (result) {
+    std::cout << "[情報]" << __func__ << ":" << filename << "(頂点数=" <<
+      positions.size() << " インデックス数=" << indices.size() << ")\n";
+  } else {
+    std::cerr << "[警告]" << __func__ << ":" << filename << "の読み込みに失敗.\n";
+  }
+  return result;
 }
 
 /**

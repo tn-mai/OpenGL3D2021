@@ -454,7 +454,8 @@ int main()
     return 1;
   }
   primitiveBuffer.Add(std::size(posGround), posGround, colGround, tcGround, normGround, std::size(indexGround), indexGround);
-  primitiveBuffer.Add(std::size(posTree), posTree, colTree, tcTree, normTree, std::size(indexTree), indexTree);
+  //primitiveBuffer.Add(std::size(posTree), posTree, colTree, tcTree, normTree, std::size(indexTree), indexTree);
+  primitiveBuffer.AddFromObjFile("Res/Tree.obj");
   primitiveBuffer.Add(std::size(posHouse), posHouse, colHouse, tcHouse, normHouse, std::size(indexHouse), indexHouse);
   primitiveBuffer.Add(std::size(posCube), posCube, colCube, tcCube, normCube, std::size(indexCube), indexCube);
 

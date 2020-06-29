@@ -48,6 +48,7 @@ public:
   // プリミティブの追加と参照.
   bool Add(size_t vertexCount, const glm::vec3* pPosition, const glm::vec4* pColor,
     const glm::vec2* pTexcoord, const glm::vec3* pNormal, size_t indexCount, const GLushort* pIndex);
+  bool AddFromObjFile(const char* filename);
   const Primitive& Get(size_t n) const;
 
   // VAOバインド管理.
