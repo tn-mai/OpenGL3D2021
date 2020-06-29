@@ -83,4 +83,9 @@
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <Object Include="Res\Tree.obj">
+      <Filter>リソース ファイル</Filter>
+    </Object>
+  </ItemGroup>
 </Project>
