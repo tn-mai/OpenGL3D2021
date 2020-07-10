@@ -5,6 +5,9 @@
 #include "GLContext.h"
 #include <iostream>
 
+// インテルグラフィックスドライバのバグによりglBindTextureUnit(i, 0)が機能しないことへの対応.
+#define AVOID_INTEL_DRIVER_BUG_FOR_GLBINDTEXTUREUNIT
+
 /**
 * テクスチャ関連の機能を格納する名前空間.
 */
@@ -32,15 +35,9 @@ GLuint samplerBindingState[16] = {};
 void UnbindAllTextures()
 {
   for (GLuint i = 0; i < std::size(textureBindingState); ++i) {
-    // インテルグラフィックスドライバのバグによりglBindTextureUnit(i, 0)が機能しないことへの対応.
-#if 0
-    glBindTextureUnit(i, 0);
-#else
-    glActiveTexture(GL_TEXTURE0 + i);
-    glBindTexture(GL_TEXTURE_2D, 0);
-#endif
     textureBindingState[i] = 0;
   }
+  glBindTextures(0, std::size(textureBindingState), textureBindingState);
 }
 
 /**
@@ -49,9 +46,9 @@ void UnbindAllTextures()
 void UnbindAllSamplers()
 {
   for (GLuint i = 0; i < std::size(samplerBindingState); ++i) {
-    glBindSampler(i, 0);
     samplerBindingState[i] = 0;
   }
+  glBindSamplers(0, std::size(samplerBindingState), samplerBindingState);
 }
 
 /**
@@ -105,7 +102,12 @@ void Image2D::Bind(GLuint unit) const
     std::cerr << "[エラー]" << __func__ << ": ユニット番号が大きすぎます(unit=" << unit << ")\n";
     return;
   }
+// インテルグラフィックスドライバのバグによりglBindTextureUnit(i, 0)が機能しないことへの対応.
+#ifndef AVOID_INTEL_DRIVER_BUG_FOR_GLBINDTEXTUREUNIT 
   glBindTextureUnit(unit, id);
+#else
+  glBindTextures(unit, 1, &id);
+#endif
   textureBindingState[unit] = id;
 }
 
@@ -117,7 +119,13 @@ void Image2D::Unbind() const
   for (GLuint i = 0; i < std::size(textureBindingState); ++i) {
     if (textureBindingState[i] == id) {
       textureBindingState[i] = 0;
+// インテルグラフィックスドライバのバグによりglBindTextureUnit(i, 0)が機能しないことへの対応.
+#ifndef AVOID_INTEL_DRIVER_BUG_FOR_GLBINDTEXTUREUNIT 
       glBindTextureUnit(i, 0);
+#else
+      const GLuint id = 0;
+      glBindTextures(i, 1, &id);
+#endif
     }
   }
 }
