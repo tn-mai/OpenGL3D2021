@@ -162,6 +162,7 @@ Sampler::Sampler() : id(GLContext::CreateSampler())
 */
 Sampler::~Sampler()
 {
+  Unbind();
   glDeleteSamplers(1, &id);
 }
 
