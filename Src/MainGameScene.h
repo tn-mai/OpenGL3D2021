@@ -3,7 +3,11 @@
 */
 #ifndef MAINGAMESCENE_H_INCLUDED
 #define MAINGAMESCENE_H_INCLUDED
+#include "glad/glad.h"
 #include <GLFW/glfw3.h>
+#include "Mesh.h"
+#include "Shader.h"
+#include "Texture.h"
 
 /**
 * ÉÅÉCÉìÉQÅ[ÉÄâÊñ .
@@ -12,17 +16,27 @@ class MainGameScene
 {
 public:
   MainGameScene() = default;
-  ~MainGameScene() = default;
-  MainGameScene(const MainGameScene&) = default;
-  MainGameScene& operator=(const MainGameScene&) = default;
+  ~MainGameScene() { Finalize(); }
+  MainGameScene(const MainGameScene&) = delete;
+  MainGameScene& operator=(const MainGameScene&) = delete;
 
-  bool Initialize();
-  void ProcessInput(const GLFWwindow*);
-  void Update(float deltaTime);
-  void Render(const GLFWwindow*);
+  bool Initialize(GLFWwindow*);
+  void ProcessInput(GLFWwindow*);
+  void Update(GLFWwindow*, float deltaTime);
+  void Render(GLFWwindow*);
   void Finalize();
 
 private:
+  Shader::Pipeline* pipeline = nullptr;
+  Mesh::PrimitiveBuffer primitiveBuffer;
+  Texture::Sampler sampler;
+
+  Texture::Image2D* texGround = nullptr;
+  Texture::Image2D* texTree = nullptr;
+  Texture::Image2D* texHouse = nullptr;
+  Texture::Image2D* texCube = nullptr;
+
+  Shader::PointLight pointLight;
 };
 
 #endif // MAINGAMESCENE_H_INCLUDED

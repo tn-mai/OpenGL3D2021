@@ -91,12 +91,21 @@
     <Image Include="Res\House.tga">
       <Filter>リソース ファイル</Filter>
     </Image>
+    <Image Include="Res\Tree.tga">
+      <Filter>リソース ファイル</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Object Include="Res\Tree.obj">
       <Filter>リソース ファイル</Filter>
     </Object>
     <Object Include="Res\Cube.obj">
+      <Filter>リソース ファイル</Filter>
+    </Object>
+    <Object Include="Res\Ground.obj">
+      <Filter>リソース ファイル</Filter>
+    </Object>
+    <Object Include="Res\House.obj">
       <Filter>リソース ファイル</Filter>
     </Object>
   </ItemGroup>
