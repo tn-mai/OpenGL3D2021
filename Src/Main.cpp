@@ -457,7 +457,8 @@ int main()
   //primitiveBuffer.Add(std::size(posTree), posTree, colTree, tcTree, normTree, std::size(indexTree), indexTree);
   primitiveBuffer.AddFromObjFile("Res/Tree.obj");
   primitiveBuffer.Add(std::size(posHouse), posHouse, colHouse, tcHouse, normHouse, std::size(indexHouse), indexHouse);
-  primitiveBuffer.Add(std::size(posCube), posCube, colCube, tcCube, normCube, std::size(indexCube), indexCube);
+  //primitiveBuffer.Add(std::size(posCube), posCube, colCube, tcCube, normCube, std::size(indexCube), indexCube);
+  primitiveBuffer.AddFromObjFile("Res/Cube.obj");
 
   // パイプライン・オブジェクトを作成する.
   //Shader::Pipeline pipeline("Res/VertexLighting.vert", "Res/Simple.frag");
