@@ -37,7 +37,7 @@ void UnbindAllTextures()
   for (GLuint i = 0; i < std::size(textureBindingState); ++i) {
     textureBindingState[i] = 0;
   }
-  glBindTextures(0, std::size(textureBindingState), textureBindingState);
+  glBindTextures(0, static_cast<GLsizei>(std::size(textureBindingState)), textureBindingState);
 }
 
 /**
@@ -48,7 +48,7 @@ void UnbindAllSamplers()
   for (GLuint i = 0; i < std::size(samplerBindingState); ++i) {
     samplerBindingState[i] = 0;
   }
-  glBindSamplers(0, std::size(samplerBindingState), samplerBindingState);
+  glBindSamplers(0, static_cast<GLsizei>(std::size(samplerBindingState)), samplerBindingState);
 }
 
 /**
