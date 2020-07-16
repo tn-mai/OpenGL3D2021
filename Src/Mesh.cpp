@@ -138,10 +138,12 @@ bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
     std::cerr << "[エラー]" << __func__ << ": VAOが作成されていません.\n";
     return false;
   } else if (maxVertexCount < curVertexCount) {
-    std::cerr << "[エラー]" << __func__ << ": 頂点カウントに異常があります(max=" << maxVertexCount << ", cur=" << curVertexCount << ")\n";
+    std::cerr << "[エラー]" << __func__ << ": 頂点カウントに異常があります(max=" <<
+      maxVertexCount << ", cur=" << curVertexCount << ")\n";
     return false;
   } else if (maxIndexCount < curIndexCount) {
-    std::cerr << "[エラー]" << __func__ << ": インデックスカウントに異常があります(max=" << maxIndexCount << ", cur=" << curIndexCount << ")\n";
+    std::cerr << "[エラー]" << __func__ << ": インデックスカウントに異常があります(max=" <<
+      maxIndexCount << ", cur=" << curIndexCount << ")\n";
     return false;
   } else if (vertexCount > static_cast<size_t>(maxVertexCount) - curVertexCount) {
     std::cerr << "[警告]" << __func__ << ": VBOが満杯です(max=" << maxVertexCount <<
