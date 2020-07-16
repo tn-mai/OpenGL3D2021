@@ -8,6 +8,7 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "Texture.h"
+#include <memory>
 
 /**
 * ƒƒCƒ“ƒQ[ƒ€‰æ–Ê.
@@ -27,14 +28,14 @@ public:
   void Finalize();
 
 private:
-  Shader::Pipeline* pipeline = nullptr;
+  std::shared_ptr<Shader::Pipeline> pipeline = nullptr;
   Mesh::PrimitiveBuffer primitiveBuffer;
   Texture::Sampler sampler;
 
-  Texture::Image2D* texGround = nullptr;
-  Texture::Image2D* texTree = nullptr;
-  Texture::Image2D* texHouse = nullptr;
-  Texture::Image2D* texCube = nullptr;
+  std::shared_ptr<Texture::Image2D> texGround = nullptr;
+  std::shared_ptr<Texture::Image2D> texTree = nullptr;
+  std::shared_ptr<Texture::Image2D> texHouse = nullptr;
+  std::shared_ptr<Texture::Image2D> texCube = nullptr;
 
   Shader::PointLight pointLight;
 };

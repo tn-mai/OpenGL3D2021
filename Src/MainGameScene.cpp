@@ -37,7 +37,7 @@ bool MainGameScene::Initialize()
   primitiveBuffer.AddFromObjFile("Res/Cube.obj");
 
   // パイプライン・オブジェクトを作成する.
-  pipeline = new Shader::Pipeline("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
+  pipeline = std::make_shared<Shader::Pipeline>("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
   if (!pipeline || !*pipeline) {
     return false;
   }
@@ -50,10 +50,10 @@ bool MainGameScene::Initialize()
   sampler.SetFilter(GL_NEAREST);
 
   //const GLuint texGround = GLContext::CreateImage2D(imageWidth, imageHeight, imageGround);
-   texGround = new Texture::Image2D("Res/Ground.tga");
-   texTree   = new Texture::Image2D("Res/Tree.tga");
-   texHouse  = new Texture::Image2D("Res/House.tga");
-   texCube   = new Texture::Image2D("Res/Rock.tga");
+   texGround = std::make_shared<Texture::Image2D>("Res/Ground.tga");
+   texTree   = std::make_shared<Texture::Image2D>("Res/Tree.tga");
+   texHouse  = std::make_shared<Texture::Image2D>("Res/House.tga");
+   texCube   = std::make_shared<Texture::Image2D>("Res/Rock.tga");
   if (!texGround ||!texTree || !texHouse || !texCube) {
     return false;
   }
@@ -206,12 +206,5 @@ void MainGameScene::Render(GLFWwindow* window) const
 */
 void MainGameScene::Finalize()
 {
-#define SAFE_DELETE(p) if (p) { delete p; p = nullptr; }(void)0
-  SAFE_DELETE(pipeline);
-  SAFE_DELETE(texGround);
-  SAFE_DELETE(texTree);
-  SAFE_DELETE(texHouse);
-  SAFE_DELETE(texCube);
-#undef SAFE_DELETE
   std::cout << "[情報] MainGameSceneを終了.\n";
 }
