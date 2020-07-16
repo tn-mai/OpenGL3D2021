@@ -112,7 +112,7 @@ int main()
   }
 
   MainGameScene mainGameScene;
-  if (!mainGameScene.Initialize(window)) {
+  if (!mainGameScene.Initialize()) {
     return 1;
   }
 
@@ -129,7 +129,7 @@ int main()
     }
     elapsedTime = newElapsedTime;
 
-    mainGameScene.ProcessInput(window);
+    mainGameScene.ProcessInput();
     mainGameScene.Update(window, deltaTime);
     mainGameScene.Render(window);
 

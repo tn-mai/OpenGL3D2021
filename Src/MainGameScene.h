@@ -20,10 +20,10 @@ public:
   MainGameScene(const MainGameScene&) = delete;
   MainGameScene& operator=(const MainGameScene&) = delete;
 
-  bool Initialize(GLFWwindow*);
-  void ProcessInput(GLFWwindow*);
+  bool Initialize();
+  void ProcessInput();
   void Update(GLFWwindow*, float deltaTime);
-  void Render(GLFWwindow*);
+  void Render(GLFWwindow*) const;
   void Finalize();
 
 private:

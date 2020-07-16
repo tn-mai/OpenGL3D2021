@@ -26,7 +26,7 @@ void DrawLineOfTrees(const Mesh::Primitive& prim, Shader::Pipeline& pipeline, co
 /**
 * メインゲーム画面を初期化する.
 */
-bool MainGameScene::Initialize(GLFWwindow*)
+bool MainGameScene::Initialize()
 {
   if (!primitiveBuffer.Allocate(20'000, 80'000)) {
     return false;
@@ -69,10 +69,9 @@ bool MainGameScene::Initialize(GLFWwindow*)
 }
 
 /**
-*
 * メインゲーム画面のキー入力を処理する.
 */
-void MainGameScene::ProcessInput(GLFWwindow* window)
+void MainGameScene::ProcessInput()
 {
 }
 
@@ -105,7 +104,7 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 *
 * メインゲーム画面を描画する.
 */
-void MainGameScene::Render(GLFWwindow* window)
+void MainGameScene::Render(GLFWwindow* window) const
 {
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
