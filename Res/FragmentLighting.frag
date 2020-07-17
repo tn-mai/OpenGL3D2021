@@ -34,7 +34,7 @@ void main()
 
   // ïΩçsåıåπ
   {
-    float theta = max(dot(worldNormal, directionalLight.direction.xyz), 0);
+    float theta = max(dot(worldNormal, -directionalLight.direction.xyz), 0);
     totalLightColor += directionalLight.color.rgb * theta;
   }
 

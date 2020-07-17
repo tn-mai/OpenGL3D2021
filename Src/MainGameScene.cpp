@@ -98,7 +98,7 @@ void MainGameScene::Render(GLFWwindow* window) const
 
   // •½sŒõŒ¹‚ðÝ’è‚·‚é
   const Shader::DirectionalLight directionalLight{
-    glm::normalize(glm::vec4(3, 2, 2, 0)),
+    glm::normalize(glm::vec4(3,-2, 2, 0)),
     glm::vec4(1, 0.9f, 0.8f, 1)
   };
   pipeline->SetLight(directionalLight);
