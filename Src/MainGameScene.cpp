@@ -2,6 +2,7 @@
 * @file MainGameScene.cpp
 */
 #include "MainGameScene.h"
+#include "Global.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
@@ -28,32 +29,10 @@ void DrawLineOfTrees(const Mesh::Primitive& prim, Shader::Pipeline& pipeline, co
 */
 bool MainGameScene::Initialize()
 {
-  if (!primitiveBuffer.Allocate(20'000, 80'000)) {
-    return false;
-  }
-  primitiveBuffer.AddFromObjFile("Res/Ground.obj");
-  primitiveBuffer.AddFromObjFile("Res/Tree.obj");
-  primitiveBuffer.AddFromObjFile("Res/House.obj");
-  primitiveBuffer.AddFromObjFile("Res/Cube.obj");
-
-  // パイプライン・オブジェクトを作成する.
-  pipeline = std::make_shared<Shader::Pipeline>("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
-  if (!pipeline || !*pipeline) {
-    return false;
-  }
-
-  // uniform変数の位置.
-  const GLint locMatMVP = 0;
-
-  // サンプラ・オブジェクトを作成する.
-  sampler.SetWrapMode(GL_REPEAT);
-  sampler.SetFilter(GL_NEAREST);
-
-  //const GLuint texGround = GLContext::CreateImage2D(imageWidth, imageHeight, imageGround);
-   texGround = std::make_shared<Texture::Image2D>("Res/Ground.tga");
-   texTree   = std::make_shared<Texture::Image2D>("Res/Tree.tga");
-   texHouse  = std::make_shared<Texture::Image2D>("Res/House.tga");
-   texCube   = std::make_shared<Texture::Image2D>("Res/Rock.tga");
+  texGround = std::make_shared<Texture::Image2D>("Res/Ground.tga");
+  texTree   = std::make_shared<Texture::Image2D>("Res/Tree.tga");
+  texHouse  = std::make_shared<Texture::Image2D>("Res/House.tga");
+  texCube   = std::make_shared<Texture::Image2D>("Res/Rock.tga");
   if (!texGround ||!texTree || !texHouse || !texCube) {
     return false;
   }
@@ -106,6 +85,11 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 */
 void MainGameScene::Render(GLFWwindow* window) const
 {
+  Global& global = Global::Get();
+  std::shared_ptr<Shader::Pipeline> pipeline = global.pipeline;
+  Mesh::PrimitiveBuffer& primitiveBuffer = global.primitiveBuffer;
+  Texture::Sampler& sampler = global.sampler;
+
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
   //glEnable(GL_FRAMEBUFFER_SRGB);

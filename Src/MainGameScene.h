@@ -28,10 +28,6 @@ public:
   void Finalize();
 
 private:
-  std::shared_ptr<Shader::Pipeline> pipeline = nullptr;
-  Mesh::PrimitiveBuffer primitiveBuffer;
-  Texture::Sampler sampler;
-
   std::shared_ptr<Texture::Image2D> texGround = nullptr;
   std::shared_ptr<Texture::Image2D> texTree = nullptr;
   std::shared_ptr<Texture::Image2D> texHouse = nullptr;

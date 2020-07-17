@@ -3,14 +3,11 @@
 */
 #include <glad/glad.h>
 #include "GLContext.h"
-#include "Mesh.h"
-#include "Texture.h"
-#include "Shader.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include "Global.h"
+#include "MainGameScene.h"
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
-#include "MainGameScene.h"
 
 #pragma comment(lib, "opengl32.lib")
 
@@ -111,6 +108,10 @@ int main()
 #undef Output
   }
 
+  if (!Global::Initialize(window)) {
+    return 1;
+  }
+
   MainGameScene mainGameScene;
   if (!mainGameScene.Initialize()) {
     return 1;
@@ -138,6 +139,8 @@ int main()
   }
 
   mainGameScene.Finalize();
+
+  Global::Finalize();
 
   // GLFWÇÃèIóπ.
   glfwTerminate();
