@@ -38,6 +38,7 @@ bool Global::Initialize(GLFWwindow* window)
   p->primitiveBuffer.AddFromObjFile("Res/Tree.obj");
   p->primitiveBuffer.AddFromObjFile("Res/House.obj");
   p->primitiveBuffer.AddFromObjFile("Res/Cube.obj");
+  p->primitiveBuffer.AddFromObjFile("Res/Plane.obj");
 
   // パイプライン・オブジェクトを作成する.
   p->pipeline = std::make_shared<Shader::Pipeline>("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
@@ -65,4 +66,16 @@ void Global::Finalize()
   p = nullptr;
   std::cout << "[情報] グローバルデータを破棄.\n";
 }
+
+/**
+* プリミティブを描画する.
+*
+* @param id プリミティブのID.
+*/
+void Global::Draw(Global::PrimitiveId id) const
+{
+  primitiveBuffer.Get(static_cast<size_t>(id)).Draw();
+}
+
+
 

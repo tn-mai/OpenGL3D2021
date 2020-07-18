@@ -4,6 +4,7 @@
 #include <glad/glad.h>
 #include "GLContext.h"
 #include "Global.h"
+#include "TitleScene.h"
 #include "MainGameScene.h"
 #include <GLFW/glfw3.h>
 #include <string>
@@ -112,6 +113,10 @@ int main()
     return 1;
   }
 
+  TitleScene titleScene;
+  if (!titleScene.Initialize()) {
+    return 1;
+  }
   MainGameScene mainGameScene;
   if (!mainGameScene.Initialize()) {
     return 1;
@@ -130,15 +135,23 @@ int main()
     }
     elapsedTime = newElapsedTime;
 
-    mainGameScene.ProcessInput();
-    mainGameScene.Update(window, deltaTime);
-    mainGameScene.Render(window);
+    Global& global = Global::Get();
+    if (global.sceneId == 0) {
+      titleScene.ProcessInput();
+      titleScene.Update(window, deltaTime);
+      titleScene.Render(window);
+    } else {
+      mainGameScene.ProcessInput();
+      mainGameScene.Update(window, deltaTime);
+      mainGameScene.Render(window);
+    }
 
     glfwPollEvents();
     glfwSwapBuffers(window);
   }
 
   mainGameScene.Finalize();
+  titleScene.Finalize();
 
   Global::Finalize();
 

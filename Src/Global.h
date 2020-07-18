@@ -20,10 +20,21 @@ public:
   static bool Initialize(GLFWwindow*);
   static void Finalize();
 
+  enum class PrimitiveId {
+    ground,
+    tree,
+    house,
+    cube,
+    plane,
+  };
+  void Draw(PrimitiveId) const;
+
   std::shared_ptr<Shader::Pipeline> pipeline = nullptr;
   Mesh::PrimitiveBuffer primitiveBuffer;
   Texture::Sampler sampler;
   GLFWwindow* window = nullptr;
+
+  int sceneId = 0;
 
 private:
   Global() = default;

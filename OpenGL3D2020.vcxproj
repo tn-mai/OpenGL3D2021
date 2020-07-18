@@ -154,6 +154,7 @@
     <ClCompile Include="Src\Mesh.cpp" />
     <ClCompile Include="Src\Shader.cpp" />
     <ClCompile Include="Src\Texture.cpp" />
+    <ClCompile Include="Src\TitleScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -172,6 +173,7 @@
     <ClInclude Include="Src\Mesh.h" />
     <ClInclude Include="Src\Shader.h" />
     <ClInclude Include="Src\Texture.h" />
+    <ClInclude Include="Src\TitleScene.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Res\Ground.tga" />
@@ -192,6 +194,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </Object>
     <Object Include="Res\House.obj">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </Object>
+    <Object Include="Res\Plane.obj">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
