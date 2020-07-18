@@ -45,6 +45,7 @@ public:
   bool SetModelMatrix(const glm::mat4&) const;
   bool SetLight(const DirectionalLight& light) const;
   bool SetLight(const PointLight& light) const;
+  bool SetObjectColor(const glm::vec4&) const;
 
 private:
   GLuint id = 0;

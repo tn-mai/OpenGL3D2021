@@ -18,11 +18,12 @@ out gl_PerVertex {
 // ユニフォーム変数
 layout(location=0) uniform mat4 matMVP;
 layout(location=1) uniform mat4 matModel;
+layout(location=2) uniform vec4 objectColor;
 
 // 頂点シェーダプログラム
 void main()
 {
-  outColor = vColor;
+  outColor = vColor * objectColor;
   outTexcoord = vTexcoord;
   outPosition = vec3(matModel * vec4(vPosition, 1));
   mat3 matNormal = transpose(inverse(mat3(matModel)));

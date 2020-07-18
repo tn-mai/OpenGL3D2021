@@ -28,6 +28,11 @@ Pipeline::Pipeline(const char* vsFilename, const char* fsFilename)
   } else if (glGetUniformLocation(fp, "directionalLight.direction") >= 0) {
     lightingProgram = fp;
   }
+
+  // オブジェクトカラーの初期値を設定.
+  if (glGetUniformLocation(vp, "objectColor") >= 0) {
+    SetObjectColor(glm::vec4(1));
+  }
 }
 
 /**
@@ -139,6 +144,28 @@ bool Pipeline::SetLight(const PointLight& light) const
   glProgramUniform4fv(lightingProgram, locPointLight + 1, 1, &light.color.x);
   if (glGetError() != GL_NO_ERROR) {
     std::cerr << "[エラー]" << __func__ << ":点光源の設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
+/**
+* シェーダにオブジェクトの色を設定する.
+*
+* @param color 設定する色.
+*
+* @retval true  設定成功.
+* @retval false 設定失敗.
+*/
+bool Pipeline::SetObjectColor(const glm::vec4& color) const
+{
+  glGetError(); // エラー状態をリセット.
+
+  const GLint locObjectColor = 2;
+
+  glProgramUniform4fv(vp, locObjectColor, 1, &color.x);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":オブジェクトカラーの設定に失敗.\n";
     return false;
   }
   return true;
