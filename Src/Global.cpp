@@ -45,6 +45,10 @@ bool Global::Initialize(GLFWwindow* window)
   if (!p->pipeline || !*p->pipeline) {
     return false;
   }
+  p->pipelineSimple = std::make_shared<Shader::Pipeline>("Res/Simple.vert", "Res/Simple.frag");
+  if (!p->pipelineSimple || !*p->pipelineSimple) {
+    return false;
+  }
 
   // サンプラ・オブジェクトを作成する.
   p->sampler.SetWrapMode(GL_REPEAT);
@@ -76,6 +80,3 @@ void Global::Draw(Global::PrimitiveId id) const
 {
   primitiveBuffer.Get(static_cast<size_t>(id)).Draw();
 }
-
-
-

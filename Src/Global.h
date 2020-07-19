@@ -30,6 +30,7 @@ public:
   void Draw(PrimitiveId) const;
 
   std::shared_ptr<Shader::Pipeline> pipeline = nullptr;
+  std::shared_ptr<Shader::Pipeline> pipelineSimple;
   Mesh::PrimitiveBuffer primitiveBuffer;
   Texture::Sampler sampler;
   GLFWwindow* window = nullptr;
