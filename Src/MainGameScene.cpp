@@ -55,8 +55,10 @@ void MainGameScene::ProcessInput()
 }
 
 /**
-*
 * メインゲーム画面を更新する.
+*
+* @param window    GLFWウィンドウへのポインタ.
+* @param deltaTime 前回の更新からの経過時間.
 */
 void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
@@ -80,8 +82,9 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 }
 
 /**
-*
 * メインゲーム画面を描画する.
+*
+* @param window    GLFWウィンドウへのポインタ.
 */
 void MainGameScene::Render(GLFWwindow* window) const
 {
