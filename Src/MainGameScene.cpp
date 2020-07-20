@@ -26,6 +26,9 @@ void DrawLineOfTrees(const Mesh::Primitive& prim, Shader::Pipeline& pipeline, co
 
 /**
 * ƒƒCƒ“ƒQ[ƒ€‰æ–Ê‚ğ‰Šú‰»‚·‚é.
+*
+* @retval true  ‰Šú‰»¬Œ÷.
+* @retval false ‰Šú‰»¸”s.
 */
 bool MainGameScene::Initialize()
 {

@@ -137,7 +137,7 @@ int main()
 
     Global& global = Global::Get();
     if (global.sceneId == 0) {
-      titleScene.ProcessInput();
+      titleScene.ProcessInput(window);
       titleScene.Update(window, deltaTime);
       titleScene.Render(window);
     } else {

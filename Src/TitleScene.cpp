@@ -7,27 +7,37 @@
 #include <iostream>
 
 /**
+* タイトル画面を初期化する.
 *
+* @retval true  初期化成功.
+* @retval false 初期化失敗.
 */
 bool TitleScene::Initialize()
 {
   texLogo = std::make_shared<Texture::Image2D>("Res/TitleLogo.tga");
+  texPressEnter = std::make_shared<Texture::Image2D>("Res/PressEnter.tga");
+  std::cout << "[情報] TitleSceneを開始.\n";
   return true;
 }
 
 /**
+* タイトル画面のキー入力を処理する.
 *
+* @param window GLFWウィンドウへのポインタ.
 */
-void TitleScene::ProcessInput()
+void TitleScene::ProcessInput(GLFWwindow* window)
 {
   Global& global = Global::Get();
-  if (glfwGetKey(global.window, GLFW_KEY_ENTER)) {
+  if (glfwGetKey(window, GLFW_KEY_ENTER)) {
     global.sceneId = 1;
   }
 }
 
 /**
+* タイトル画面を更新する.
 *
+* @param window    GLFWウィンドウへのポインタ.
+* @param deltaTime 前回の更新からの経過時間.
 */
 void TitleScene::Update(GLFWwindow*, float deltaTime)
 {
@@ -38,7 +48,9 @@ void TitleScene::Update(GLFWwindow*, float deltaTime)
 }
 
 /**
+* タイトル画面を描画する.
 *
+* @param window GLFWウィンドウへのポインタ.
 */
 void TitleScene::Render(GLFWwindow*)
 {
@@ -49,7 +61,10 @@ void TitleScene::Render(GLFWwindow*)
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
-  glClearColor(0.5f, 0.3f, 0.1f, 1.0f);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glClearColor(0.3f, 0.2f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   const glm::vec3 viewPosition(0, 0, 100);
@@ -67,20 +82,29 @@ void TitleScene::Render(GLFWwindow*)
 
   // タイトルロゴを描画.
   {
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    const glm::mat4 matModel = glm::scale(glm::mat4(1), glm::vec3(texLogo->Width(), texLogo->Height(), 1));
-    const glm::mat4 matMVP = matProj * matView * matModel;
+    const glm::mat4 matModelT = glm::translate(glm::mat4(1), glm::vec3(0, 200, 0));
+    const glm::mat4 matModelS = glm::scale(glm::mat4(1), glm::vec3(texLogo->Width(), texLogo->Height(), 1));
+    const glm::mat4 matMVP = matProj * matView * matModelT * matModelS;
     pipeline->SetMVP(matMVP);
     pipeline->SetObjectColor(glm::vec4(1, 1, 1, alpha));
     texLogo->Bind(0);
     global.Draw(Global::PrimitiveId::plane);
   }
+  {
+    const glm::mat4 matModelT = glm::translate(glm::mat4(1), glm::vec3(0, -200, 0));
+    const glm::mat4 matModelS = glm::scale(glm::mat4(1), glm::vec3(texPressEnter->Width(), texPressEnter->Height(), 1));
+    const glm::mat4 matMVP = matProj * matView * matModelT * matModelS;
+    pipeline->SetMVP(matMVP);
+    pipeline->SetObjectColor(glm::vec4(1));
+    texPressEnter->Bind(0);
+    global.Draw(Global::PrimitiveId::plane);
+  }
 }
 
 /**
-*
+* タイトル画面を終了する.
 */
 void TitleScene::Finalize()
 {
+  std::cout << "[情報] TitleSceneを終了.\n";
 }
