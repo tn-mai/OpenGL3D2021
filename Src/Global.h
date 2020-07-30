@@ -17,8 +17,7 @@ class Global
 {
 public:
   static Global& Get();
-  static bool Initialize(GLFWwindow*);
-  static void Finalize();
+  bool Initialize(GLFWwindow*);
 
   enum class PrimitiveId {
     ground,
@@ -39,11 +38,9 @@ public:
 
 private:
   Global() = default;
-  ~Global() = default;
+  ~Global();
   Global(const Global&) = delete;
   Global& operator=(const Global&) = delete;
-
-  static Global* p;
 };
 
 

@@ -109,7 +109,8 @@ int main()
 #undef Output
   }
 
-  if (!Global::Initialize(window)) {
+  Global& global = Global::Get();
+  if (!global.Initialize(window)) {
     return 1;
   }
 
@@ -135,7 +136,6 @@ int main()
     }
     elapsedTime = newElapsedTime;
 
-    Global& global = Global::Get();
     if (global.sceneId == 0) {
       titleScene.ProcessInput(window);
       titleScene.Update(window, deltaTime);
@@ -152,8 +152,6 @@ int main()
 
   mainGameScene.Finalize();
   titleScene.Finalize();
-
-  Global::Finalize();
 
   // GLFWÇÃèIóπ.
   glfwTerminate();

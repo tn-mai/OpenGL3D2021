@@ -4,15 +4,21 @@
 #include "Global.h"
 #include <iostream>
 
-
-Global* Global::p;
-
 /**
 *
 */
 Global& Global::Get()
 {
-  return *p;
+  static Global singleton;
+  return singleton;
+}
+
+/**
+* デストラクタ.
+*/
+Global::~Global()
+{
+  std::cout << "[情報] グローバルデータを破棄.\n";
 }
 
 /**
@@ -25,50 +31,35 @@ Global& Global::Get()
 */
 bool Global::Initialize(GLFWwindow* window)
 {
-  if (Global::p) {
-    return true;
-  }
-  Global* p = new Global;// = std::make_shared<Derived>();
-
   // プリミティブバッファにモデルデータを読み込む.
-  if (!p->primitiveBuffer.Allocate(20'000, 80'000)) {
+  if (!primitiveBuffer.Allocate(20'000, 80'000)) {
     return false;
   }
-  p->primitiveBuffer.AddFromObjFile("Res/Ground.obj");
-  p->primitiveBuffer.AddFromObjFile("Res/Tree.obj");
-  p->primitiveBuffer.AddFromObjFile("Res/House.obj");
-  p->primitiveBuffer.AddFromObjFile("Res/Cube.obj");
-  p->primitiveBuffer.AddFromObjFile("Res/Plane.obj");
+  primitiveBuffer.AddFromObjFile("Res/Ground.obj");
+  primitiveBuffer.AddFromObjFile("Res/Tree.obj");
+  primitiveBuffer.AddFromObjFile("Res/House.obj");
+  primitiveBuffer.AddFromObjFile("Res/Cube.obj");
+  primitiveBuffer.AddFromObjFile("Res/Plane.obj");
 
   // パイプライン・オブジェクトを作成する.
-  p->pipeline = std::make_shared<Shader::Pipeline>("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
-  if (!p->pipeline || !*p->pipeline) {
+  pipeline = std::make_shared<Shader::Pipeline>("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
+  if (!pipeline || !*pipeline) {
     return false;
   }
-  p->pipelineSimple = std::make_shared<Shader::Pipeline>("Res/Simple.vert", "Res/Simple.frag");
-  if (!p->pipelineSimple || !*p->pipelineSimple) {
+  pipelineSimple = std::make_shared<Shader::Pipeline>("Res/Simple.vert", "Res/Simple.frag");
+  if (!pipelineSimple || !*pipelineSimple) {
     return false;
   }
 
   // サンプラ・オブジェクトを作成する.
-  p->sampler.SetWrapMode(GL_REPEAT);
-  p->sampler.SetFilter(GL_NEAREST);
+  sampler.SetWrapMode(GL_REPEAT);
+  sampler.SetFilter(GL_NEAREST);
 
-  p->window = window;
-  Global::p = p;
+  this->window = window;
 
   std::cout << "[情報] グローバルデータを初期化.\n";
 
   return true;
-}
-
-/**
-* グローバルデータを破棄する.
-*/
-void Global::Finalize()
-{
-  p = nullptr;
-  std::cout << "[情報] グローバルデータを破棄.\n";
 }
 
 /**
