@@ -150,6 +150,28 @@ bool Pipeline::SetLight(const PointLight& light) const
 }
 
 /**
+* シェーダに環境光を設定する.
+*
+* @param color 設定する環境光.
+*
+* @retval true  設定成功.
+* @retval false 設定失敗.
+*/
+bool Pipeline::SetAmbientLight(const glm::vec3& color) const
+{
+  glGetError(); // エラー状態をリセット.
+
+  const GLint locAmbientLight= 6;
+
+  glProgramUniform3fv(lightingProgram, locAmbientLight, 1, &color.x);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":環境光の設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
+/**
 * シェーダにオブジェクトの色を設定する.
 *
 * @param color 設定する色.

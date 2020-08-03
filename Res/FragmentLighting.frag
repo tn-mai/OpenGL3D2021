@@ -26,11 +26,14 @@ struct PointLight {
 };
 layout(location=4) uniform PointLight pointLight;
 
+// 環境光
+layout(location=6) uniform vec3 ambientLight;
+
 // フラグメントシェーダプログラム
 void main()
 {
   vec3 worldNormal = normalize(inNormal);
-  vec3 totalLightColor = vec3(0);
+  vec3 totalLightColor = ambientLight;
 
   // 平行光源
   {
