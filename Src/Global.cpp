@@ -40,6 +40,16 @@ bool Global::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/House.obj");
   primitiveBuffer.AddFromObjFile("Res/Cube.obj");
   primitiveBuffer.AddFromObjFile("Res/Plane.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_3.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_4.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_5.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_idle_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_run_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_run_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_run_2.obj");
 
   // パイプライン・オブジェクトを作成する.
   pipeline = std::make_shared<Shader::Pipeline>("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
@@ -57,6 +67,8 @@ bool Global::Initialize(GLFWwindow* window)
 
   this->window = window;
 
+  random.seed(std::random_device{}());
+
   std::cout << "[情報] グローバルデータを初期化.\n";
 
   return true;
@@ -67,7 +79,7 @@ bool Global::Initialize(GLFWwindow* window)
 *
 * @param id プリミティブのID.
 */
-void Global::Draw(Global::PrimitiveId id) const
+void Global::Draw(Global::PrimNo id) const
 {
   primitiveBuffer.Get(static_cast<size_t>(id)).Draw();
 }

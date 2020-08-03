@@ -8,6 +8,7 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "Texture.h"
+#include "Actor.h"
 #include <memory>
 
 /**
@@ -22,7 +23,7 @@ public:
   MainGameScene& operator=(const MainGameScene&) = delete;
 
   bool Initialize();
-  void ProcessInput();
+  void ProcessInput(GLFWwindow*);
   void Update(GLFWwindow*, float deltaTime);
   void Render(GLFWwindow*) const;
   void Finalize();
@@ -32,8 +33,13 @@ private:
   std::shared_ptr<Texture::Image2D> texTree = nullptr;
   std::shared_ptr<Texture::Image2D> texHouse = nullptr;
   std::shared_ptr<Texture::Image2D> texCube = nullptr;
+  std::shared_ptr<Texture::Image2D> texZombie;
+  std::shared_ptr<Texture::Image2D> texPlayer;
 
   Shader::PointLight pointLight;
+
+  ActorList actors;
+  ActorPtr playerActor;
 };
 
 #endif // MAINGAMESCENE_H_INCLUDED

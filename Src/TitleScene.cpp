@@ -2,6 +2,7 @@
 * @file TitleScene.cpp
 */
 #include "TitleScene.h"
+#include "SceneManager.h"
 #include "Global.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -27,9 +28,8 @@ bool TitleScene::Initialize()
 */
 void TitleScene::ProcessInput(GLFWwindow* window)
 {
-  Global& global = Global::Get();
   if (glfwGetKey(window, GLFW_KEY_ENTER)) {
-    global.sceneId = 1;
+    SceneManager::Get().ChangeScene(MAINGAME_SCENE_NAME);
   }
 }
 
@@ -88,7 +88,7 @@ void TitleScene::Render(GLFWwindow*)
     pipeline->SetMVP(matMVP);
     pipeline->SetObjectColor(glm::vec4(1, 1, 1, alpha));
     texLogo->Bind(0);
-    global.Draw(Global::PrimitiveId::plane);
+    global.Draw(Global::PrimNo::plane);
   }
   {
     const glm::mat4 matModelT = glm::translate(glm::mat4(1), glm::vec3(0, -200, 0));
@@ -97,7 +97,7 @@ void TitleScene::Render(GLFWwindow*)
     pipeline->SetMVP(matMVP);
     pipeline->SetObjectColor(glm::vec4(1));
     texPressEnter->Bind(0);
-    global.Draw(Global::PrimitiveId::plane);
+    global.Draw(Global::PrimNo::plane);
   }
 }
 

@@ -4,8 +4,7 @@
 #include <glad/glad.h>
 #include "GLContext.h"
 #include "Global.h"
-#include "TitleScene.h"
-#include "MainGameScene.h"
+#include "SceneManager.h"
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
@@ -114,14 +113,8 @@ int main()
     return 1;
   }
 
-  TitleScene titleScene;
-  if (!titleScene.Initialize()) {
-    return 1;
-  }
-  MainGameScene mainGameScene;
-  if (!mainGameScene.Initialize()) {
-    return 1;
-  }
+  SceneManager& sceneManager = SceneManager::Get();
+  sceneManager.ChangeScene(TITLE_SCENE_NAME);
 
   // 経過時間計測開始.
   double elapsedTime = glfwGetTime();
@@ -136,22 +129,14 @@ int main()
     }
     elapsedTime = newElapsedTime;
 
-    if (global.sceneId == 0) {
-      titleScene.ProcessInput(window);
-      titleScene.Update(window, deltaTime);
-      titleScene.Render(window);
-    } else {
-      mainGameScene.ProcessInput();
-      mainGameScene.Update(window, deltaTime);
-      mainGameScene.Render(window);
-    }
+    sceneManager.Update(window, deltaTime);
+    sceneManager.Render(window);
 
     glfwPollEvents();
     glfwSwapBuffers(window);
   }
 
-  mainGameScene.Finalize();
-  titleScene.Finalize();
+  sceneManager.Finalize();
 
   // GLFWの終了.
   glfwTerminate();

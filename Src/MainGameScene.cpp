@@ -40,6 +40,41 @@ bool MainGameScene::Initialize()
     return false;
   }
 
+  texZombie = std::make_shared<Texture::Image2D>("Res/zombie_male.tga");
+  texPlayer = std::make_shared<Texture::Image2D>("Res/player_male.tga");
+
+  Global& global = Global::Get();
+
+  std::random_device rd;
+  std::mt19937 random(rd());
+
+  // プレイヤーを表示.
+  playerActor = std::make_shared<Actor>("player", &global.primitiveBuffer.Get(Global::PrimNo::player_stand),
+    texPlayer, glm::vec3(10, 0, 10));
+  actors.push_back(playerActor);
+
+  // ゾンビを表示.
+  const Mesh::Primitive* pPrimitive = &global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_0);
+  std::vector<const Mesh::Primitive*> animation;
+  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_0));
+  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_1));
+  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_2));
+  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_3));
+  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_4));
+  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_5));
+  for (size_t i = 0; i < 100; ++i) {
+    glm::vec3 pos(0);
+    pos.x = std::uniform_real_distribution<float>(-18, 18)(global.random);
+    pos.z = std::uniform_real_distribution<float>(-18, 18)(global.random);
+    std::shared_ptr<Actor> actor = std::make_shared<Actor>("zombie", pPrimitive, texZombie, pos);
+    actor->rotation.y =
+      std::uniform_real_distribution<float>(0, glm::radians(360.0f))(global.random);
+    // アニメーションを設定.
+    actor->animation = animation;
+    actor->animationInterval = 0.2f;
+    actors.push_back(actor);
+  }
+
   // 点光源を設定する
   pointLight = Shader::PointLight{
     glm::vec4(8, 10,-8, 0),
@@ -52,9 +87,30 @@ bool MainGameScene::Initialize()
 
 /**
 * メインゲーム画面のキー入力を処理する.
+*
+* @param window    GLFWウィンドウへのポインタ.
 */
-void MainGameScene::ProcessInput()
+void MainGameScene::ProcessInput(GLFWwindow* window)
 {
+  // プレイヤーアクターを移動させる.
+  glm::vec3 direction = glm::vec3(0);
+  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    direction.x -= 1;
+  } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    direction.x += 1;
+  }
+  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+    direction.z -= 1;
+  } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+    direction.z += 1;
+  }
+  if (glm::length(direction) > 0) {
+    playerActor->rotation.y = std::atan2(-direction.z, direction.x);
+    const float speed = 4.0f;
+    playerActor->velocity = glm::normalize(direction) * speed;
+  } else {
+    playerActor->velocity = glm::vec3(0);
+  }
 }
 
 /**
@@ -65,23 +121,7 @@ void MainGameScene::ProcessInput()
 */
 void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
-  // 点光源を移動させる.
-  const float speed = 10.0f * deltaTime;
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    pointLight.position.x -= speed;
-  } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    pointLight.position.x += speed;
-  }
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    pointLight.position.z -= speed;
-  } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    pointLight.position.z += speed;
-  }
-  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-    pointLight.position.y -= speed;
-  } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-    pointLight.position.y += speed;
-  }
+  UpdateActorList(actors, deltaTime);
 }
 
 /**
@@ -102,6 +142,9 @@ void MainGameScene::Render(GLFWwindow* window) const
   glClearColor(0.1f, 0.3f, 0.5f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  // 環境光を設定する.
+  pipeline->SetAmbientLight(glm::vec3(0.1f, 0.125f, 0.15f));
+
   // 平行光源を設定する
   const Shader::DirectionalLight directionalLight{
     glm::normalize(glm::vec4(3,-2, 2, 0)),
@@ -111,7 +154,8 @@ void MainGameScene::Render(GLFWwindow* window) const
 
   pipeline->SetLight(pointLight);
 
-  const glm::vec3 viewPosition(20, 30, 30);
+  const glm::vec3 viewPosition = playerActor->position + glm::vec3(2, 3, 3);
+  const glm::vec3 viewTarget = playerActor->position + glm::vec3(0, 1, 0);
 
   // 座標変換行列を作成.
   int w, h;
@@ -120,13 +164,11 @@ void MainGameScene::Render(GLFWwindow* window) const
   const glm::mat4 matProj =
     glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 500.0f);
   const glm::mat4 matView =
-    glm::lookAt(viewPosition, glm::vec3(0), glm::vec3(0, 1, 0));
+    glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
 
   primitiveBuffer.BindVertexArray();
   pipeline->Bind();
   sampler.Bind(0);
-
-  //primTree.Draw();
 
   // 木を描画.
   texTree->Bind(0);
@@ -164,6 +206,19 @@ void MainGameScene::Render(GLFWwindow* window) const
     texCube->Bind(0);
     primitiveBuffer.Get(3).Draw();
   }
+
+  // 影描画用の行列を作成.
+  // XとZを平行光源の方向に引き伸ばし、Yを0にする.
+  // 地面と密着するとちらつくので少し浮かせる.
+  glm::mat4 matShadow(1);
+  matShadow[1][0] = directionalLight.direction.x;
+  matShadow[1][1] = 0;
+  matShadow[1][2] = directionalLight.direction.z;
+  matShadow[3][3] = 1;
+  matShadow[3][1] = 0.01f;
+
+  // アクターリストを描画.
+  RenderActorList(actors, matProj * matView, matShadow);
 
   // 点光源の位置を描画.
   {

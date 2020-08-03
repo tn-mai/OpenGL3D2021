@@ -48,6 +48,12 @@
     <ClCompile Include="Src\TitleScene.cpp">
       <Filter>ソース ファイル\Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Actor.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\SceneManager.cpp">
+      <Filter>ソース ファイル\Scenes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -93,6 +99,12 @@
       <Filter>ソース ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Src\TitleScene.h">
+      <Filter>ソース ファイル\Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Actor.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\SceneManager.h">
       <Filter>ソース ファイル\Scenes</Filter>
     </ClInclude>
   </ItemGroup>
