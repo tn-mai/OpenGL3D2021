@@ -73,6 +73,7 @@ bool MainGameScene::Initialize()
       texPlayer, glm::vec3(10, 0, 10));
     playerActor->animation = animation;
     playerActor->animationInterval = 0.1f;
+    playerActor->SetCylinderCollision(1.7f, 0, 0.5f);
     actors.push_back(playerActor);
   }
 
@@ -95,6 +96,7 @@ bool MainGameScene::Initialize()
     // アニメーションを設定.
     actor->animation = animation;
     actor->animationInterval = 0.2f;
+    actor->SetCylinderCollision(1.7f, 0, 0.5f);
     actors.push_back(actor);
   }
 
@@ -180,6 +182,7 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
   UpdateActorList(actors, deltaTime);
+  HandleCollisions(actors);
 }
 
 /**
