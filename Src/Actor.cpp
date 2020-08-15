@@ -25,6 +25,7 @@ Actor::Actor(std::string actorName, const Mesh::Primitive* prim,
 */
 void Actor::Update(float deltaTime)
 {
+  // 座標を更新.
   position += velocity * deltaTime;
 
   // アニメーションを更新.
@@ -124,3 +125,102 @@ void RenderActorList(const ActorList& actorList,
     actorList[i]->Draw(*global.pipeline, matVP, matShadow);
   }
 }
+
+/**
+* 2つのアクターの衝突状態を調べる.
+*
+* @param a アクターその1.
+* @param b アクターその2.
+*
+* @retval true  衝突している.
+* @retval false 衝突していない.
+*/
+bool DetectCollision(const Actor& a, const Actor& b)
+{
+  if (a.position.y + a.collision.bottom >= b.position.y + b.collision.top) {
+    return false;
+  }
+  if (a.position.y + a.collision.top <= b.position.y + b.collision.bottom) {
+    return false;
+  }
+  const float dx = a.position.x - b.position.x;
+  const float dz = a.position.z - b.position.z;
+  const float d2 = dx * dx + dz * dz;
+  const float r = a.collision.radius + b.collision.radius;
+  return d2 < r * r;
+
+/*
+  // X軸の衝突判定.
+  if (a.colWorld.min.x > b.colWorld.max.x) {
+    return false;
+  }
+  if (a.colWorld.max.x < b.colWorld.min.x) {
+    return false;
+  }
+
+  // Y軸の衝突判定.
+  if (a.colWorld.min.y > b.colWorld.max.y) {
+    return false;
+  }
+  if (a.colWorld.max.y < b.colWorld.min.y) {
+    return false;
+  }
+
+  // Z軸の衝突判定.
+  if (a.colWorld.min.z > b.colWorld.max.z) {
+    return false;
+  }
+  if (a.colWorld.max.z < b.colWorld.min.z) {
+    return false;
+  }
+
+  return true; // 衝突している.
+*/
+}
+
+/**
+* アクターの衝突を処理する.
+*
+* @param actors 衝突を処理するアクターの配列.
+*/
+void HandleCollisions(ActorList& actors)
+{
+  for (size_t ia = 0; ia < actors.size(); ++ia) {
+    ActorPtr a = actors[ia]; // アクターA
+    // 計算済み及び自分自身を除く、残りのアクターとの間で衝突判定を実行.
+    for (size_t ib = ia + 1; ib < actors.size(); ++ib) {
+      ActorPtr b = actors[ib]; // アクターB
+      if (DetectCollision(*a, *b)) {
+        // アクターAとBの衝突判定(円柱)の中心間の距離dを計算.
+        const float dx = a->position.x - b->position.x;
+        const float dz = a->position.z - b->position.z;
+        const float d = std::sqrt(dx * dx + dz * dz);
+        // dが長い方の半径より短ければ、垂直方向に重なっているとみなす.
+        // そうでなければ水平方向に重なっているとみなす.
+        if (d < std::max(a->collision.radius, b->collision.radius)) {
+          // 円柱の下端の高さを計算.
+          const float bottomA = a->position.y + a->collision.bottom;
+          const float bottomB = b->position.y + b->collision.bottom;
+          // 下端が高いほうを上に移動.
+          if (bottomA > bottomB) {
+            a->position.y += (b->position.y + b->collision.top) - bottomA;
+          } else {
+            b->position.y += (a->position.y + a->collision.top) - bottomB;
+          }
+        } else {
+          // 衝突しない距離rを計算.
+          const float r = a->collision.radius + b->collision.radius;
+          // 押し返す距離sを計算.
+          const float s = r - d;
+          // 円柱の中心軸間の方向ベクトルnを計算.
+          const glm::vec3 n(dx / d, 0, dz / d);
+          // アクターAとBを均等に押し返す.
+          a->position += n * s * 0.5f;
+          b->position -= n * s * 0.5f;
+        }
+      }
+      // 閉じカッコの数に注意.
+    }
+  }
+}
+

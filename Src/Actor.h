@@ -12,6 +12,17 @@
 #include <string>
 
 /**
+* 衝突判定.
+*/
+struct Collision 
+{
+  // 円柱のパラメータ.
+  float top;    // 円柱の上端.
+  float bottom; // 円柱の下端.
+  float radius; // 円柱の半径.
+};
+
+/**
 * アクター.
 */
 class Actor
@@ -41,6 +52,9 @@ public:
   float animationTimer = 0; // プリミティブ切り替えタイマー(秒).
   float animationInterval = 0.3f; // プリミティブを切り替える間隔(秒).
 
+  // 衝突判定用の変数.
+  Collision collision;
+
   bool hasShadow = true;
 };
 
@@ -51,5 +65,8 @@ using ActorList = std::vector<ActorPtr>;
 void UpdateActorList(ActorList& actorList, float deltaTime);
 void RenderActorList(const ActorList& actorList,
   const glm::mat4& matVP, const glm::mat4& matShadow);
+
+bool DetectCollision(const Actor&, const Actor&);
+void HandleCollisions(ActorList&);
 
 #endif // ACTOR_H_INCLUDED
