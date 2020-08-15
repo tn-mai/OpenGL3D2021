@@ -212,8 +212,8 @@ void MainGameScene::Render(GLFWwindow* window) const
 
   pipeline->SetLight(pointLight);
 
-  const glm::vec3 viewPosition = playerActor->position + glm::vec3(2, 3, 3);
-  const glm::vec3 viewTarget = playerActor->position + glm::vec3(0, 1, 0);
+  const glm::vec3 viewPosition = playerActor->position + glm::vec3(0, 7, 7);
+  const glm::vec3 viewTarget = playerActor->position + glm::vec3(0, 0, 0);
 
   // À•W•ÏŠ·s—ñ‚ğì¬.
   int w, h;
