@@ -40,6 +40,11 @@ private:
 
   ActorList actors;
   ActorPtr playerActor;
+  enum class ActionId {
+    idle,
+    run,
+  };
+  ActionId playerState = ActionId::run;
 };
 
 #endif // MAINGAMESCENE_H_INCLUDED

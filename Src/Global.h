@@ -32,10 +32,19 @@ public:
     zombie_male_walk_3,
     zombie_male_walk_4,
     zombie_male_walk_5,
-    player_stand,
+    player_idle_0,
+    player_idle_1,
+    player_idle_2,
+    player_idle_3,
+    player_idle_4,
     player_run_0,
     player_run_1,
     player_run_2,
+    player_run_3,
+    player_run_4,
+    player_run_5,
+    player_run_6,
+    player_run_7,
   };
   void Draw(PrimNo) const;
 

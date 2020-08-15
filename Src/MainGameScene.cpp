@@ -1,5 +1,15 @@
 /**
 * @file MainGameScene.cpp
+*
+* 時は21世紀。「ナチス2.0」の科学中佐「ゲラルト・ベルコフ」(47)は、人間をゾンビ化する秘術「デス・ストラクチャリング」を実用化。
+* 世界征服の野望の手始めに、とあるヨーロッパの辺鄙な片田舎をゾンビまみれにしようとしていた。
+*
+* SAS予備役でサバイバル・インストラクターの「リサ・エンフィールド」(26)は、たまたま夏季休暇でこの奇貨に巻き込まれてしまう。
+* そして、かろうじて逃げ込んだ町の教会で、「アンソニー・ウェスト」牧師から驚くべき事実を告げられたのだった。
+* 「あなたは神が遣わされた戦士なのです。この「祝福されたAK-47」と「聖なる手榴弾」をお取りなさい。
+* そして神の栄光をあまねく現世にしろしめすのです。」
+* リサは驚きながらも「無辜の市民を守るのが軍人の務め。」という上官「エドガー・ラッセル」(35)の教えに従うことにする。
+* ナチス2.0の野望をくじくため、荒れ果てた町とゾンビの巣食う深い森を抜ける、リサの過酷な戦いが始まった！
 */
 #include "MainGameScene.h"
 #include "Global.h"
@@ -41,7 +51,7 @@ bool MainGameScene::Initialize()
   }
 
   texZombie = std::make_shared<Texture::Image2D>("Res/zombie_male.tga");
-  texPlayer = std::make_shared<Texture::Image2D>("Res/player_male.tga");
+  texPlayer = std::make_shared<Texture::Image2D>("Res/player_female/player_female.tga");
 
   Global& global = Global::Get();
 
@@ -49,9 +59,22 @@ bool MainGameScene::Initialize()
   std::mt19937 random(rd());
 
   // プレイヤーを表示.
-  playerActor = std::make_shared<Actor>("player", &global.primitiveBuffer.Get(Global::PrimNo::player_stand),
-    texPlayer, glm::vec3(10, 0, 10));
-  actors.push_back(playerActor);
+  {
+    std::vector<const Mesh::Primitive*> animation;
+    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_0));
+    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_1));
+    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_2));
+    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_3));
+    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_4));
+    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_5));
+    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_6));
+    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_7));
+    playerActor = std::make_shared<Actor>("player", &global.primitiveBuffer.Get(Global::PrimNo::player_idle_0),
+      texPlayer, glm::vec3(10, 0, 10));
+    playerActor->animation = animation;
+    playerActor->animationInterval = 0.1f;
+    actors.push_back(playerActor);
+  }
 
   // ゾンビを表示.
   const Mesh::Primitive* pPrimitive = &global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_0);
@@ -104,12 +127,47 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
   } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
     direction.z += 1;
   }
+
+  Global& global = Global::Get();
+
   if (glm::length(direction) > 0) {
     playerActor->rotation.y = std::atan2(-direction.z, direction.x);
     const float speed = 4.0f;
     playerActor->velocity = glm::normalize(direction) * speed;
+
+    if (playerState != ActionId::run) {
+      std::vector<const Mesh::Primitive*> animation;
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_0));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_1));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_2));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_3));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_4));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_5));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_6));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_7));
+      playerActor->animation = animation;
+      playerActor->animationInterval = 0.1f;
+      playerActor->animationTimer = 0.1f;
+      playerState = ActionId::run;
+    }
   } else {
     playerActor->velocity = glm::vec3(0);
+
+    if (playerState != ActionId::idle) {
+      std::vector<const Mesh::Primitive*> animation;
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_0));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_1));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_2));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_3));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_4));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_3));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_2));
+      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_1));
+      playerActor->animation = animation;
+      playerActor->animationInterval = 0.2f;
+      playerActor->animationTimer = 0.2f;
+      playerState = ActionId::idle;
+    }
   }
 }
 

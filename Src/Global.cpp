@@ -46,10 +46,19 @@ bool Global::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_3.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_4.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_5.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_male_idle_0.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_male_run_0.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_male_run_1.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_male_run_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_3.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_4.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_3.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_4.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_5.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_6.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_7.obj");
 
   // パイプライン・オブジェクトを作成する.
   pipeline = std::make_shared<Shader::Pipeline>("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
