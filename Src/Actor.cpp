@@ -99,6 +99,20 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP, const
 }
 
 /**
+* 垂直円柱の衝突判定を設定する.
+*
+* @param top    る円柱の上端の座標.
+* @param bottom る円柱の下端の座標.
+* @param radius 円柱の半径.
+*/
+void Actor::SetCylinderCollision(float top, float bottom, float radius)
+{
+  collision.top = top;
+  collision.bottom = bottom;
+  collision.radius = radius;
+}
+
+/**
 * アクターリストを更新する.
 *
 * @param actorList  更新するアクターリスト.

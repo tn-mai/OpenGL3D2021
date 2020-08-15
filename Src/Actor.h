@@ -35,6 +35,7 @@ public:
 
   void Update(float deltTIme);
   void Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP, const glm::mat4& matShadow) const;
+  void SetCylinderCollision(float top, float bottom, float radius);
 
   std::string name; // アクターの名前.
 
