@@ -101,8 +101,8 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP, const
 /**
 * ‚’¼‰~’Œ‚ÌÕ“Ë”»’è‚ğİ’è‚·‚é.
 *
-* @param top    ‚é‰~’Œ‚Ìã’[‚ÌÀ•W.
-* @param bottom ‚é‰~’Œ‚Ì‰º’[‚ÌÀ•W.
+* @param top    ‰~’Œ‚Ìã’[‚ÌÀ•W.
+* @param bottom ‰~’Œ‚Ì‰º’[‚ÌÀ•W.
 * @param radius ‰~’Œ‚Ì”¼Œa.
 */
 void Actor::SetCylinderCollision(float top, float bottom, float radius)
