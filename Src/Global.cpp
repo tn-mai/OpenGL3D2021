@@ -40,12 +40,17 @@ bool Global::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/House.obj");
   primitiveBuffer.AddFromObjFile("Res/Cube.obj");
   primitiveBuffer.AddFromObjFile("Res/Plane.obj");
+  primitiveBuffer.AddFromObjFile("Res/Bullet.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_0.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_1.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_2.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_3.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_4.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_5.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male_down_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male_down_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male_down_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male_down_3.obj");
   primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_0.obj");
   primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_1.obj");
   primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_2.obj");
