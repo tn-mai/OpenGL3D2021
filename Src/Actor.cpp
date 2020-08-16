@@ -86,8 +86,13 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP, const
     // 影を描画.
   if (hasShadow) {
     // 平行移動・回転・大きさ変更の行列を掛け算して、ひとつのモデル行列にまとめる.
+    glm::mat4 matTransY = glm::mat4(1);
+    matTransY[3][1] = position.y;
+    glm::mat4 matTransXZ = glm::mat4(1);
+    matTransXZ[3][0] = position.x;
+    matTransXZ[3][2] = position.z;
     const glm::mat4 matModelShadow =
-      matTranslate * matShadow * matRotateY * matRotateZ * matRotateX * matScale;
+      matTransXZ * matShadow * matTransY * matRotateY * matRotateZ * matRotateX * matScale;
 
     // GPUメモリに影行列を転送.
     pipeline.SetModelMatrix(matModelShadow);
