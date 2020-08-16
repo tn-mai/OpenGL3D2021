@@ -14,7 +14,7 @@
 */
 Actor::Actor(std::string actorName, const Mesh::Primitive* prim,
   std::shared_ptr<Texture::Image2D> tex, const glm::vec3& pos) :
-  name(name), primitive(prim), texture(tex), position(pos)
+  name(actorName), primitive(prim), texture(tex), position(pos)
 {
 }
 
