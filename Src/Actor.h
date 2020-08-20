@@ -4,22 +4,36 @@
 #ifndef ACTOR_H_INCLUDED
 #define ACTOR_H_INCLUDED
 #include "glad/glad.h"
-#include "Global.h"
 #include "Texture.h"
+#include "Mesh.h"
+#include "Shader.h"
 #include <glm/glm.hpp>
-#include <vector>
 #include <memory>
+#include <vector>
 #include <string>
 
 /**
 * 衝突判定.
 */
-struct Collision 
+struct Collision
 {
+  // 衝突形状の種類.
+  enum Shape {
+    none,     // 衝突判定なし.
+    cylinder, // 円柱.
+    box,      // 直方体.
+  };
+  Shape shape = Shape::none;
+  bool isBlock = true; // 通り抜けられないならtrue、抜けられるならfalse.
+
   // 円柱のパラメータ.
   float top;    // 円柱の上端.
   float bottom; // 円柱の下端.
   float radius; // 円柱の半径.
+
+  // 直方体のパラメータ.
+  glm::vec3 boxMin;
+  glm::vec3 boxMax;
 };
 
 /**
@@ -36,6 +50,10 @@ public:
   void Update(float deltTIme);
   void Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP, const glm::mat4& matShadow) const;
   void SetCylinderCollision(float top, float bottom, float radius);
+  void SetBoxCollision(const glm::vec3& min, const glm::vec3& max);
+  void SetAnimation(
+    const std::vector<const Mesh::Primitive*>& animation,
+    float interval, bool loop);
 
   std::string name; // アクターの名前.
 
@@ -52,22 +70,23 @@ public:
   size_t animationNo = 0; // 表示するプリミティブの番号.
   float animationTimer = 0; // プリミティブ切り替えタイマー(秒).
   float animationInterval = 0.3f; // プリミティブを切り替える間隔(秒).
+  bool animationLoop = true; // ループフラグ.
 
   // 衝突判定用の変数.
   Collision collision;
+  void (*OnHit)(Actor&, Actor&) = [](Actor&, Actor&) {};
 
+  bool dead = false;
   bool hasShadow = true;
 };
 
-// アクターの配列.
-using ActorPtr = std::shared_ptr<Actor>;
-using ActorList = std::vector<ActorPtr>;
+using ActorPtr = std::shared_ptr<Actor>; // アクターポインタ型.
+using ActorList = std::vector<ActorPtr>; // アクター配列型.
 
 void UpdateActorList(ActorList& actorList, float deltaTime);
 void RenderActorList(const ActorList& actorList,
   const glm::mat4& matVP, const glm::mat4& matShadow);
 
-bool DetectCollision(const Actor&, const Actor&);
-void HandleCollisions(ActorList&);
+bool DetectCollision(Actor&, Actor&);
 
 #endif // ACTOR_H_INCLUDED

@@ -29,12 +29,15 @@ public:
   void Finalize();
 
 private:
+  void AddLineOfTrees(const glm::vec3& start, const glm::vec3& direction);
+
   std::shared_ptr<Texture::Image2D> texGround = nullptr;
   std::shared_ptr<Texture::Image2D> texTree = nullptr;
   std::shared_ptr<Texture::Image2D> texHouse = nullptr;
   std::shared_ptr<Texture::Image2D> texCube = nullptr;
   std::shared_ptr<Texture::Image2D> texZombie;
   std::shared_ptr<Texture::Image2D> texPlayer;
+  std::shared_ptr<Texture::Image2D> texBullet;
 
   Shader::PointLight pointLight;
 

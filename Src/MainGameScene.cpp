@@ -15,22 +15,23 @@
 #include "Global.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <algorithm>
 
 /**
 * 並木を描画する.
 */
-void DrawLineOfTrees(const Mesh::Primitive& prim, Shader::Pipeline& pipeline, const glm::mat4& matVP, const glm::vec3& start, const glm::vec3& direction)
+void MainGameScene::AddLineOfTrees(const glm::vec3& start, const glm::vec3& direction)
 {
+  Global& global = Global::Get();
+
   glm::vec3 offset = start;
   for (float i = 0; i < 19; ++i) {
-    const glm::vec3 offset = start + direction * i;
-    const glm::mat4 matModelT = glm::translate(glm::mat4(1), offset);
-    const glm::mat4 matModelR = glm::rotate(glm::mat4(1), glm::radians(i * 30), glm::vec3(0, 1, 0));
-    const glm::mat4 matModel = matModelT * matModelR;
-    const glm::mat4 matMVP = matVP * matModel;
-    pipeline.SetMVP(matMVP);
-    pipeline.SetModelMatrix(matModel);
-    prim.Draw();
+    std::shared_ptr<Actor> actor = std::make_shared<Actor>("tree",
+      &global.primitiveBuffer.Get(Global::PrimNo::tree),
+      texTree, start + direction * i);
+    actor->rotation.y = glm::radians(i * 30);
+    actor->SetBoxCollision(glm::vec3(-1, 0, -1), glm::vec3(1, 6, 1));
+    actors.push_back(actor);
   }
 }
 
@@ -52,11 +53,34 @@ bool MainGameScene::Initialize()
 
   texZombie = std::make_shared<Texture::Image2D>("Res/zombie_male.tga");
   texPlayer = std::make_shared<Texture::Image2D>("Res/player_female/player_female.tga");
+  texBullet = std::make_shared<Texture::Image2D>("Res/Bullet.tga");
 
   Global& global = Global::Get();
 
   std::random_device rd;
   std::mt19937 random(rd());
+
+  // 木を表示.
+  for (float j = 0; j < 4; ++j) {
+    const glm::mat4 matRot = glm::rotate(glm::mat4(1), glm::radians(90.0f) * j, glm::vec3(0, 1, 0));
+    AddLineOfTrees(matRot * glm::vec4(-19, 0, 19, 1), matRot * glm::vec4(2, 0, 0, 1));
+  }
+
+  // 家を表示.
+  {
+    std::shared_ptr<Actor> actor = std::make_shared<Actor>(
+      "house", &global.primitiveBuffer.Get(Global::PrimNo::house), texHouse, glm::vec3(0));
+    actor->SetBoxCollision(glm::vec3(-3, 0, -3), glm::vec3(3, 5, 3));
+    actors.push_back(actor);
+  }
+
+  // 立方体を表示.
+  {
+    std::shared_ptr<Actor> actor = std::make_shared<Actor>(
+      "cube", &global.primitiveBuffer.Get(Global::PrimNo::cube), texCube, glm::vec3(10, 1, 0));
+    actor->SetBoxCollision(glm::vec3(-1), glm::vec3(1));
+    actors.push_back(actor);
+  }
 
   // プレイヤーを表示.
   {
@@ -97,6 +121,22 @@ bool MainGameScene::Initialize()
     actor->animation = animation;
     actor->animationInterval = 0.2f;
     actor->SetCylinderCollision(1.7f, 0, 0.5f);
+
+    // 衝突処理を設定.
+    actor->OnHit = [](Actor& a, Actor& b) {
+      if (b.name == "bullet") {
+        // 死亡アニメーションを設定.
+        Global& global = Global::Get();
+        std::vector<const Mesh::Primitive*> animation;
+        animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_down_0));
+        animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_down_1));
+        animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_down_2));
+        animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_down_3));
+        a.SetAnimation(animation, 0.125f, false);
+        // 衝突判定を無くす.
+        a.collision.shape = Collision::Shape::none;
+      }
+    };
     actors.push_back(actor);
   }
 
@@ -171,6 +211,54 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
       playerState = ActionId::idle;
     }
   }
+
+  static bool prevShootKey = false;
+  const bool shootKey = glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS;
+  const bool shoot = shootKey & !prevShootKey;
+  prevShootKey = shootKey;
+  if (shoot) {
+    // プレイヤーのY軸回転から正面方向を計算.
+    const float fx = std::cos(playerActor->rotation.y);
+    const float fz = -std::sin(playerActor->rotation.y); // Z軸の向きは数学と逆.
+    const glm::vec3 front = glm::vec3(fx, 0, fz);
+
+    // プレイヤーのY軸回転から右方向を計算.
+    const float rx = std::cos(playerActor->rotation.y - glm::radians(90.0f));
+    const float rz = -std::sin(playerActor->rotation.y - glm::radians(90.0f)); // 同上
+    const glm::vec3 right = glm::vec3(rx, 0, rz);
+
+    // 弾丸の発射位置(銃口)を計算. 3Dモデルを調べたところ、銃口は
+    // プレイヤーの座標(足元)から前に0.6m、右に0.2m、上に0.9mの位置にある.
+    const glm::vec3 position =
+      playerActor->position + front * 0.6f + right * 0.2f + glm::vec3(0, 0.9f, 0);
+
+    // 弾丸アクターを銃口の位置に作成.
+    std::shared_ptr<Actor> bullet = std::make_shared<Actor>("bullet",
+      &global.primitiveBuffer.Get(Global::PrimNo::bullet), texBullet, position);
+
+    // 向き(回転)はプレイヤーアクターを継承.
+    bullet->rotation = playerActor->rotation;
+
+    // front方向へ「毎秒20m」の速度で移動するように設定.
+    bullet->velocity = front * 20.0f;
+
+    // 衝突形状を設定.
+    bullet->SetCylinderCollision(0.1f, -0.1f, 0.125f);
+    bullet->collision.isBlock = false;
+
+    // 衝突処理を設定.
+    bullet->OnHit = [](Actor& a, Actor& b) {
+      // 衝突先が弾丸またはプレイヤーの場合は何もしない.
+      if (b.name == "bullet" || b.name == "player") {
+        return;
+      }
+      // 弾丸を消去.
+      a.dead = true;
+    };
+
+    // アクターをリストに追加.
+    actors.push_back(bullet);
+  }
 }
 
 /**
@@ -182,7 +270,6 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
   UpdateActorList(actors, deltaTime);
-  HandleCollisions(actors);
 }
 
 /**
@@ -231,13 +318,6 @@ void MainGameScene::Render(GLFWwindow* window) const
   pipeline->Bind();
   sampler.Bind(0);
 
-  // 木を描画.
-  texTree->Bind(0);
-  for (float j = 0; j < 4; ++j) {
-    const glm::mat4 matRot = glm::rotate(glm::mat4(1), glm::radians(90.0f) * j, glm::vec3(0, 1, 0));
-    DrawLineOfTrees(primitiveBuffer.Get(1), *pipeline, matProj * matView, matRot * glm::vec4(-19, 0, 19, 1), matRot * glm::vec4(2, 0, 0, 1));
-  }
-
   // 地面を描画.
   {
     const glm::mat4 matModel = glm::mat4(1);
@@ -246,26 +326,6 @@ void MainGameScene::Render(GLFWwindow* window) const
     pipeline->SetModelMatrix(matModel);
     texGround->Bind(0);
     primitiveBuffer.Get(0).Draw();
-  }
-
-  // 家を描画.
-  {
-    const glm::mat4 matModel = glm::mat4(1);
-    const glm::mat4 matMVP = matProj * matView * matModel;
-    pipeline->SetMVP(matMVP);
-    pipeline->SetModelMatrix(matModel);
-    texHouse->Bind(0);
-    primitiveBuffer.Get(2).Draw();
-  }
-
-  // 立方体を描画.
-  {
-    const glm::mat4 matModel = glm::translate(glm::mat4(1), glm::vec3(10, 1, 0));
-    const glm::mat4 matMVP = matProj * matView * matModel;
-    pipeline->SetMVP(matMVP);
-    pipeline->SetModelMatrix(matModel);
-    texCube->Bind(0);
-    primitiveBuffer.Get(3).Draw();
   }
 
   // 影描画用の行列を作成.
