@@ -3,7 +3,7 @@
 */
 #include <glad/glad.h>
 #include "GLContext.h"
-#include "Global.h"
+#include "GameData.h"
 #include "SceneManager.h"
 #include <GLFW/glfw3.h>
 #include <string>

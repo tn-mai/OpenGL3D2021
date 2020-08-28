@@ -3,7 +3,7 @@
 */
 #include "TitleScene.h"
 #include "SceneManager.h"
-#include "Global.h"
+#include "GameData.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 

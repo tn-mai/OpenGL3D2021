@@ -2,7 +2,7 @@
 * @file Actor.cpp
 */
 #include "Actor.h"
-#include "Global.h"
+#include "GameData.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 

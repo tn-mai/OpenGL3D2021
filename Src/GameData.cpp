@@ -1,7 +1,7 @@
 /**
-* @file Global.cpp
+* @file GameData.cpp
 */
-#include "Global.h"
+#include "GameData.h"
 #include <iostream>
 
 /**

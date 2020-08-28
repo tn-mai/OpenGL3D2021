@@ -12,7 +12,7 @@
 * ナチス2.0の野望をくじくため、荒れ果てた町とゾンビの巣食う深い森を抜ける、リサの過酷な戦いが始まった！
 */
 #include "MainGameScene.h"
-#include "Global.h"
+#include "GameData.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <algorithm>
