@@ -7,18 +7,18 @@
 /**
 *
 */
-Global& Global::Get()
+GameData& GameData::Get()
 {
-  static Global singleton;
+  static GameData singleton;
   return singleton;
 }
 
 /**
 * デストラクタ.
 */
-Global::~Global()
+GameData::~GameData()
 {
-  std::cout << "[情報] グローバルデータを破棄.\n";
+  std::cout << "[情報] ゲームデータを破棄.\n";
 }
 
 /**
@@ -29,8 +29,10 @@ Global::~Global()
 * @retval true  初期化成功.
 * @retval false 初期化失敗.
 */
-bool Global::Initialize(GLFWwindow* window)
+bool GameData::Initialize(GLFWwindow* window)
 {
+  std::cout << "[情報] ゲームデータの初期化を開始.\n";
+
   // プリミティブバッファにモデルデータを読み込む.
   if (!primitiveBuffer.Allocate(20'000, 80'000)) {
     return false;
@@ -83,7 +85,7 @@ bool Global::Initialize(GLFWwindow* window)
 
   random.seed(std::random_device{}());
 
-  std::cout << "[情報] グローバルデータを初期化.\n";
+  std::cout << "[情報] ゲームデータの初期化を完了.\n";
 
   return true;
 }
@@ -93,7 +95,7 @@ bool Global::Initialize(GLFWwindow* window)
 *
 * @param id プリミティブのID.
 */
-void Global::Draw(Global::PrimNo id) const
+void GameData::Draw(GameData::PrimNo id) const
 {
   primitiveBuffer.Get(static_cast<size_t>(id)).Draw();
 }

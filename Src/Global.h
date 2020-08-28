@@ -14,10 +14,10 @@
 /**
 * ゲーム全体で使うデータ.
 */
-class Global
+class GameData
 {
 public:
-  static Global& Get();
+  static GameData& Get();
   bool Initialize(GLFWwindow*);
 
   enum PrimNo {
@@ -62,10 +62,10 @@ public:
   std::mt19937 random;
 
 private:
-  Global() = default;
-  ~Global();
-  Global(const Global&) = delete;
-  Global& operator=(const Global&) = delete;
+  GameData() = default;
+  ~GameData();
+  GameData(const GameData&) = delete;
+  GameData& operator=(const GameData&) = delete;
 };
 
 

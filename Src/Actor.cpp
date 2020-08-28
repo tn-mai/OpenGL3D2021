@@ -212,7 +212,7 @@ void UpdateActorList(ActorList& actorList, float deltaTime)
 void RenderActorList(const ActorList& actorList,
   const glm::mat4& matVP, const glm::mat4& matShadow)
 {
-  Global& global = Global::Get();
+  GameData& global = GameData::Get();
   for (size_t i = 0; i < actorList.size(); ++i) {
     actorList[i]->Draw(*global.pipeline, matVP, matShadow);
   }

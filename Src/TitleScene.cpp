@@ -54,7 +54,7 @@ void TitleScene::Update(GLFWwindow*, float deltaTime)
 */
 void TitleScene::Render(GLFWwindow*)
 {
-  Global& global = Global::Get();
+  GameData& global = GameData::Get();
   std::shared_ptr<Shader::Pipeline> pipeline = global.pipelineSimple;
   Mesh::PrimitiveBuffer& primitiveBuffer = global.primitiveBuffer;
   Texture::Sampler& sampler = global.sampler;
@@ -88,7 +88,7 @@ void TitleScene::Render(GLFWwindow*)
     pipeline->SetMVP(matMVP);
     pipeline->SetObjectColor(glm::vec4(1, 1, 1, alpha));
     texLogo->Bind(0);
-    global.Draw(Global::PrimNo::plane);
+    global.Draw(GameData::PrimNo::plane);
   }
   {
     const glm::mat4 matModelT = glm::translate(glm::mat4(1), glm::vec3(0, -200, 0));
@@ -97,7 +97,7 @@ void TitleScene::Render(GLFWwindow*)
     pipeline->SetMVP(matMVP);
     pipeline->SetObjectColor(glm::vec4(1));
     texPressEnter->Bind(0);
-    global.Draw(Global::PrimNo::plane);
+    global.Draw(GameData::PrimNo::plane);
   }
 }
 

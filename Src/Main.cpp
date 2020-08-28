@@ -108,7 +108,7 @@ int main()
 #undef Output
   }
 
-  Global& global = Global::Get();
+  GameData& global = GameData::Get();
   if (!global.Initialize(window)) {
     return 1;
   }

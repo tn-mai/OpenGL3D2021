@@ -22,12 +22,12 @@
 */
 void MainGameScene::AddLineOfTrees(const glm::vec3& start, const glm::vec3& direction)
 {
-  Global& global = Global::Get();
+  GameData& global = GameData::Get();
 
   glm::vec3 offset = start;
   for (float i = 0; i < 19; ++i) {
     std::shared_ptr<Actor> actor = std::make_shared<Actor>("tree",
-      &global.primitiveBuffer.Get(Global::PrimNo::tree),
+      &global.primitiveBuffer.Get(GameData::PrimNo::tree),
       texTree, start + direction * i);
     actor->rotation.y = glm::radians(i * 30);
     actor->SetBoxCollision(glm::vec3(-1, 0, -1), glm::vec3(1, 6, 1));
@@ -55,7 +55,7 @@ bool MainGameScene::Initialize()
   texPlayer = std::make_shared<Texture::Image2D>("Res/player_female/player_female.tga");
   texBullet = std::make_shared<Texture::Image2D>("Res/Bullet.tga");
 
-  Global& global = Global::Get();
+  GameData& global = GameData::Get();
 
   std::random_device rd;
   std::mt19937 random(rd());
@@ -69,7 +69,7 @@ bool MainGameScene::Initialize()
   // 家を表示.
   {
     std::shared_ptr<Actor> actor = std::make_shared<Actor>(
-      "house", &global.primitiveBuffer.Get(Global::PrimNo::house), texHouse, glm::vec3(0));
+      "house", &global.primitiveBuffer.Get(GameData::PrimNo::house), texHouse, glm::vec3(0));
     actor->SetBoxCollision(glm::vec3(-3, 0, -3), glm::vec3(3, 5, 3));
     actors.push_back(actor);
   }
@@ -77,7 +77,7 @@ bool MainGameScene::Initialize()
   // 立方体を表示.
   {
     std::shared_ptr<Actor> actor = std::make_shared<Actor>(
-      "cube", &global.primitiveBuffer.Get(Global::PrimNo::cube), texCube, glm::vec3(10, 1, 0));
+      "cube", &global.primitiveBuffer.Get(GameData::PrimNo::cube), texCube, glm::vec3(10, 1, 0));
     actor->SetBoxCollision(glm::vec3(-1), glm::vec3(1));
     actors.push_back(actor);
   }
@@ -85,15 +85,15 @@ bool MainGameScene::Initialize()
   // プレイヤーを表示.
   {
     std::vector<const Mesh::Primitive*> animation;
-    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_0));
-    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_1));
-    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_2));
-    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_3));
-    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_4));
-    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_5));
-    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_6));
-    animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_7));
-    playerActor = std::make_shared<Actor>("player", &global.primitiveBuffer.Get(Global::PrimNo::player_idle_0),
+    animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_0));
+    animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_1));
+    animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_2));
+    animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_3));
+    animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_4));
+    animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_5));
+    animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_6));
+    animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_7));
+    playerActor = std::make_shared<Actor>("player", &global.primitiveBuffer.Get(GameData::PrimNo::player_idle_0),
       texPlayer, glm::vec3(10, 0, 10));
     playerActor->animation = animation;
     playerActor->animationInterval = 0.1f;
@@ -102,14 +102,14 @@ bool MainGameScene::Initialize()
   }
 
   // ゾンビを表示.
-  const Mesh::Primitive* pPrimitive = &global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_0);
+  const Mesh::Primitive* pPrimitive = &global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_walk_0);
   std::vector<const Mesh::Primitive*> animation;
-  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_0));
-  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_1));
-  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_2));
-  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_3));
-  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_4));
-  animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_walk_5));
+  animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_walk_0));
+  animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_walk_1));
+  animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_walk_2));
+  animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_walk_3));
+  animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_walk_4));
+  animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_walk_5));
   for (size_t i = 0; i < 100; ++i) {
     glm::vec3 pos(0);
     pos.x = std::uniform_real_distribution<float>(-18, 18)(global.random);
@@ -126,12 +126,12 @@ bool MainGameScene::Initialize()
     actor->OnHit = [](Actor& a, Actor& b) {
       if (b.name == "bullet") {
         // 死亡アニメーションを設定.
-        Global& global = Global::Get();
+        GameData& global = GameData::Get();
         std::vector<const Mesh::Primitive*> animation;
-        animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_down_0));
-        animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_down_1));
-        animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_down_2));
-        animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::zombie_male_down_3));
+        animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_down_0));
+        animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_down_1));
+        animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_down_2));
+        animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_down_3));
         a.SetAnimation(animation, 0.125f, false);
         // 衝突判定を無くす.
         a.collision.shape = Collision::Shape::none;
@@ -170,7 +170,7 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
     direction.z += 1;
   }
 
-  Global& global = Global::Get();
+  GameData& global = GameData::Get();
 
   if (glm::length(direction) > 0) {
     playerActor->rotation.y = std::atan2(-direction.z, direction.x);
@@ -179,14 +179,14 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 
     if (playerState != ActionId::run) {
       std::vector<const Mesh::Primitive*> animation;
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_0));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_1));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_2));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_3));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_4));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_5));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_6));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_run_7));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_0));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_1));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_2));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_3));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_4));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_5));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_6));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_run_7));
       playerActor->animation = animation;
       playerActor->animationInterval = 0.1f;
       playerActor->animationTimer = 0.1f;
@@ -197,14 +197,14 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 
     if (playerState != ActionId::idle) {
       std::vector<const Mesh::Primitive*> animation;
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_0));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_1));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_2));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_3));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_4));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_3));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_2));
-      animation.push_back(&global.primitiveBuffer.Get(Global::PrimNo::player_idle_1));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_idle_0));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_idle_1));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_idle_2));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_idle_3));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_idle_4));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_idle_3));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_idle_2));
+      animation.push_back(&global.primitiveBuffer.Get(GameData::PrimNo::player_idle_1));
       playerActor->animation = animation;
       playerActor->animationInterval = 0.2f;
       playerActor->animationTimer = 0.2f;
@@ -234,7 +234,7 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 
     // 弾丸アクターを銃口の位置に作成.
     std::shared_ptr<Actor> bullet = std::make_shared<Actor>("bullet",
-      &global.primitiveBuffer.Get(Global::PrimNo::bullet), texBullet, position);
+      &global.primitiveBuffer.Get(GameData::PrimNo::bullet), texBullet, position);
 
     // 向き(回転)はプレイヤーアクターを継承.
     bullet->rotation = playerActor->rotation;
@@ -279,7 +279,7 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 */
 void MainGameScene::Render(GLFWwindow* window) const
 {
-  Global& global = Global::Get();
+  GameData& global = GameData::Get();
   std::shared_ptr<Shader::Pipeline> pipeline = global.pipeline;
   Mesh::PrimitiveBuffer& primitiveBuffer = global.primitiveBuffer;
   Texture::Sampler& sampler = global.sampler;

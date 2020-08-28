@@ -57,6 +57,18 @@ public:
 
   std::string name; // アクターの名前.
 
+  // アクターの動作状態.
+  enum State {
+    idle, // 何もしていない(待機中).
+    run,  // 走っている.
+    search, // 索敵している.
+    attack, // 攻撃している.
+    damage, // ダメージを受けている.
+    down, // 倒れている.
+  };
+  State state = State::idle; // 現在の動作状態.
+
+
   const Mesh::Primitive* primitive = nullptr;
   std::shared_ptr<Texture::Image2D> texture;
 
