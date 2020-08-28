@@ -1,8 +1,8 @@
 /**
 * @file GameData.h
 */
-#ifndef GLOBAL_H_INCLUDED
-#define GLOBAL_H_INCLUDED
+#ifndef GAMEDATA_H_INCLUDED
+#define GAMEDATA_H_INCLUDED
 #include "glad/glad.h"
 #include "Shader.h"
 #include "Mesh.h"
@@ -69,4 +69,4 @@ private:
 };
 
 
-#endif // GLOBAL_H_INCLUDED
+#endif // GAMEDATA_H_INCLUDED
