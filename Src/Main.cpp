@@ -108,11 +108,13 @@ int main()
 #undef Output
   }
 
+  // ゲーム全体で使うデータを初期化する.
   GameData& global = GameData::Get();
   if (!global.Initialize(window)) {
     return 1;
   }
 
+  // 最初に実行するシーンを指定する.
   SceneManager& sceneManager = SceneManager::Get();
   sceneManager.ChangeScene(TITLE_SCENE_NAME);
 
