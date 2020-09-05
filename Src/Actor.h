@@ -13,6 +13,16 @@
 #include <string>
 
 /**
+* アニメーションデータ.
+*/
+struct Animation
+{
+  std::vector<const Mesh::Primitive*> list; // アニメーションに使うプリミティブのリスト.
+  float interval = 0.3f; // プリミティブを切り替える間隔(秒).
+  bool isLoop = true; // ループフラグ.
+};
+
+/**
 * 衝突判定.
 */
 struct Collision
@@ -52,8 +62,7 @@ public:
   void SetCylinderCollision(float top, float bottom, float radius);
   void SetBoxCollision(const glm::vec3& min, const glm::vec3& max);
   void SetAnimation(
-    const std::vector<const Mesh::Primitive*>& animation,
-    float interval, bool loop);
+    std::shared_ptr<Animation> animation);
 
   std::string name; // アクターの名前.
 
@@ -78,11 +87,9 @@ public:
   glm::vec3 velocity = glm::vec3(0); // アクターの移動速度.
 
   // アニメーション用データ.
-  std::vector<const Mesh::Primitive*> animation; // アニメーションに使うプリミティブのリスト.
+  std::shared_ptr<Animation> animation; // アニメーションデータ.
   size_t animationNo = 0; // 表示するプリミティブの番号.
   float animationTimer = 0; // プリミティブ切り替えタイマー(秒).
-  float animationInterval = 0.3f; // プリミティブを切り替える間隔(秒).
-  bool animationLoop = true; // ループフラグ.
 
   // 衝突判定用の変数.
   Collision collision;

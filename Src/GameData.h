@@ -7,6 +7,7 @@
 #include "Shader.h"
 #include "Mesh.h"
 #include "Texture.h"
+#include "Actor.h"
 #include <GLFW/glfw3.h>
 #include <memory>
 #include <random>
@@ -60,6 +61,11 @@ public:
   GLFWwindow* window = nullptr;
 
   std::mt19937 random;
+
+  std::shared_ptr<Animation> anmZombieMaleWalk;
+  std::shared_ptr<Animation> anmZombieMaleDown;
+  std::shared_ptr<Animation> anmPlayerIdle;
+  std::shared_ptr<Animation> anmPlayerRun;
 
 private:
   GameData() = default;

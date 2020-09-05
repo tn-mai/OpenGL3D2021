@@ -85,8 +85,48 @@ bool GameData::Initialize(GLFWwindow* window)
 
   random.seed(std::random_device{}());
 
-  std::cout << "[情報] ゲームデータの初期化を完了.\n";
+  /* アニメーションデータを作成 */
 
+  anmZombieMaleWalk = std::make_shared<Animation>();
+  anmZombieMaleWalk->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_walk_0));
+  anmZombieMaleWalk->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_walk_1));
+  anmZombieMaleWalk->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_walk_2));
+  anmZombieMaleWalk->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_walk_3));
+  anmZombieMaleWalk->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_walk_4));
+  anmZombieMaleWalk->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_walk_5));
+  anmZombieMaleWalk->interval = 0.2f;
+
+  anmZombieMaleDown = std::make_shared<Animation>();
+  anmZombieMaleDown->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_down_0));
+  anmZombieMaleDown->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_down_1));
+  anmZombieMaleDown->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_down_2));
+  anmZombieMaleDown->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_down_3));
+  anmZombieMaleDown->interval = 0.125f;
+  anmZombieMaleDown->isLoop = false;
+
+  anmPlayerIdle = std::make_shared<Animation>();
+  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_0));
+  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_1));
+  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_2));
+  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_3));
+  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_4));
+  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_3));
+  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_2));
+  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_1));
+  anmPlayerIdle->interval = 0.2f;
+
+  anmPlayerRun = std::make_shared<Animation>();
+  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_0));
+  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_1));
+  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_2));
+  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_3));
+  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_4));
+  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_5));
+  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_6));
+  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_7));
+  anmPlayerRun->interval = 0.1f;
+
+  std::cout << "[情報] ゲームデータの初期化を完了.\n";
   return true;
 }
 

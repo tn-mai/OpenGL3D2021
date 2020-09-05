@@ -31,25 +31,25 @@ void Actor::Update(float deltaTime)
   position += velocity * deltaTime;
 
   // アニメーションデータがあればアニメーションする.
-  if (!animation.empty()) {
+  if (animation && !animation->list.empty()) {
     // ループフラグがtrue、またはループフラグがfalse
     // かつアニメーション番号がプリミティブリストのデータ数を超えていない場合、
     // アニメーションを更新する.
-    if (animationLoop || animationNo < animation.size() - 1) {
+    if (animation->isLoop || animationNo < animation->list.size() - 1) {
       animationTimer += deltaTime;
       // アニメーションタイマーがインターバル時間を超えていたら、
       // タイマーを減らして、アニメーション番号を薦める.
-      if (animationTimer >= animationInterval) {
-        animationTimer -= animationInterval;
+      if (animationTimer >= animation->interval) {
+        animationTimer -= animation->interval;
         ++animationNo;
         // アニメーション番号がプリミティブリストのデータ数を超えた場合、
         // アニメーション番号を0に戻す.
-        if (animationNo >= animation.size()) {
+        if (animationNo >= animation->list.size()) {
           animationNo = 0;
         }
       }
     }
-    primitive = animation[animationNo];
+    primitive = animation->list[animationNo];
   }
 }
 
@@ -145,20 +145,22 @@ void Actor::SetBoxCollision(const glm::vec3& min, const glm::vec3& max)
 /**
 * アニメーションを設定する.
 *
-* @param animation アニメーションデータの配列.
-* @param interval  アニメーション間隔.
-* @param loop      ループ再生の有無(ループする=true ループしない=false).
+* @param animation アニメーションデータ.
 */
 void Actor::SetAnimation(
-  const std::vector<const Mesh::Primitive*>& animation,
-  float interval, bool loop)
+  std::shared_ptr<Animation> animation)
 {
+  // 既に同じアニメーションが設定されている場合は何もしない.
+  if (this->animation == animation) {
+    return;
+  }
+
   this->animation = animation;
-  animationInterval = interval;
-  animationLoop = loop;
   animationNo = 0;
   animationTimer = 0;
-  primitive = this->animation[0];
+  if (animation && !animation->list.empty()) {
+    primitive = animation->list[0];
+  }
 }
 
 /**
