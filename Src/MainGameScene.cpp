@@ -152,18 +152,10 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
     playerActor->rotation.y = std::atan2(-direction.z, direction.x);
     const float speed = 4.0f;
     playerActor->velocity = glm::normalize(direction) * speed;
-
-    if (playerState != ActionId::run) {
-      playerActor->SetAnimation(GameData::Get().anmPlayerRun);
-      playerState = ActionId::run;
-    }
+    playerActor->SetAnimation(GameData::Get().anmPlayerRun);
   } else {
     playerActor->velocity = glm::vec3(0);
-
-    if (playerState != ActionId::idle) {
-      playerActor->SetAnimation(GameData::Get().anmPlayerIdle);
-      playerState = ActionId::idle;
-    }
+    playerActor->SetAnimation(GameData::Get().anmPlayerIdle);
   }
 
   static bool prevShootKey = false;
