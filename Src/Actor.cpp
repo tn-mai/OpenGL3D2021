@@ -180,14 +180,14 @@ void UpdateActorList(ActorList& actorList, float deltaTime)
   for (size_t ia = 0; ia < actorList.size(); ++ia) {
     Actor& a = *actorList[ia]; // アクターA
     // アクターAが死亡している場合は衝突しない.
-    if (a.dead) {
+    if (a.isDead) {
       continue;
     }
     // 計算済み及び自分自身を除く、残りのアクターとの間で衝突判定を実行.
     for (size_t ib = ia + 1; ib < actorList.size(); ++ib) {
       Actor& b = *actorList[ib]; // アクターB
       // アクターBが死亡している場合は衝突しない.
-      if (b.dead) {
+      if (b.isDead) {
         continue;
       }
       // 衝突判定.
@@ -200,7 +200,7 @@ void UpdateActorList(ActorList& actorList, float deltaTime)
   }
 
   // dead状態のアクターを削除.
-  const auto isDead = [](ActorPtr p) { return p->dead; };
+  const auto isDead = [](ActorPtr p) { return p->isDead; };
   const ActorList::iterator i = std::remove_if(actorList.begin(), actorList.end(), isDead);
   actorList.erase(i, actorList.end());
 }

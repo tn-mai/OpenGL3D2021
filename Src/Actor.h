@@ -95,7 +95,7 @@ public:
   Collision collision;
   void (*OnHit)(Actor&, Actor&) = [](Actor&, Actor&) {};
 
-  bool dead = false;
+  bool isDead = false;
   bool hasShadow = true;
 };
 

@@ -199,7 +199,7 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
         return;
       }
       // 弾丸を消去.
-      a.dead = true;
+      a.isDead = true;
     };
 
     // アクターをリストに追加.
