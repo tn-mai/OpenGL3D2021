@@ -38,11 +38,18 @@ private:
   std::shared_ptr<Texture::Image2D> texZombie;
   std::shared_ptr<Texture::Image2D> texPlayer;
   std::shared_ptr<Texture::Image2D> texBullet;
+  std::shared_ptr<Texture::Image2D> texGameClear;
 
   Shader::PointLight pointLight;
 
   ActorList actors;
   ActorPtr playerActor;
+
+  // oŒ»‚³‚¹‚é“G‚Ì”.
+  size_t appearanceEnemyCount = 100;
+
+  // ƒNƒŠƒAğŒ‚ğ–‚½‚µ‚½‚©‚Ç‚¤‚©.
+  bool isGameClear = false;
 };
 
 #endif // MAINGAMESCENE_H_INCLUDED

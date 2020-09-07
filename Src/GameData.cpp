@@ -131,6 +131,44 @@ bool GameData::Initialize(GLFWwindow* window)
 }
 
 /**
+* ゲームデータの更新.
+*/
+void GameData::Update()
+{
+  // [キー情報の更新]
+  {
+    // ゲームデータのキー番号とGLFWのキー番号の対応表を作る.
+    // 操作キーを増やしたり変えたいときはこの対応表を変更する.
+    const struct {
+      Key keyGamedata;  // ゲームデータのキー.
+      uint32_t keyGlfw; // GLFWのキー.
+    } keyMap[] = {
+      { Key::enter, GLFW_KEY_ENTER },
+      { Key::left,  GLFW_KEY_A },
+      { Key::right, GLFW_KEY_D },
+      { Key::up,    GLFW_KEY_W },
+      { Key::down,  GLFW_KEY_S },
+      { Key::shot,  GLFW_KEY_J },
+    };
+
+    // 現在押されているキーを取得.
+    uint32_t newKey = 0; // 現在押されているキー.
+    for (const auto& e : keyMap) {
+      if (glfwGetKey(window, e.keyGlfw) == GLFW_PRESS) {
+        newKey |= e.keyGamedata;
+      }
+    }
+
+    // 前回のUpdateで押されておらず(~keyPressed)、
+    // かつ現在押されている(newKey)キーを最後のフレームで押されたキーに設定.
+    keyPressedInLastFrame = ~keyPressed & newKey;
+
+    // 押されているキーを更新.
+    keyPressed = newKey;
+  }
+}
+
+/**
 * プリミティブを描画する.
 *
 * @param id プリミティブのID.

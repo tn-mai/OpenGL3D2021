@@ -109,8 +109,8 @@ int main()
   }
 
   // ゲーム全体で使うデータを初期化する.
-  GameData& global = GameData::Get();
-  if (!global.Initialize(window)) {
+  GameData& gamedata = GameData::Get();
+  if (!gamedata.Initialize(window)) {
     return 1;
   }
 
@@ -130,6 +130,9 @@ int main()
       deltaTime = 1.0f / 60.0f;
     }
     elapsedTime = newElapsedTime;
+
+    // ゲームデータの状態を更新.
+    gamedata.Update();
 
     sceneManager.Update(window, deltaTime);
     sceneManager.Render(window);

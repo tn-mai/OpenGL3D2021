@@ -28,7 +28,8 @@ bool TitleScene::Initialize()
 */
 void TitleScene::ProcessInput(GLFWwindow* window)
 {
-  if (glfwGetKey(window, GLFW_KEY_ENTER)) {
+  GameData& gamedata = GameData::Get();
+  if (gamedata.keyPressedInLastFrame & GameData::Key::enter) {
     SceneManager::Get().ChangeScene(MAINGAME_SCENE_NAME);
   }
 }

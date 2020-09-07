@@ -13,6 +13,7 @@
 */
 #include "MainGameScene.h"
 #include "GameData.h"
+#include "SceneManager.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <algorithm>
@@ -54,6 +55,7 @@ bool MainGameScene::Initialize()
   texZombie = std::make_shared<Texture::Image2D>("Res/zombie_male.tga");
   texPlayer = std::make_shared<Texture::Image2D>("Res/player_female/player_female.tga");
   texBullet = std::make_shared<Texture::Image2D>("Res/Bullet.tga");
+  texGameClear = std::make_shared<Texture::Image2D>("Res/Survived.tga");
 
   GameData& global = GameData::Get();
 
@@ -93,7 +95,7 @@ bool MainGameScene::Initialize()
 
   // ゾンビを表示.
   const Mesh::Primitive* pPrimitive = &global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_walk_0);
-  for (size_t i = 0; i < 100; ++i) {
+  for (size_t i = 0; i < appearanceEnemyCount; ++i) {
     glm::vec3 pos(0);
     pos.x = std::uniform_real_distribution<float>(-18, 18)(global.random);
     pos.z = std::uniform_real_distribution<float>(-18, 18)(global.random);
@@ -111,6 +113,8 @@ bool MainGameScene::Initialize()
         a.SetAnimation(GameData::Get().anmZombieMaleDown);
         // 衝突判定を無くす.
         a.collision.shape = Collision::Shape::none;
+        // 倒したゾンビの数を1体増やす.
+        ++GameData::Get().killCount;
       }
     };
     actors.push_back(actor);
@@ -121,6 +125,10 @@ bool MainGameScene::Initialize()
     glm::vec4(8, 10,-8, 0),
     glm::vec4(0.4f, 0.7f, 1.0f, 0) * 200.0f
   };
+
+  // ゲームデータの初期設定.
+  GameData& gamedata = GameData::Get();
+  gamedata.killCount = 0;
 
   std::cout << "[情報] MainGameSceneを開始.\n";
   return true;
@@ -133,6 +141,15 @@ bool MainGameScene::Initialize()
 */
 void MainGameScene::ProcessInput(GLFWwindow* window)
 {
+  // クリアしている?
+  GameData& gamedata = GameData::Get();
+  if (isGameClear) {
+    if (gamedata.keyPressedInLastFrame & GameData::Key::enter) {
+      SceneManager::Get().ChangeScene(TITLE_SCENE_NAME);
+    }
+    return;
+  }
+
   // プレイヤーアクターを移動させる.
   glm::vec3 direction = glm::vec3(0);
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
@@ -216,6 +233,16 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
   UpdateActorList(actors, deltaTime);
+
+  // まだクリアしていない?
+  if (!isGameClear) {
+    // クリア条件(「倒した敵の数」が「出現する敵の数」以上)を満たしている?
+    if (GameData::Get().killCount >= appearanceEnemyCount) {
+      // ゲームクリアフラグをtrueにする.
+      isGameClear = true;
+      std::cout << "[情報] ゲームクリア条件を達成\n";
+    }
+  }
 }
 
 /**
@@ -271,7 +298,7 @@ void MainGameScene::Render(GLFWwindow* window) const
     pipeline->SetMVP(matMVP);
     pipeline->SetModelMatrix(matModel);
     texGround->Bind(0);
-    primitiveBuffer.Get(0).Draw();
+    primitiveBuffer.Get(GameData::PrimNo::ground).Draw();
   }
 
   // 影描画用の行列を作成.
@@ -304,7 +331,39 @@ void MainGameScene::Render(GLFWwindow* window) const
     pipeline->SetMVP(matProj * matView * matModel);
     pipeline->SetModelMatrix(matModel);
     texTree->Bind(0);
-    primitiveBuffer.Get(1).Draw();
+    primitiveBuffer.Get(GameData::PrimNo::tree).Draw();
+  }
+
+  // 2D表示.
+  {
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+
+    // 座標変換行列を作成.
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+    const float halfW = w / 2.0f;
+    const float halfH = h / 2.0f;
+    const glm::mat4 matProj =
+      glm::ortho<float>(-halfW, halfW, -halfH, halfH, 1.0f, 500.0f);
+    const glm::mat4 matView =
+      glm::lookAt(glm::vec3(0, 0, 100), glm::vec3(0), glm::vec3(0, 1, 0));
+    const glm::mat4 matVP = matProj * matView;
+
+    std::shared_ptr<Shader::Pipeline> pipeline2D = GameData::Get().pipelineSimple;
+
+    pipeline2D->Bind();
+
+    // ゲームクリア画像を描画.
+    if (isGameClear) {
+      const glm::mat4 matModelS = glm::scale(glm::mat4(1),
+        glm::vec3(texGameClear->Width() * 2.0f, texGameClear->Height() * 2.0f, 1));
+      const glm::mat4 matModelT = glm::translate(glm::mat4(1), glm::vec3(0, 100, 0));
+      const glm::mat4 matModel = matModelT * matModelS;
+      pipeline2D->SetMVP(matVP * matModel);
+      texGameClear->Bind(0);
+      primitiveBuffer.Get(GameData::PrimNo::plane).Draw();
+    }
   }
 
   Texture::UnbindAllTextures();
