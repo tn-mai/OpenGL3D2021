@@ -234,12 +234,40 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
   UpdateActorList(actors, deltaTime);
 
+  // 衝突判定.
+  for (size_t ia = 0; ia < actors.size(); ++ia) {
+    Actor& a = *actors[ia]; // アクターA
+    // アクターAが死亡している場合は衝突しない.
+    if (a.isDead) {
+      continue;
+    }
+    // 計算済み及び自分自身を除く、残りのアクターとの間で衝突判定を実行.
+    for (size_t ib = ia + 1; ib < actors.size(); ++ib) {
+      Actor& b = *actors[ib]; // アクターB
+      // アクターBが死亡している場合は衝突しない.
+      if (b.isDead) {
+        continue;
+      }
+      // 衝突判定.
+      if (DetectCollision(a, b)) {
+        // 衝突していたら、双方のOnHit関数を実行する.
+        a.OnHit(a, b);
+        b.OnHit(b, a);
+      }
+    } // 閉じ括弧の数に注意.
+  }
+
   // まだクリアしていない?
   if (!isGameClear) {
     // クリア条件(「倒した敵の数」が「出現する敵の数」以上)を満たしている?
     if (GameData::Get().killCount >= appearanceEnemyCount) {
       // ゲームクリアフラグをtrueにする.
       isGameClear = true;
+
+      // プレイヤーアクターを待機状態にする.
+      playerActor->velocity = glm::vec3(0);
+      playerActor->SetAnimation(GameData::Get().anmPlayerIdle);
+
       std::cout << "[情報] ゲームクリア条件を達成\n";
     }
   }
