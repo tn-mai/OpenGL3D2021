@@ -39,6 +39,7 @@ private:
   std::shared_ptr<Texture::Image2D> texPlayer;
   std::shared_ptr<Texture::Image2D> texBullet;
   std::shared_ptr<Texture::Image2D> texGameClear;
+  std::shared_ptr<Texture::Image2D> texBlack;
 
   Shader::PointLight pointLight;
 

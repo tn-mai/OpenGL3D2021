@@ -81,6 +81,7 @@ public:
 
   std::shared_ptr<Shader::Pipeline> pipeline = nullptr;
   std::shared_ptr<Shader::Pipeline> pipelineSimple;
+  std::shared_ptr<Shader::Pipeline> pipelineShadow;
   Mesh::PrimitiveBuffer primitiveBuffer;
   Texture::Sampler sampler;
   GLFWwindow* window = nullptr;

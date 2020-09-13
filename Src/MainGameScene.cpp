@@ -56,6 +56,7 @@ bool MainGameScene::Initialize()
   texPlayer = std::make_shared<Texture::Image2D>("Res/player_female/player_female.tga");
   texBullet = std::make_shared<Texture::Image2D>("Res/Bullet.tga");
   texGameClear = std::make_shared<Texture::Image2D>("Res/Survived.tga");
+  texBlack = std::make_shared<Texture::Image2D>("Res/Black.tga");
 
   GameData& global = GameData::Get();
 
@@ -113,6 +114,8 @@ bool MainGameScene::Initialize()
         a.SetAnimation(GameData::Get().anmZombieMaleDown);
         // 衝突判定を無くす.
         a.collision.shape = Collision::Shape::none;
+        // 死亡状態に設定.
+        a.state = Actor::State::dead;
         // 倒したゾンビの数を1体増やす.
         ++GameData::Get().killCount;
       }
@@ -232,6 +235,43 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 */
 void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
+  // アクターの行動を処理.
+  for (auto& e : actors) {
+    // 名前が「zombie」だったら
+    if (e->name == "zombie") {
+      // ゾンビの行動.
+      // 1. +X方向に直進.
+      // 2. 現在向いている方向に直進.
+      // 3. プレイヤーの方向を向く.
+      // 4. 少しずつプレイヤーの方向を向く.
+
+      // 状態が「死亡」でなければ
+      if (e->state != Actor::State::dead) {
+        const float r360 = glm::radians(360.0f);
+        glm::vec3 toPlayer = playerActor->position - e->position;
+        float r = std::atan2(-toPlayer.z, toPlayer.x);
+        float dy = std::fmod(r - e->rotation.y + r360 * 2, r360);
+        if (std::abs(dy) >= glm::radians(10.0f)) {
+          // r < y , (360 + r-y) % 360 >= 180  --> cw
+          //       , (360 + r-y) % 360 <  180  --> ccw
+          // r >= y, (360 + r-y) % 360 <  180  -> ccw
+          //       , (360 + r-y) % 360 >= 180  -> cw
+          const float speed = glm::radians(60.0f);
+          if (dy >= glm::radians(180.0f)) {
+            e->rotation.y -= speed * deltaTime;
+          } else {
+            e->rotation.y += speed * deltaTime;
+          }
+        }
+        e->rotation.y = fmod(e->rotation.y + r360, r360);
+        e->velocity.x = std::cos(e->rotation.y);
+        e->velocity.z = -std::sin(e->rotation.y);
+      } else {
+        e->velocity = glm::vec3(0);
+      }
+    }
+  }
+
   UpdateActorList(actors, deltaTime);
 
   // 衝突判定.
@@ -289,7 +329,7 @@ void MainGameScene::Render(GLFWwindow* window) const
   glEnable(GL_CULL_FACE);
   //glEnable(GL_FRAMEBUFFER_SRGB);
   glClearColor(0.1f, 0.3f, 0.5f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   // 環境光を設定する.
   pipeline->SetAmbientLight(glm::vec3(0.1f, 0.125f, 0.15f));
@@ -329,18 +369,11 @@ void MainGameScene::Render(GLFWwindow* window) const
     primitiveBuffer.Get(GameData::PrimNo::ground).Draw();
   }
 
-  // 影描画用の行列を作成.
-  // XとZを平行光源の方向に引き伸ばし、Yを0にする.
-  // 地面と密着するとちらつくので少し浮かせる.
-  glm::mat4 matShadow(1);
-  matShadow[1][0] = directionalLight.direction.x;
-  matShadow[1][1] = 0;
-  matShadow[1][2] = directionalLight.direction.z;
-  matShadow[3][3] = 1;
-  matShadow[3][1] = 0.01f;
-
   // アクターリストを描画.
-  RenderActorList(actors, matProj * matView, matShadow);
+  const glm::mat4 matVP = matProj * matView;
+  for (size_t i = 0; i < actors.size(); ++i) {
+    actors[i]->Draw(*pipeline, matVP, Actor::DrawType::color);
+  }
 
   // 点光源の位置を描画.
   {
@@ -361,6 +394,50 @@ void MainGameScene::Render(GLFWwindow* window) const
     texTree->Bind(0);
     primitiveBuffer.Get(GameData::PrimNo::tree).Draw();
   }
+
+  // 影描画用の行列を作成.
+#if 1
+  // XとZを平行光源の方向に引き伸ばし、Yを0にする.
+  // 地面と密着するとちらつくので少し浮かせる.
+  glm::mat4 matShadow(1);
+  matShadow[1][0] = directionalLight.direction.x;
+  matShadow[1][1] = 0;
+  matShadow[1][2] = directionalLight.direction.z;
+  matShadow[3][3] = 1;
+  matShadow[3][1] = 0.01f;
+#else
+  const glm::mat4 matShadow = glm::translate(glm::mat4(1), glm::vec3(0, 0.01f, 0)) * glm::scale(glm::mat4(1), glm::vec3(1, 0, 1));
+#endif
+  const glm::mat4 matShadowVP = matVP * matShadow;
+
+  // アクターの影を描画.
+  glEnable(GL_STENCIL_TEST);
+  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+  glStencilFunc(GL_ALWAYS, 1, 0xff);
+  glStencilMask(0xff);
+  glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+  std::shared_ptr<Shader::Pipeline> pipelineShadow = GameData::Get().pipelineShadow;
+  pipelineShadow->Bind();
+  for (const auto& actor : actors) {
+    actor->Draw(*pipelineShadow, matShadowVP, Actor::DrawType::shadow);
+  }
+
+  glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+  glStencilFunc(GL_EQUAL, 1, 0xff);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  glDisable(GL_DEPTH_TEST);
+  std::shared_ptr<Shader::Pipeline> pipeline2D = GameData::Get().pipelineSimple;
+  pipeline2D->Bind();
+  const glm::mat4 matProjS =
+    glm::ortho<float>(-640, 640, -360, 360, 1.0f, 500.0f);
+  const glm::mat4 matViewS =
+    glm::lookAt(glm::vec3(0, 0, 100), glm::vec3(0), glm::vec3(0, 1, 0));
+  const glm::mat4 matVPS = matProjS * matViewS;
+  pipeline2D->SetMVP(matVPS * glm::scale(glm::mat4(1), glm::vec3(1280, 720, 1)));
+  texBlack->Bind(0);
+  primitiveBuffer.Get(GameData::PrimNo::plane).Draw();
+
+  glDisable(GL_STENCIL_TEST);
 
   // 2D表示.
   {

@@ -162,6 +162,8 @@
     <None Include="packages.config" />
     <None Include="Res\FragmentLighting.frag" />
     <None Include="Res\FragmentLighting.vert" />
+    <None Include="Res\Shadow.frag" />
+    <None Include="Res\Shadow.vert" />
     <None Include="Res\Simple.frag" />
     <None Include="Res\Simple.vert" />
     <None Include="Res\VertexLighting.vert" />
@@ -180,6 +182,7 @@
     <ClInclude Include="Src\TitleScene.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Res\Black.tga" />
     <Image Include="Res\Ground.tga" />
     <Image Include="Res\House.tga" />
     <Image Include="Res\Tree.tga" />

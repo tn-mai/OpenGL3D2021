@@ -76,6 +76,10 @@ bool GameData::Initialize(GLFWwindow* window)
   if (!pipelineSimple || !*pipelineSimple) {
     return false;
   }
+  pipelineShadow = std::make_shared<Shader::Pipeline>("Res/Shadow.vert", "Res/Shadow.frag");
+  if (!pipelineShadow || !*pipelineShadow) {
+    return false;
+  }
 
   // サンプラ・オブジェクトを作成する.
   sampler.SetWrapMode(GL_REPEAT);

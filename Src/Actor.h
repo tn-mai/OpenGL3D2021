@@ -58,7 +58,14 @@ public:
     std::shared_ptr<Texture::Image2D> tex, const glm::vec3& pos);
 
   void Update(float deltTIme);
-  void Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP, const glm::mat4& matShadow) const;
+
+  // •`‰æ‚Ìí—Ş.
+  enum DrawType {
+    color,  // ’Êí•`‰æ.
+    shadow, // ‰e•`‰æ.
+  };
+  void Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP, DrawType) const;
+
   void SetCylinderCollision(float top, float bottom, float radius);
   void SetBoxCollision(const glm::vec3& min, const glm::vec3& max);
   void SetAnimation(
@@ -74,6 +81,7 @@ public:
     attack, // UŒ‚‚µ‚Ä‚¢‚é.
     damage, // ƒ_ƒ[ƒW‚ğó‚¯‚Ä‚¢‚é.
     down, // “|‚ê‚Ä‚¢‚é.
+    dead, // €‚ñ‚Å‚¢‚é.
   };
   State state = State::idle; // Œ»İ‚Ì“®ìó‘Ô.
 
@@ -104,7 +112,7 @@ using ActorList = std::vector<ActorPtr>; // ƒAƒNƒ^[”z—ñŒ^.
 
 void UpdateActorList(ActorList& actorList, float deltaTime);
 void RenderActorList(const ActorList& actorList,
-  const glm::mat4& matVP, const glm::mat4& matShadow);
+  const glm::mat4& matVP, Actor::DrawType drawType);
 
 bool DetectCollision(Actor&, Actor&);
 

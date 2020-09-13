@@ -58,8 +58,10 @@ void Actor::Update(float deltaTime)
 *
 * @param pipeline 行列の設定先となるパイプラインオブジェクト.
 * @param matVP    描画に使用するビュープロジェクション行列.
+* @param drawType 描画の種類.
 */
-void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP, const glm::mat4& matShadow) const
+void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP,
+  DrawType drawType) const
 {
   // プリミティブが設定されていないときは何もせず終了.
   if (!primitive) {
@@ -85,7 +87,9 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP, const
     matTranslate * matRotateY * matRotateZ * matRotateX * matScale;
 
   // GPUメモリに行列を転送.
-  pipeline.SetModelMatrix(matModel);
+  if (drawType == DrawType::color) {
+    pipeline.SetModelMatrix(matModel);
+  }
   pipeline.SetMVP(matVP * matModel);
 
   // テクスチャイメージスロット0番にテクスチャを割り当てる.
@@ -93,25 +97,6 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP, const
 
   // プリミティブを描画.
   primitive->Draw();
-
-    // 影を描画.
-  if (hasShadow) {
-    // 平行移動・回転・大きさ変更の行列を掛け算して、ひとつのモデル行列にまとめる.
-    glm::mat4 matTransY = glm::mat4(1);
-    matTransY[3][1] = position.y;
-    glm::mat4 matTransXZ = glm::mat4(1);
-    matTransXZ[3][0] = position.x;
-    matTransXZ[3][2] = position.z;
-    const glm::mat4 matModelShadow =
-      matTransXZ * matShadow * matTransY * matRotateY * matRotateZ * matRotateX * matScale;
-
-    // GPUメモリに影行列を転送.
-    pipeline.SetModelMatrix(matModelShadow);
-    pipeline.SetMVP(matVP * matModelShadow);
-
-    // プリミティブを描画.
-    primitive->Draw();
-  }
 }
 
 /**
@@ -189,11 +174,11 @@ void UpdateActorList(ActorList& actorList, float deltaTime)
 * @param matVP     描画に使用するビュープロジェクション行列.
 */
 void RenderActorList(const ActorList& actorList,
-  const glm::mat4& matVP, const glm::mat4& matShadow)
+  const glm::mat4& matVP, Actor::DrawType drawType)
 {
   GameData& global = GameData::Get();
   for (size_t i = 0; i < actorList.size(); ++i) {
-    actorList[i]->Draw(*global.pipeline, matVP, matShadow);
+    actorList[i]->Draw(*global.pipeline, matVP, drawType);
   }
 }
 
