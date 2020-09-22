@@ -10,6 +10,8 @@
 * 「そして神の栄光をもって、邪な死者どもに安息をもたらすのです。」
 * リサは驚きながらも「無辜の市民を守るのが軍人の務め。」という上官「エドガー・ラッセル」(35)の教えを思い出し、運命に従うことにする。
 * ナチス2.0の野望をくじくため、荒れ果てた町とゾンビの巣食う深い森を駆け抜けるリサの過酷な戦いが始まった！
+*
+* 「遠慮はいらねえ。オレたちゃとっくに死んでるんだ。」
 */
 #include "MainGameScene.h"
 #include "GameData.h"
@@ -53,7 +55,7 @@ bool MainGameScene::Initialize()
   }
 
   texZombie = std::make_shared<Texture::Image2D>("Res/zombie_male.tga");
-  texPlayer = std::make_shared<Texture::Image2D>("Res/player_female/player_female.tga");
+  texPlayer = std::make_shared<Texture::Image2D>("Res/player_male.tga");
   texBullet = std::make_shared<Texture::Image2D>("Res/Bullet.tga");
   texGameClear = std::make_shared<Texture::Image2D>("Res/Survived.tga");
   texBlack = std::make_shared<Texture::Image2D>("Res/Black.tga");
@@ -247,22 +249,16 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 
       // 状態が「死亡」でなければ
       if (e->state != Actor::State::dead) {
-        const float r360 = glm::radians(360.0f);
+        constexpr float speed = glm::radians(60.0f);
         glm::vec3 toPlayer = playerActor->position - e->position;
-        float r = std::atan2(-toPlayer.z, toPlayer.x);
-        float dy = std::fmod(r - e->rotation.y + r360 * 2, r360);
-        if (std::abs(dy) >= glm::radians(10.0f)) {
-          // r < y , (360 + r-y) % 360 >= 180  --> cw
-          //       , (360 + r-y) % 360 <  180  --> ccw
-          // r >= y, (360 + r-y) % 360 <  180  -> ccw
-          //       , (360 + r-y) % 360 >= 180  -> cw
-          const float speed = glm::radians(60.0f);
-          if (dy >= glm::radians(180.0f)) {
-            e->rotation.y -= speed * deltaTime;
-          } else {
-            e->rotation.y += speed * deltaTime;
-          }
+        const glm::vec3 front(std::cos(e->rotation.y), 0, -std::sin(e->rotation.y));
+        const glm::vec3 c = glm::cross(front, toPlayer);
+        if (c.y >= 0) {
+          e->rotation.y += speed * deltaTime;
+        } else {
+          e->rotation.y -= speed * deltaTime;
         }
+        constexpr float r360 = glm::radians(360.0f);
         e->rotation.y = fmod(e->rotation.y + r360, r360);
         e->velocity.x = std::cos(e->rotation.y);
         e->velocity.z = -std::sin(e->rotation.y);
@@ -395,49 +391,65 @@ void MainGameScene::Render(GLFWwindow* window) const
     primitiveBuffer.Get(GameData::PrimNo::tree).Draw();
   }
 
-  // 影描画用の行列を作成.
-#if 1
-  // XとZを平行光源の方向に引き伸ばし、Yを0にする.
-  // 地面と密着するとちらつくので少し浮かせる.
-  glm::mat4 matShadow(1);
-  matShadow[1][0] = directionalLight.direction.x;
-  matShadow[1][1] = 0;
-  matShadow[1][2] = directionalLight.direction.z;
-  matShadow[3][3] = 1;
-  matShadow[3][1] = 0.01f;
-#else
-  const glm::mat4 matShadow = glm::translate(glm::mat4(1), glm::vec3(0, 0.01f, 0)) * glm::scale(glm::mat4(1), glm::vec3(1, 0, 1));
-#endif
-  const glm::mat4 matShadowVP = matVP * matShadow;
-
   // アクターの影を描画.
-  glEnable(GL_STENCIL_TEST);
-  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-  glStencilFunc(GL_ALWAYS, 1, 0xff);
-  glStencilMask(0xff);
-  glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-  std::shared_ptr<Shader::Pipeline> pipelineShadow = GameData::Get().pipelineShadow;
-  pipelineShadow->Bind();
-  for (const auto& actor : actors) {
-    actor->Draw(*pipelineShadow, matShadowVP, Actor::DrawType::shadow);
+  {
+    // ステンシルバッファを有効にする.
+    glEnable(GL_STENCIL_TEST);
+    // 「比較に使う値」を1にして、常に比較が成功するように設定.
+    glStencilFunc(GL_ALWAYS, 1, 0xff);
+    // ステンシル深度の両方のテストに成功した場合に「比較する値」を書き込むように設定.
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    // ステンシルバッファの全ビットの書き込みを許可.
+    glStencilMask(0xff);
+    // カラーバッファへの書き込みを禁止.
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    // 深度バッファへの書き込みを禁止.
+    glDepthMask(GL_FALSE);
+
+    // 高さ1mの物体が落とす影の長さを計算.
+    const float scale = 1.0f / -directionalLight.direction.y;
+    const float sx = directionalLight.direction.x * scale;
+    const float sz = directionalLight.direction.z * scale;
+
+    // ぺちゃんこ行列(Y座標を0にする行列)を作成.
+    const glm::mat4 matShadow(
+      1.00f, 0.00f, 0.00f, 0.00f,
+      sx, 0.00f, sz, 0.00f,
+      0.00f, 0.00f, 1.00f, 0.00f,
+      0.00f, 0.01f, 0.00f, 1.00f);
+
+    // 影用パイプランをバインド.
+    std::shared_ptr<Shader::Pipeline> pipelineShadow = GameData::Get().pipelineShadow;
+    pipelineShadow->Bind();
+
+    // ぺちゃんこ行列→ビュー行列→プロジェクション行列の順番に掛ける行列を作る.
+    const glm::mat4 matShadowVP = matVP * matShadow;
+
+    // ぺちゃんこビュープロジェクション行列を使って全てのアクターを描画する.
+    for (const auto& actor : actors) {
+      actor->Draw(*pipelineShadow, matShadowVP, Actor::DrawType::shadow);
+    }
+
+    // ステンシル値が1の場合のみテストに成功するように設定.
+    glStencilFunc(GL_EQUAL, 1, 0xff);
+    // ステンシルバッファ
+    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    // カラーバッファへの描き込みを許可.
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    // 深度バッファを無効化.
+    glDisable(GL_DEPTH_TEST);
+
+    // 画面全体に影色を塗る.
+    pipelineShadow->SetMVP(glm::scale(glm::mat4(1), glm::vec3(2)));
+    primitiveBuffer.Get(GameData::PrimNo::plane).Draw();
+
+    // ステンシルバッファを無効化.
+    glDisable(GL_STENCIL_TEST);
+    // 深度バッファを有効化.
+    glEnable(GL_DEPTH_TEST);
+    // 深度バッファへの描き込みを許可.
+    glDepthMask(GL_TRUE);
   }
-
-  glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-  glStencilFunc(GL_EQUAL, 1, 0xff);
-  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-  glDisable(GL_DEPTH_TEST);
-  std::shared_ptr<Shader::Pipeline> pipeline2D = GameData::Get().pipelineSimple;
-  pipeline2D->Bind();
-  const glm::mat4 matProjS =
-    glm::ortho<float>(-640, 640, -360, 360, 1.0f, 500.0f);
-  const glm::mat4 matViewS =
-    glm::lookAt(glm::vec3(0, 0, 100), glm::vec3(0), glm::vec3(0, 1, 0));
-  const glm::mat4 matVPS = matProjS * matViewS;
-  pipeline2D->SetMVP(matVPS * glm::scale(glm::mat4(1), glm::vec3(1280, 720, 1)));
-  texBlack->Bind(0);
-  primitiveBuffer.Get(GameData::PrimNo::plane).Draw();
-
-  glDisable(GL_STENCIL_TEST);
 
   // 2D表示.
   {
@@ -456,7 +468,6 @@ void MainGameScene::Render(GLFWwindow* window) const
     const glm::mat4 matVP = matProj * matView;
 
     std::shared_ptr<Shader::Pipeline> pipeline2D = GameData::Get().pipelineSimple;
-
     pipeline2D->Bind();
 
     // ゲームクリア画像を描画.

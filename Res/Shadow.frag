@@ -1,7 +1,6 @@
 #version 450 core
 
 // “ü—Í•Ï”
-layout(location=0) in vec4 inColor;
 layout(location=1) in vec2 inTexcoord;
 
 // o—Í•Ï”
@@ -16,4 +15,5 @@ void main()
   if (texture(texColor, inTexcoord).a < 0.5) {
     discard;
   }
+  fragColor = vec4(0,0,0,0.5);
 }

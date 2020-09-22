@@ -43,29 +43,29 @@ bool GameData::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/Cube.obj");
   primitiveBuffer.AddFromObjFile("Res/Plane.obj");
   primitiveBuffer.AddFromObjFile("Res/Bullet.obj");
+
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_0.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_1.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_2.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_3.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_4.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_5.obj");
+
   primitiveBuffer.AddFromObjFile("Res/zombie_male_down_0.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_down_1.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_down_2.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_down_3.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_0.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_1.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_2.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_3.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_idle_4.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_0.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_1.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_2.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_3.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_4.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_5.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_6.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_female/player_female_run_7.obj");
+
+  primitiveBuffer.AddFromObjFile("Res/player_male_idle_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_idle_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_idle_2.obj");
+
+  primitiveBuffer.AddFromObjFile("Res/player_male_run_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_run_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_run_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_run_3.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_run_4.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_run_5.obj");
 
   // パイプライン・オブジェクトを作成する.
   pipeline = std::make_shared<Shader::Pipeline>("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
@@ -112,10 +112,6 @@ bool GameData::Initialize(GLFWwindow* window)
   anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_0));
   anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_1));
   anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_2));
-  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_3));
-  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_4));
-  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_3));
-  anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_2));
   anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_1));
   anmPlayerIdle->interval = 0.2f;
 
@@ -126,9 +122,7 @@ bool GameData::Initialize(GLFWwindow* window)
   anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_3));
   anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_4));
   anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_5));
-  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_6));
-  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_7));
-  anmPlayerRun->interval = 0.1f;
+  anmPlayerRun->interval = 0.125f;
 
   std::cout << "[情報] ゲームデータの初期化を完了.\n";
   return true;
