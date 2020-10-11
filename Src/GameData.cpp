@@ -214,10 +214,11 @@ void GameData::Update()
         newKey |= e.keyGamedata;
       }
     }
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
+    // マウスの左ボタンで射撃.
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
       newKey |= Key::shot;
     }
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
       newKey |= Key::build;
     }
 
