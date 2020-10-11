@@ -185,6 +185,7 @@
     <Image Include="Res\Black.tga" />
     <Image Include="Res\Ground.tga" />
     <Image Include="Res\House.tga" />
+    <Image Include="Res\Pointer.tga" />
     <Image Include="Res\Tree.tga" />
   </ItemGroup>
   <ItemGroup>

@@ -40,11 +40,23 @@ private:
   std::shared_ptr<Texture::Image2D> texBullet;
   std::shared_ptr<Texture::Image2D> texGameClear;
   std::shared_ptr<Texture::Image2D> texBlack;
+  std::shared_ptr<Texture::Image2D> texPointer;
+  std::shared_ptr<Texture::Image2D> texWoodenBarrior;
 
   Shader::PointLight pointLight;
 
+  glm::mat4 matProj = glm::mat4(1);
+  glm::mat4 matView = glm::mat4(1);
+
   ActorList actors;
   ActorPtr playerActor;
+  ActorPtr cursorActor;
+  ActorPtr builderActor;
+
+  float shotTimer = 0;
+  const float shotInterval = 0.1f;
+  int leftOfRounds = 0;
+  const int maxRounds = 3;
 
   // èoåªÇ≥ÇπÇÈìGÇÃêî.
   size_t appearanceEnemyCount = 100;

@@ -7,6 +7,14 @@
 /**
 *
 */
+void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+  GameData::Get().tmpScroll += yoffset;
+}
+
+/**
+*
+*/
 GameData& GameData::Get()
 {
   static GameData singleton;
@@ -33,8 +41,10 @@ bool GameData::Initialize(GLFWwindow* window)
 {
   std::cout << "[情報] ゲームデータの初期化を開始.\n";
 
+  glfwSetScrollCallback(window, ScrollCallback);
+
   // プリミティブバッファにモデルデータを読み込む.
-  if (!primitiveBuffer.Allocate(20'000, 80'000)) {
+  if (!primitiveBuffer.Allocate(200'000, 800'000)) {
     return false;
   }
   primitiveBuffer.AddFromObjFile("Res/Ground.obj");
@@ -43,6 +53,7 @@ bool GameData::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/Cube.obj");
   primitiveBuffer.AddFromObjFile("Res/Plane.obj");
   primitiveBuffer.AddFromObjFile("Res/Bullet.obj");
+  primitiveBuffer.AddFromObjFile("Res/wooden_barrier.obj");
 
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_0.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_1.obj");
@@ -66,6 +77,27 @@ bool GameData::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/player_male_run_3.obj");
   primitiveBuffer.AddFromObjFile("Res/player_male_run_4.obj");
   primitiveBuffer.AddFromObjFile("Res/player_male_run_5.obj");
+
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_back_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_back_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_back_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_back_3.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_back_4.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_back_5.obj");
+
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_left_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_left_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_left_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_left_3.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_left_4.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_left_5.obj");
+
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_3.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_4.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_5.obj");
 
   // パイプライン・オブジェクトを作成する.
   pipeline = std::make_shared<Shader::Pipeline>("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
@@ -115,14 +147,41 @@ bool GameData::Initialize(GLFWwindow* window)
   anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_1));
   anmPlayerIdle->interval = 0.2f;
 
-  anmPlayerRun = std::make_shared<Animation>();
-  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_0));
-  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_1));
-  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_2));
-  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_3));
-  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_4));
-  anmPlayerRun->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_5));
-  anmPlayerRun->interval = 0.125f;
+  anmPlayerRunFront = std::make_shared<Animation>();
+  anmPlayerRunFront->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_front_0));
+  anmPlayerRunFront->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_front_1));
+  anmPlayerRunFront->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_front_2));
+  anmPlayerRunFront->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_front_3));
+  anmPlayerRunFront->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_front_4));
+  anmPlayerRunFront->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_front_5));
+  anmPlayerRunFront->interval = 0.125f;
+
+  anmPlayerRunBack = std::make_shared<Animation>();
+  anmPlayerRunBack->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_back_0));
+  anmPlayerRunBack->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_back_1));
+  anmPlayerRunBack->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_back_2));
+  anmPlayerRunBack->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_back_3));
+  anmPlayerRunBack->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_back_4));
+  anmPlayerRunBack->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_back_5));
+  anmPlayerRunBack->interval = 0.125f;
+
+  anmPlayerRunLeft = std::make_shared<Animation>();
+  anmPlayerRunLeft->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_left_0));
+  anmPlayerRunLeft->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_left_1));
+  anmPlayerRunLeft->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_left_2));
+  anmPlayerRunLeft->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_left_3));
+  anmPlayerRunLeft->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_left_4));
+  anmPlayerRunLeft->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_left_5));
+  anmPlayerRunLeft->interval = 0.125f;
+
+  anmPlayerRunRight = std::make_shared<Animation>();
+  anmPlayerRunRight->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_right_0));
+  anmPlayerRunRight->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_right_1));
+  anmPlayerRunRight->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_right_2));
+  anmPlayerRunRight->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_right_3));
+  anmPlayerRunRight->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_right_4));
+  anmPlayerRunRight->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_right_5));
+  anmPlayerRunRight->interval = 0.125f;
 
   std::cout << "[情報] ゲームデータの初期化を完了.\n";
   return true;
@@ -146,7 +205,6 @@ void GameData::Update()
       { Key::right, GLFW_KEY_D },
       { Key::up,    GLFW_KEY_W },
       { Key::down,  GLFW_KEY_S },
-      { Key::shot,  GLFW_KEY_J },
     };
 
     // 現在押されているキーを取得.
@@ -156,6 +214,12 @@ void GameData::Update()
         newKey |= e.keyGamedata;
       }
     }
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
+      newKey |= Key::shot;
+    }
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+      newKey |= Key::build;
+    }
 
     // 前回のUpdateで押されておらず(~keyPressed)、
     // かつ現在押されている(newKey)キーを最後のフレームで押されたキーに設定.
@@ -163,6 +227,38 @@ void GameData::Update()
 
     // 押されているキーを更新.
     keyPressed = newKey;
+  }
+
+  // マウスカーソル座標の更新.
+  {
+    // マウスカーソル座標を変数xとyに取得.
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+
+    /* 取得した座標をOpenGL座標系に変換. */
+
+    // ウィンドウサイズを変数wとhに取得.
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+
+    // 「左下原点、上が+Y」の座標系に変換.
+    // 1を引いているのは、例えば高さ720の場合、座標が取りうる範囲は0～719の720段階になるため。
+    y = (h - 1.0) - y;
+
+    // 「画面中心が原点、上が+Y」の座標系(つまりOpenGLの座標系)に変換.
+    x -= w * 0.5;
+    y -= h * 0.5;
+
+    // 座標をfloat型に変換してcursorPositionメンバ変数に代入.
+    // (OpenGLは基本的にfloat型で処理を行うので、型を合わせておくと扱いやすい).
+    cursorPosition.x = static_cast<float>(x);
+    cursorPosition.y = static_cast<float>(y);
+  }
+
+  // スクロールの更新.
+  {
+    prevScroll = curScroll;
+    curScroll = tmpScroll;
   }
 }
 

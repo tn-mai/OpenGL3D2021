@@ -4,14 +4,54 @@
 * 時は21世紀。「ナチス2.0」の科学中佐「ゲラルト・ベルコフ」(47)は、人間をゾンビ化する秘術「デス・ストラクチャリング」を実用化。
 * ナチス復活と世界征服の野望の手始めに、とあるヨーロッパの辺鄙な片田舎をゾンビまみれにしようとしていた。
 *
-* SAS予備役でサバイバル・インストラクターの「リサ・エンフィールド」(26)は、たまたま夏季休暇で訪れた町でこの奇貨に巻き込まれてしまう。
+* SAS予備役でサバイバル・インストラクターの「ジョン・スミス」(31)は、たまたま夏季休暇で訪れた町でこの奇貨に巻き込まれてしまう。
 * かろうじて逃げ込んだ町の教会で、牧師の「アンソニー・ウェスト」から驚くべき事実を告げられたのだった。
 * 「あなたは神が遣わされた戦士なのです。この「祝福されたAK-47」と「聖なる手榴弾」をお取りなさい。」
 * 「そして神の栄光をもって、邪な死者どもに安息をもたらすのです。」
-* リサは驚きながらも「無辜の市民を守るのが軍人の務め。」という上官「エドガー・ラッセル」(35)の教えを思い出し、運命に従うことにする。
-* ナチス2.0の野望をくじくため、荒れ果てた町とゾンビの巣食う深い森を駆け抜けるリサの過酷な戦いが始まった！
+* ジョンは驚きながらも「無辜の市民を守るのが軍人の務め。」という上官「エドガー・ラッセル」(35)の教えを思い出し、運命に従うことにする。
+* ナチス2.0の野望をくじくため、荒れ果てた町とゾンビの巣食う深い森を駆け抜けるジョンの過酷な戦いが始まった！
 *
-* 「遠慮はいらねえ。オレたちゃとっくに死んでるんだ。」
+* 「遠慮はいらねえ。奴らはとっくに死んでるんだ。」
+*
+* [後期の内容候補]
+*
+* 方向性:
+* - ホラー感より爽快感を重視.
+* - ホラー感はゾンビの大群という時点で十分.
+* - 派手な爆発、炎上、誘爆、そして飛び散る血しぶき.
+*
+* プログラムの強化点:
+* - サウンド.
+* - マウスによる照準と射撃. 半直線と衝突図形との衝突判定が必要.
+* - 球の衝突判定.
+* - Y軸回転した直方体の衝突判定.
+* - フェードイン・アウト.
+* - モーフィングによる補完アニメーション
+* - オフスクリーンサーフェスによる画面効果.
+* - ノーマルマップ.
+* - 三角ポリゴン・四角ポリゴンと直線の衝突判定.
+* - モデルデータの軽量化.
+* - 専用のモデルフォーマットの開発.
+*
+* プレイヤーの機能:
+* - 手榴弾を投げる. 転がす(追加のアニメーションが必要).
+* - 下方向への攻撃手段.
+* - バリケード作成.
+* - 前転、振りほどき、ジャンプ、吹き飛びダウン、ダウンからの起き上がり.
+* - 近接攻撃.
+*
+* ゾンビの機能:
+* - ゾンビモデルのバリエーションを増やす.
+* - 下半身損傷or欠損による匍匐移動および攻撃.
+* - 吹き飛びダウン.
+* - ダウンからの起き上がり.
+* - 頭部爆散からのダウン.
+* - 上半身爆散からのダウン.
+* - 炎上.
+* - 炎上ダウン.
+* - 噛みつき攻撃.
+* - すしざんまいのポーズ.
+* - ボスゾンビ.
 */
 #include "MainGameScene.h"
 #include "GameData.h"
@@ -59,6 +99,8 @@ bool MainGameScene::Initialize()
   texBullet = std::make_shared<Texture::Image2D>("Res/Bullet.tga");
   texGameClear = std::make_shared<Texture::Image2D>("Res/Survived.tga");
   texBlack = std::make_shared<Texture::Image2D>("Res/Black.tga");
+  texPointer = std::make_shared<Texture::Image2D>("Res/Pointer.tga");
+  texWoodenBarrior = std::make_shared<Texture::Image2D>("Res/wooden_barrier.tga");
 
   GameData& global = GameData::Get();
 
@@ -95,6 +137,12 @@ bool MainGameScene::Initialize()
     playerActor->SetCylinderCollision(1.7f, 0, 0.5f);
     actors.push_back(playerActor);
   }
+
+  // マウスカーソル位置を示すアクター.
+  cursorActor = std::make_shared<Actor>("cursor", &global.primitiveBuffer.Get(GameData::PrimNo::cube), texCube, glm::vec3(0));
+  cursorActor->rotation = glm::vec3(0.75f, 0.75f, 0.75f);
+  cursorActor->scale = glm::vec3(0.25f);
+  actors.push_back(cursorActor);
 
   // ゾンビを表示.
   const Mesh::Primitive* pPrimitive = &global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_walk_0);
@@ -135,6 +183,9 @@ bool MainGameScene::Initialize()
   GameData& gamedata = GameData::Get();
   gamedata.killCount = 0;
 
+  // マウスカーソルを非表示にする.
+  glfwSetInputMode(gamedata.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
   std::cout << "[情報] MainGameSceneを開始.\n";
   return true;
 }
@@ -155,6 +206,27 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
     return;
   }
 
+  // マウスポインタを地面に表示.
+  {
+    const glm::vec2 cursor = GameData::Get().cursorPosition;
+
+    Segment seg;
+    const glm::vec2 screenPosition((cursor.x / 1280) * 2, (cursor.y / 720) * 2);
+    const glm::mat4 matInverseVP = glm::inverse(matProj * matView);
+
+    const glm::vec4 start = matInverseVP * glm::vec4(screenPosition, -1, 1);
+    seg.start = glm::vec3(start) / start.w;
+
+    const glm::vec4 end = matInverseVP * glm::vec4(screenPosition, 1, 1);
+    seg.end = glm::vec3(end) / end.w;
+
+    const Plane plane{ glm::vec3(0, 1, 0), glm::vec3(0, 1, 0) };
+    Intersect(seg, plane, &cursorActor->position);
+
+    const glm::vec3 direction(cursorActor->position - playerActor->position);
+    playerActor->rotation.y = std::atan2(-direction.z, direction.x);
+  }
+
   // プレイヤーアクターを移動させる.
   glm::vec3 direction = glm::vec3(0);
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
@@ -171,20 +243,39 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
   GameData& global = GameData::Get();
 
   if (glm::length(direction) > 0) {
-    playerActor->rotation.y = std::atan2(-direction.z, direction.x);
+    //playerActor->rotation.y = std::atan2(-direction.z, direction.x);
     const float speed = 4.0f;
-    playerActor->velocity = glm::normalize(direction) * speed;
-    playerActor->SetAnimation(GameData::Get().anmPlayerRun);
+    direction = glm::normalize(direction);
+    playerActor->velocity = direction * speed;
+
+    const glm::vec3 front(std::cos(playerActor->rotation.y), 0, -std::sin(playerActor->rotation.y));
+    const float cf = glm::dot(front, direction);
+    if (cf > std::cos(glm::radians(45.0f))) {
+      playerActor->SetAnimation(GameData::Get().anmPlayerRunFront);
+    } else if (cf < std::cos(glm::radians(135.0f))) {
+      playerActor->SetAnimation(GameData::Get().anmPlayerRunBack);
+    } else {
+      const glm::vec3 right(std::cos(playerActor->rotation.y-glm::radians(90.0f)), 0, -std::sin(playerActor->rotation.y-glm::radians(90.0f)));
+      const float cr = glm::dot(right, direction);
+      if (cr > std::cos(glm::radians(90.0f))) {
+        playerActor->SetAnimation(GameData::Get().anmPlayerRunRight);
+      } else {
+        playerActor->SetAnimation(GameData::Get().anmPlayerRunLeft);
+      }
+    }
   } else {
     playerActor->velocity = glm::vec3(0);
     playerActor->SetAnimation(GameData::Get().anmPlayerIdle);
   }
 
-  static bool prevShootKey = false;
-  const bool shootKey = glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS;
-  const bool shoot = shootKey & !prevShootKey;
-  prevShootKey = shootKey;
-  if (shoot) {
+  if (GameData::Get().keyPressedInLastFrame & GameData::Key::shot) {
+    leftOfRounds = maxRounds;
+    shotTimer = 0;
+  }
+  if (leftOfRounds > 0 && shotTimer <= 0) {
+    --leftOfRounds;
+    shotTimer = shotInterval;
+
     // プレイヤーのY軸回転から正面方向を計算.
     const float fx = std::cos(playerActor->rotation.y);
     const float fz = -std::sin(playerActor->rotation.y); // Z軸の向きは数学と逆.
@@ -227,6 +318,55 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
     // アクターをリストに追加.
     actors.push_back(bullet);
   }
+
+  // 右クリックでバリケードを配置.
+  if (!builderActor) {
+    if (GameData::Get().keyPressed & GameData::Key::build) {
+      builderActor = std::make_shared<Actor>("WoodenBarrior",
+        &global.primitiveBuffer.Get(GameData::PrimNo::wooden_barrior), texBlack, cursorActor->position);
+      builderActor->texture = texWoodenBarrior;
+      // 衝突形状を設定.
+      builderActor->SetBoxCollision(glm::vec3(-1, 0, -0.1f), glm::vec3(1, 2, 0.1f));
+      builderActor->collision.isBlock = true;
+    }
+  }
+
+  if (builderActor) {
+    builderActor->position = cursorActor->position;
+    builderActor->position.y = 0;
+
+    const double scroll = global.curScroll - global.prevScroll;
+    if (scroll <= -1) {
+      builderActor->rotation.y -= glm::radians(90.0f);
+    } else if (scroll >= 1) {
+      builderActor->rotation.y += glm::radians(90.0f);
+    }
+    builderActor->rotation.y = std::fmod(builderActor->rotation.y + glm::radians(360.0f), glm::radians(360.0f));
+    if (std::abs(builderActor->rotation.y - glm::radians(90.0f)) < glm::radians(5.0f)) {
+      builderActor->SetBoxCollision(glm::vec3(-0.25f, -1, -1), glm::vec3(0.25f, 1, 1));
+    } else if (std::abs(builderActor->rotation.y - glm::radians(270.0f)) < glm::radians(5.0f)) {
+      builderActor->SetBoxCollision(glm::vec3(-0.25f, -1, -1), glm::vec3(0.25f, 1, 1));
+    } else {
+      builderActor->SetBoxCollision(glm::vec3(-1, -1, -0.25f), glm::vec3(1, 1, 0.25f));
+    }
+
+    glm::vec4 color = glm::vec4(0.2f, 0.2f, 1, 0.5f);
+    for (size_t i = 0; i < actors.size(); ++i) {
+      if (DetectCollision(*builderActor, *actors[i], false)) {
+        color = glm::vec4(1, 0.2f, 0.2f, 0.5f);
+        break;
+      }
+    }
+    builderActor->baseColor = color;
+
+    if (!(GameData::Get().keyPressed & GameData::Key::build)) {
+      if (builderActor->baseColor.r < 1) {
+        builderActor->baseColor = glm::vec4(1);
+        actors.push_back(builderActor);
+      }
+      builderActor.reset();
+    }
+  }
 }
 
 /**
@@ -237,60 +377,71 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 */
 void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
-  // アクターの行動を処理.
-  for (auto& e : actors) {
-    // 名前が「zombie」だったら
-    if (e->name == "zombie") {
-      // ゾンビの行動.
-      // 1. +X方向に直進.
-      // 2. 現在向いている方向に直進.
-      // 3. プレイヤーの方向を向く.
-      // 4. 少しずつプレイヤーの方向を向く.
-
-      // 状態が「死亡」でなければ
-      if (e->state != Actor::State::dead) {
-        constexpr float speed = glm::radians(60.0f);
-        glm::vec3 toPlayer = playerActor->position - e->position;
-        const glm::vec3 front(std::cos(e->rotation.y), 0, -std::sin(e->rotation.y));
-        const glm::vec3 c = glm::cross(front, toPlayer);
-        if (c.y >= 0) {
-          e->rotation.y += speed * deltaTime;
-        } else {
-          e->rotation.y -= speed * deltaTime;
-        }
-        constexpr float r360 = glm::radians(360.0f);
-        e->rotation.y = fmod(e->rotation.y + r360, r360);
-        e->velocity.x = std::cos(e->rotation.y);
-        e->velocity.z = -std::sin(e->rotation.y);
-      } else {
-        e->velocity = glm::vec3(0);
-      }
-    }
+  if (leftOfRounds > 0) {
+    shotTimer -= deltaTime;
   }
 
-  UpdateActorList(actors, deltaTime);
-
-  // 衝突判定.
-  for (size_t ia = 0; ia < actors.size(); ++ia) {
-    Actor& a = *actors[ia]; // アクターA
-    // アクターAが死亡している場合は衝突しない.
-    if (a.isDead) {
-      continue;
+  float dt = deltaTime;
+  deltaTime = 1.0f / 60.0f;
+  for (; dt > 0; dt -= 1.0f / 60.0f) {
+    if (dt < deltaTime) {
+      deltaTime = dt;
     }
-    // 計算済み及び自分自身を除く、残りのアクターとの間で衝突判定を実行.
-    for (size_t ib = ia + 1; ib < actors.size(); ++ib) {
-      Actor& b = *actors[ib]; // アクターB
-      // アクターBが死亡している場合は衝突しない.
-      if (b.isDead) {
+    // アクターの行動を処理.
+    for (auto& e : actors) {
+      // 名前が「zombie」だったら
+      if (e->name == "zombie") {
+        // ゾンビの行動.
+        // 1. +X方向に直進.
+        // 2. 現在向いている方向に直進.
+        // 3. プレイヤーの方向を向く.
+        // 4. 少しずつプレイヤーの方向を向く.
+
+        // 状態が「死亡」でなければ
+        if (e->state != Actor::State::dead) {
+          constexpr float speed = glm::radians(60.0f);
+          glm::vec3 toPlayer = playerActor->position - e->position;
+          const glm::vec3 front(std::cos(e->rotation.y), 0, -std::sin(e->rotation.y));
+          const glm::vec3 c = glm::cross(front, toPlayer);
+          if (c.y >= 0) {
+            e->rotation.y += speed * deltaTime;
+          } else {
+            e->rotation.y -= speed * deltaTime;
+          }
+          constexpr float r360 = glm::radians(360.0f);
+          e->rotation.y = fmod(e->rotation.y + r360, r360);
+          e->velocity.x = std::cos(e->rotation.y) * 0.4f;
+          e->velocity.z = -std::sin(e->rotation.y) * 0.4f;
+        } else {
+          e->velocity = glm::vec3(0);
+        }
+      }
+    }
+
+    UpdateActorList(actors, deltaTime);
+
+    // 衝突判定.
+    for (size_t ia = 0; ia < actors.size(); ++ia) {
+      Actor& a = *actors[ia]; // アクターA
+      // アクターAが死亡している場合は衝突しない.
+      if (a.isDead) {
         continue;
       }
-      // 衝突判定.
-      if (DetectCollision(a, b)) {
-        // 衝突していたら、双方のOnHit関数を実行する.
-        a.OnHit(a, b);
-        b.OnHit(b, a);
-      }
-    } // 閉じ括弧の数に注意.
+      // 計算済み及び自分自身を除く、残りのアクターとの間で衝突判定を実行.
+      for (size_t ib = ia + 1; ib < actors.size(); ++ib) {
+        Actor& b = *actors[ib]; // アクターB
+        // アクターBが死亡している場合は衝突しない.
+        if (b.isDead) {
+          continue;
+        }
+        // 衝突判定.
+        if (DetectCollision(a, b, true)) {
+          // 衝突していたら、双方のOnHit関数を実行する.
+          a.OnHit(a, b);
+          b.OnHit(b, a);
+        }
+      } // 閉じ括弧の数に注意.
+    }
   }
 
   // まだクリアしていない?
@@ -307,6 +458,20 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
       std::cout << "[情報] ゲームクリア条件を達成\n";
     }
   }
+
+  // カメラをプレイヤーアクターのななめ上に配置.
+  const glm::vec3 viewPosition = playerActor->position + glm::vec3(0, 7, 7);
+  // プレイヤーアクターの足元が画面の中央に映るようにする.
+  const glm::vec3 viewTarget = playerActor->position;
+
+  // 座標変換行列を作成.
+  int w, h;
+  glfwGetWindowSize(window, &w, &h);
+  const float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+  matProj =
+    glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 500.0f);
+  matView =
+    glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
 }
 
 /**
@@ -316,6 +481,12 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 */
 void MainGameScene::Render(GLFWwindow* window) const
 {
+  int fbw, fbh;
+  glfwGetFramebufferSize(window, &fbw, &fbh);
+  if (fbw <= 0 || fbh <= 0) {
+    return;
+  }
+
   GameData& global = GameData::Get();
   std::shared_ptr<Shader::Pipeline> pipeline = global.pipeline;
   Mesh::PrimitiveBuffer& primitiveBuffer = global.primitiveBuffer;
@@ -339,18 +510,6 @@ void MainGameScene::Render(GLFWwindow* window) const
 
   pipeline->SetLight(pointLight);
 
-  const glm::vec3 viewPosition = playerActor->position + glm::vec3(0, 7, 7);
-  const glm::vec3 viewTarget = playerActor->position + glm::vec3(0, 0, 0);
-
-  // 座標変換行列を作成.
-  int w, h;
-  glfwGetWindowSize(window, &w, &h);
-  const float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
-  const glm::mat4 matProj =
-    glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 500.0f);
-  const glm::mat4 matView =
-    glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
-
   primitiveBuffer.BindVertexArray();
   pipeline->Bind();
   sampler.Bind(0);
@@ -361,6 +520,7 @@ void MainGameScene::Render(GLFWwindow* window) const
     const glm::mat4 matMVP = matProj * matView * matModel;
     pipeline->SetMVP(matMVP);
     pipeline->SetModelMatrix(matModel);
+    pipeline->SetObjectColor(glm::vec4(1));
     texGround->Bind(0);
     primitiveBuffer.Get(GameData::PrimNo::ground).Draw();
   }
@@ -369,6 +529,11 @@ void MainGameScene::Render(GLFWwindow* window) const
   const glm::mat4 matVP = matProj * matView;
   for (size_t i = 0; i < actors.size(); ++i) {
     actors[i]->Draw(*pipeline, matVP, Actor::DrawType::color);
+  }
+
+  // 未確定の建築物を描画.
+  if (builderActor) {
+    builderActor->Draw(*pipeline, matVP, Actor::DrawType::color);
   }
 
   // 点光源の位置を描画.
@@ -440,6 +605,7 @@ void MainGameScene::Render(GLFWwindow* window) const
     glDisable(GL_DEPTH_TEST);
 
     // 画面全体に影色を塗る.
+    texBlack->Bind(0);
     pipelineShadow->SetMVP(glm::scale(glm::mat4(1), glm::vec3(2)));
     primitiveBuffer.Get(GameData::PrimNo::plane).Draw();
 
@@ -457,10 +623,8 @@ void MainGameScene::Render(GLFWwindow* window) const
     glDisable(GL_DEPTH_TEST);
 
     // 座標変換行列を作成.
-    int w, h;
-    glfwGetWindowSize(window, &w, &h);
-    const float halfW = w / 2.0f;
-    const float halfH = h / 2.0f;
+    const float halfW = fbw / 2.0f;
+    const float halfH = fbh / 2.0f;
     const glm::mat4 matProj =
       glm::ortho<float>(-halfW, halfW, -halfH, halfH, 1.0f, 500.0f);
     const glm::mat4 matView =
@@ -469,6 +633,17 @@ void MainGameScene::Render(GLFWwindow* window) const
 
     std::shared_ptr<Shader::Pipeline> pipeline2D = GameData::Get().pipelineSimple;
     pipeline2D->Bind();
+
+    // マウスカーソル位置を描画.
+    {
+      const glm::mat4 matModelS = glm::scale(glm::mat4(1),
+        glm::vec3(texPointer->Width(), texPointer->Height(), 1));
+      const glm::mat4 matModelT = glm::translate(glm::mat4(1), glm::vec3(GameData::Get().cursorPosition, 0));
+      const glm::mat4 matModel = matModelT * matModelS;
+      pipeline2D->SetMVP(matVP * matModel);
+      texPointer->Bind(0);
+      primitiveBuffer.Get(GameData::PrimNo::plane).Draw();
+    }
 
     // ゲームクリア画像を描画.
     if (isGameClear) {
@@ -493,5 +668,8 @@ void MainGameScene::Render(GLFWwindow* window) const
 */
 void MainGameScene::Finalize()
 {
+  // マウスカーソルを表示する.
+  glfwSetInputMode(GameData::Get().window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
   std::cout << "[情報] MainGameSceneを終了.\n";
 }

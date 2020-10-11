@@ -93,6 +93,7 @@ public:
   glm::vec3 rotation = glm::vec3(0); // アクターの向き.
   glm::vec3 scale = glm::vec3(1); // アクターの大きさ.
   glm::vec3 velocity = glm::vec3(0); // アクターの移動速度.
+  glm::vec4 baseColor = glm::vec4(1); // アクターの色.
 
   // アニメーション用データ.
   std::shared_ptr<Animation> animation; // アニメーションデータ.
@@ -114,6 +115,26 @@ void UpdateActorList(ActorList& actorList, float deltaTime);
 void RenderActorList(const ActorList& actorList,
   const glm::mat4& matVP, Actor::DrawType drawType);
 
-bool DetectCollision(Actor&, Actor&);
+bool DetectCollision(Actor&, Actor&, bool block);
+
+/**
+* 線分.
+*/
+struct Segment
+{
+  glm::vec3 start; // 線分の始点.
+  glm::vec3 end;   // 線分の終点.
+};
+
+/**
+* 平面.
+*/
+struct Plane
+{
+  glm::vec3 point;  // 平面上の任意の座標.
+  glm::vec3 normal; // 平面の法線.
+};
+
+bool Intersect(const Segment& seg, const Plane& plane, glm::vec3* p);
 
 #endif // ACTOR_H_INCLUDED

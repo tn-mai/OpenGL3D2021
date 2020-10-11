@@ -127,6 +127,9 @@
     <Image Include="Res\Black.tga">
       <Filter>リソース ファイル</Filter>
     </Image>
+    <Image Include="Res\Pointer.tga">
+      <Filter>リソース ファイル</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Object Include="Res\Tree.obj">

@@ -88,6 +88,7 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP,
 
   // GPUメモリに行列を転送.
   if (drawType == DrawType::color) {
+    pipeline.SetObjectColor(baseColor);
     pipeline.SetModelMatrix(matModel);
   }
   pipeline.SetMVP(matVP * matModel);
@@ -375,6 +376,87 @@ bool CollideCylinderAndBox(Actor& a, Actor& b, bool isBlock)
 }
 
 /**
+* 直方体同士の衝突を処理する.
+*
+* @param a 衝突形状が直方体のアクター.
+* @param b 衝突形状が直方体のアクター.
+* @param isBlock 貫通させない場合true. 貫通する場合false
+*
+* @retval true  衝突している.
+* @retval false 衝突していない.
+*/
+bool CollideBoxAndBox(Actor& a, Actor& b, bool isBlock)
+{
+  // 直方体aの下端が直方体bの上端の上にあるなら衝突していない.
+  const float bottomA = a.position.y + a.collision.boxMin.y;
+  const float topB = b.position.y + b.collision.boxMax.y;
+  if (bottomA >= topB) {
+    return false;
+  }
+  // 直方体aの上端が直方体bの下端の下にあるなら衝突していない.
+  const float topA = a.position.y + a.collision.boxMax.y;
+  const float bottomB = b.position.y + b.collision.boxMin.y;
+  if (topA <= bottomB) {
+    return false;
+  }
+
+  // 直方体aの左端が直方体bの右端の右にあるなら衝突していない.
+  const float leftA = a.position.x + a.collision.boxMin.x;
+  const float rightB = b.position.x + b.collision.boxMax.x;
+  if (leftA >= rightB) {
+    return false;
+  }
+  // 直方体aの右端が直方体bの左端の左にあるなら衝突していない.
+  const float rightA = a.position.x + a.collision.boxMax.x;
+  const float leftB = b.position.x + b.collision.boxMin.x;
+  if (rightA <= leftB) {
+    return false;
+  }
+
+  // 直方体aの手前端が直方体bの奥端の奥にあるなら衝突していない.
+  const float frontA = a.position.z + a.collision.boxMin.z;
+  const float backB = b.position.z + b.collision.boxMax.z;
+  if (frontA >= backB) {
+    return false;
+  }
+  // 直方体aの上端が直方体bの下端の下にあるなら衝突していない.
+  const float backA = a.position.z + a.collision.boxMax.z;
+  const float frontB = b.position.z + b.collision.boxMin.z;
+  if (backA <= frontB) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+* 線分と平面が交差する座標を求める.
+*
+*
+*/
+bool Intersect(const Segment& seg, const Plane& plane, glm::vec3* p)
+{
+  const float distance = glm::dot(plane.normal, plane.point - seg.start);
+  const glm::vec3 v = seg.end - seg.start;
+
+  // 分母がほぼ0の場合、線分は平面と平行なので交差しない.
+  const float denom = glm::dot(plane.normal, v);
+  if (std::abs(denom) < 0.0001f) {
+    return false;
+  }
+
+  // 交点までの距離tが0未満または1より大きい場合、交点は線分の外側にあるので実際には交差しない.
+  const float t = distance / denom;
+  if (t < 0 || t > 1) {
+    return false;
+  }
+
+  // 交点は線分上にある.
+  *p = seg.start + v * t;
+  return true;
+}
+
+/**
 * アクターの衝突を処理する.
 *
 * @param a 衝突を処理するアクターA.
@@ -383,10 +465,10 @@ bool CollideCylinderAndBox(Actor& a, Actor& b, bool isBlock)
 * @retval true  衝突している.
 * @retval false 衝突していない.
 */
-bool DetectCollision(Actor& a, Actor& b)
+bool DetectCollision(Actor& a, Actor& b, bool block)
 {
   // アクターAとアクターBの両方が通り抜け禁止なら押し返す
-  const bool isBlock = a.collision.isBlock && b.collision.isBlock;
+  const bool isBlock = block && a.collision.isBlock && b.collision.isBlock;
 
   // 衝突形状ごとに処理を分ける.
   switch (a.collision.shape) {
@@ -407,7 +489,7 @@ bool DetectCollision(Actor& a, Actor& b)
     case Collision::Shape::cylinder:
       return CollideCylinderAndBox(b, a, isBlock);
     case Collision::Shape::box:
-      return false;
+      return CollideBoxAndBox(a, b, isBlock);
     default:
       return false;
     }

@@ -40,9 +40,13 @@ public:
     up    = 0b0000'0000'0000'1000, // 矢印キー(上)
     down  = 0b0000'0000'0001'0000, // 矢印キー(下)
     shot  = 0b0000'0000'0010'0000, // 弾発射キー
+    build = 0b0000'0000'0100'0000, // 建築キー.
   };
   uint32_t keyPressed = 0; // 押しているキー.
   uint32_t keyPressedInLastFrame = 0; // 最後のフレームで押されたキー.
+
+  // マウスカーソルの座標.
+  glm::vec2 cursorPosition = glm::vec2(0);
 
   // プリミティブ番号.
   // プリミティブの読み込み順と一致させること.
@@ -53,6 +57,7 @@ public:
     cube,
     plane,
     bullet,
+    wooden_barrior,
     zombie_male_walk_0,
     zombie_male_walk_1,
     zombie_male_walk_2,
@@ -66,12 +71,34 @@ public:
     player_idle_0,
     player_idle_1,
     player_idle_2,
-    player_run_0,
-    player_run_1,
-    player_run_2,
-    player_run_3,
-    player_run_4,
-    player_run_5,
+    player_run_front_0,
+    player_run_front_1,
+    player_run_front_2,
+    player_run_front_3,
+    player_run_front_4,
+    player_run_front_5,
+
+    player_run_back_0,
+    player_run_back_1,
+    player_run_back_2,
+    player_run_back_3,
+    player_run_back_4,
+    player_run_back_5,
+
+    player_run_left_0,
+    player_run_left_1,
+    player_run_left_2,
+    player_run_left_3,
+    player_run_left_4,
+    player_run_left_5,
+
+    player_run_right_0,
+    player_run_right_1,
+    player_run_right_2,
+    player_run_right_3,
+    player_run_right_4,
+    player_run_right_5,
+
   };
   void Draw(PrimNo) const;
 
@@ -88,10 +115,18 @@ public:
   std::shared_ptr<Animation> anmZombieMaleWalk;
   std::shared_ptr<Animation> anmZombieMaleDown;
   std::shared_ptr<Animation> anmPlayerIdle;
-  std::shared_ptr<Animation> anmPlayerRun;
+  std::shared_ptr<Animation> anmPlayerRunFront;
+  std::shared_ptr<Animation> anmPlayerRunBack;
+  std::shared_ptr<Animation> anmPlayerRunLeft;
+  std::shared_ptr<Animation> anmPlayerRunRight;
 
   // 倒したゾンビの数.
   size_t killCount = 0;
+
+  // スクロール値.
+  double prevScroll = 0;
+  double curScroll = 0;
+  double tmpScroll = 0;
 
 private:
   GameData() = default;
