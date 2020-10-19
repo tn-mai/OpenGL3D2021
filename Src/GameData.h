@@ -68,6 +68,18 @@ public:
     zombie_male_down_1,
     zombie_male_down_2,
     zombie_male_down_3,
+    zombie_male_attack_0,
+    zombie_male_attack_1,
+    zombie_male_attack_2,
+    zombie_male_attack_3,
+    zombie_male_attack_4,
+    zombie_male_attack_5,
+    zombie_male_attack_6,
+    zombie_male_damage_0,
+    zombie_male_damage_1,
+    zombie_male_damage_2,
+    zombie_male_damage_3,
+
     player_idle_0,
     player_idle_1,
     player_idle_2,
@@ -99,6 +111,14 @@ public:
     player_run_right_4,
     player_run_right_5,
 
+    player_down_0,
+    player_down_1,
+    player_down_2,
+    player_down_3,
+
+    player_damage_0,
+    player_damage_1,
+    player_damage_2,
   };
   void Draw(PrimNo) const;
 
@@ -114,11 +134,15 @@ public:
   // アニメーションデータ.
   std::shared_ptr<Animation> anmZombieMaleWalk;
   std::shared_ptr<Animation> anmZombieMaleDown;
+  std::shared_ptr<Animation> anmZombieMaleAttack;
+  std::shared_ptr<Animation> anmZombieMaleDamage;
   std::shared_ptr<Animation> anmPlayerIdle;
   std::shared_ptr<Animation> anmPlayerRunFront;
   std::shared_ptr<Animation> anmPlayerRunBack;
   std::shared_ptr<Animation> anmPlayerRunLeft;
   std::shared_ptr<Animation> anmPlayerRunRight;
+  std::shared_ptr<Animation> anmPlayerDown;
+  std::shared_ptr<Animation> anmPlayerDamage;
 
   // 倒したゾンビの数.
   size_t killCount = 0;

@@ -84,7 +84,8 @@ public:
     dead, // 死んでいる.
   };
   State state = State::idle; // 現在の動作状態.
-
+  float health = 0; // 耐久力.
+  float timer = 0;  // 汎用タイマー.
 
   const Mesh::Primitive* primitive = nullptr;
   std::shared_ptr<Texture::Image2D> texture;
@@ -102,9 +103,13 @@ public:
 
   // 衝突判定用の変数.
   Collision collision;
+
+ // 衝突解決関数へのポインタ.
   void (*OnHit)(Actor&, Actor&) = [](Actor&, Actor&) {};
 
-  bool isDead = false;
+  std::shared_ptr<Actor> attackActor; // 攻撃の衝突判定用アクター.
+
+  bool isDead = false; // 死亡フラグ.
   bool hasShadow = true;
 };
 

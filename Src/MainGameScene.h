@@ -39,6 +39,7 @@ private:
   std::shared_ptr<Texture::Image2D> texPlayer;
   std::shared_ptr<Texture::Image2D> texBullet;
   std::shared_ptr<Texture::Image2D> texGameClear;
+  std::shared_ptr<Texture::Image2D> texGameOver;
   std::shared_ptr<Texture::Image2D> texBlack;
   std::shared_ptr<Texture::Image2D> texPointer;
   std::shared_ptr<Texture::Image2D> texWoodenBarrior;
@@ -53,16 +54,18 @@ private:
   ActorPtr cursorActor;
   ActorPtr builderActor;
 
-  float shotTimer = 0;
-  const float shotInterval = 0.1f;
-  int leftOfRounds = 0;
-  const int maxRounds = 3;
+  // ˜AË—p•Ï”.
+  float shotTimer = 0; // Ÿ‚Ì’e‚ğ”­Ë‚·‚é‚Ü‚Å‚Ìc‚èŠÔ(•b).
+  const float shotInterval = 0.1f; // ’e‚Ì”­ËŠÔŠu(•b).
+  int leftOfRounds = 0; // ’e‚Ìc‚è˜AË‰ñ”.
+  const int maxRounds = 3; // 1‰ñ‚Ìƒ{ƒ^ƒ““ü—Í‚Å”­Ë‚³‚ê‚é’e”.
 
   // oŒ»‚³‚¹‚é“G‚Ì”.
   size_t appearanceEnemyCount = 100;
 
   // ƒNƒŠƒAğŒ‚ğ–‚½‚µ‚½‚©‚Ç‚¤‚©.
   bool isGameClear = false;
+  bool isGameOver = false;
 };
 
 #endif // MAINGAMESCENE_H_INCLUDED

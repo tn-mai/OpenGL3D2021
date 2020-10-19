@@ -67,6 +67,19 @@ bool GameData::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/zombie_male_down_2.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_down_3.obj");
 
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_attack_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_attack_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_attack_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_attack_3.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_attack_4.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_attack_5.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_attack_6.obj");
+
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_damage_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_damage_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_damage_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/zombie_male/zombie_male_damage_3.obj");
+
   primitiveBuffer.AddFromObjFile("Res/player_male_idle_0.obj");
   primitiveBuffer.AddFromObjFile("Res/player_male_idle_1.obj");
   primitiveBuffer.AddFromObjFile("Res/player_male_idle_2.obj");
@@ -98,6 +111,15 @@ bool GameData::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_3.obj");
   primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_4.obj");
   primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_5.obj");
+
+  primitiveBuffer.AddFromObjFile("Res/player_male_down_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_down_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_down_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male_down_3.obj");
+
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_damage_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_damage_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_damage_2.obj");
 
   // パイプライン・オブジェクトを作成する.
   pipeline = std::make_shared<Shader::Pipeline>("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
@@ -139,6 +161,26 @@ bool GameData::Initialize(GLFWwindow* window)
   anmZombieMaleDown->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_down_3));
   anmZombieMaleDown->interval = 0.125f;
   anmZombieMaleDown->isLoop = false;
+
+  anmZombieMaleAttack = std::make_shared<Animation>();
+  anmZombieMaleAttack->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_attack_0));
+  anmZombieMaleAttack->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_attack_1));
+  anmZombieMaleAttack->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_attack_2));
+  anmZombieMaleAttack->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_attack_3));
+  anmZombieMaleAttack->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_attack_4));
+  anmZombieMaleAttack->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_attack_5));
+  anmZombieMaleAttack->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_attack_6));
+  anmZombieMaleAttack->interval = 0.125f;
+  anmZombieMaleAttack->isLoop = false;
+
+  anmZombieMaleDamage = std::make_shared<Animation>();
+  anmZombieMaleDamage->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_damage_0));
+  anmZombieMaleDamage->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_damage_1));
+  anmZombieMaleDamage->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_damage_2));
+  anmZombieMaleDamage->list.push_back(&primitiveBuffer.Get(PrimNo::zombie_male_damage_3));
+  anmZombieMaleDamage->interval = 0.1f;
+  anmZombieMaleDamage->isLoop = false;
+
 
   anmPlayerIdle = std::make_shared<Animation>();
   anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_0));
@@ -182,6 +224,22 @@ bool GameData::Initialize(GLFWwindow* window)
   anmPlayerRunRight->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_right_4));
   anmPlayerRunRight->list.push_back(&primitiveBuffer.Get(PrimNo::player_run_right_5));
   anmPlayerRunRight->interval = 0.125f;
+
+  anmPlayerDown = std::make_shared<Animation>();
+  anmPlayerDown->list.push_back(&primitiveBuffer.Get(PrimNo::player_down_0));
+  anmPlayerDown->list.push_back(&primitiveBuffer.Get(PrimNo::player_down_1));
+  anmPlayerDown->list.push_back(&primitiveBuffer.Get(PrimNo::player_down_2));
+  anmPlayerDown->list.push_back(&primitiveBuffer.Get(PrimNo::player_down_3));
+  anmPlayerDown->interval = 0.2f;
+  anmPlayerDown->isLoop = false;
+
+  anmPlayerDamage = std::make_shared<Animation>();
+  anmPlayerDamage->list.push_back(&primitiveBuffer.Get(PrimNo::player_damage_1));
+  anmPlayerDamage->list.push_back(&primitiveBuffer.Get(PrimNo::player_damage_2));
+  anmPlayerDamage->list.push_back(&primitiveBuffer.Get(PrimNo::player_damage_1));
+  anmPlayerDamage->list.push_back(&primitiveBuffer.Get(PrimNo::player_damage_0));
+  anmPlayerDamage->interval = 0.1f;
+  anmPlayerDamage->isLoop = false;
 
   std::cout << "[情報] ゲームデータの初期化を完了.\n";
   return true;
