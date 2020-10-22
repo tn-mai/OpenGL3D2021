@@ -473,7 +473,7 @@ bool Intersect(const Segment& seg, const Plane& plane, glm::vec3* p)
 bool DetectCollision(Actor& a, Actor& b, bool block)
 {
   // アクターAとアクターBの両方が通り抜け禁止なら押し返す
-  const bool isBlock = block && a.collision.isBlock && b.collision.isBlock;
+  const bool isBlock = block && a.collision.blockOtherActors && b.collision.blockOtherActors;
 
   // 衝突形状ごとに処理を分ける.
   switch (a.collision.shape) {

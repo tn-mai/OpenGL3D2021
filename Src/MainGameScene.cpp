@@ -382,7 +382,7 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 
     // Õ“ËŒ`ó‚ðÝ’è.
     bullet->SetCylinderCollision(0.1f, -0.1f, 0.125f);
-    bullet->collision.isBlock = false;
+    bullet->collision.blockOtherActors = false;
 
     // Õ“Ëˆ—‚ðÝ’è.
     bullet->OnHit = [](Actor& a, Actor& b) {
@@ -406,7 +406,7 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
       builderActor->texture = texWoodenBarrior;
       // Õ“ËŒ`ó‚ðÝ’è.
       builderActor->SetBoxCollision(glm::vec3(-1, 0, -0.1f), glm::vec3(1, 2, 0.1f));
-      builderActor->collision.isBlock = true;
+      builderActor->collision.blockOtherActors = true;
     }
   }
 
@@ -515,7 +515,7 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
             e->attackActor = std::make_shared<Actor>("zombie_attack", nullptr, nullptr, pos);
             // UŒ‚”»’è‚ðÝ’è.
             e->attackActor->SetCylinderCollision(0.2f, -0.2f, 0.1f);
-            e->attackActor->collision.isBlock = false;
+            e->attackActor->collision.blockOtherActors = false;
             newActors.push_back(e->attackActor);
           }
         }

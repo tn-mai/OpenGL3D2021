@@ -34,7 +34,7 @@ struct Collision
     box,      // 直方体.
   };
   Shape shape = Shape::none;
-  bool isBlock = true; // 通り抜けられないならtrue、抜けられるならfalse.
+  bool blockOtherActors = true; // 通り抜けられないならtrue、抜けられるならfalse.
 
   // 円柱のパラメータ.
   float top;    // 円柱の上端.
