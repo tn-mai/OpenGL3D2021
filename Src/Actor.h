@@ -53,7 +53,7 @@ class Actor
 {
 public:
   Actor() = default;
-  ~Actor() = default;
+  virtual ~Actor() = default;
   Actor(std::string actorName, const Mesh::Primitive* prim,
     std::shared_ptr<Texture::Image2D> tex, const glm::vec3& pos);
 
@@ -104,7 +104,10 @@ public:
   // 衝突判定用の変数.
   Collision collision;
 
- // 衝突解決関数へのポインタ.
+  // 状態更新関数.
+  virtual void OnUpdate(float) {}
+
+  // 衝突解決関数へのポインタ.
   void (*OnHit)(Actor&, Actor&) = [](Actor&, Actor&) {};
 
   std::shared_ptr<Actor> attackActor; // 攻撃の衝突判定用アクター.

@@ -56,6 +56,7 @@
 #include "MainGameScene.h"
 #include "GameData.h"
 #include "SceneManager.h"
+#include "Actors/ZombieActor.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <algorithm>
@@ -96,12 +97,10 @@ bool MainGameScene::Initialize()
 
   texZombie = std::make_shared<Texture::Image2D>("Res/zombie_male.tga");
   texPlayer = std::make_shared<Texture::Image2D>("Res/player_male.tga");
-  texBullet = std::make_shared<Texture::Image2D>("Res/Bullet.tga");
   texGameClear = std::make_shared<Texture::Image2D>("Res/Survived.tga");
   texGameOver = std::make_shared<Texture::Image2D>("Res/GameOver.tga");
   texBlack = std::make_shared<Texture::Image2D>("Res/Black.tga");
   texPointer = std::make_shared<Texture::Image2D>("Res/Pointer.tga");
-  texWoodenBarrior = std::make_shared<Texture::Image2D>("Res/wooden_barrier.tga");
 
   GameData& global = GameData::Get();
 
@@ -132,46 +131,9 @@ bool MainGameScene::Initialize()
 
   // プレイヤーを表示.
   {
-    playerActor = std::make_shared<Actor>("player", &global.primitiveBuffer.Get(GameData::PrimNo::player_idle_0),
-      texPlayer, glm::vec3(10, 0, 10));
-    playerActor->health = 10;
-    playerActor->SetAnimation(GameData::Get().anmPlayerIdle);
-    playerActor->SetCylinderCollision(1.7f, 0, 0.5f);
-    playerActor->OnHit = [](Actor& a, Actor& b) {
-      if (b.name == "zombie_attack") {
-        // 死んでいたら何もしない.
-        if (a.state == Actor::State::dead) {
-          return;
-        }
-        // 無敵タイマー稼働中は衝突しない.
-        if (a.timer > 0) {
-          return;
-        }
-        // 耐久力を減らす.
-        a.health -= 1;
-        b.collision.shape = Collision::Shape::none;
-        // 耐久力が0より大きければダメージアニメーションを再生し、無敵タイマーを設定.
-        // 0以下なら死亡.
-        if (a.health > 0) {
-          a.SetAnimation(GameData::Get().anmPlayerDamage);
-          a.state = Actor::State::damage;
-          a.timer = 2;
-        } else {
-          a.velocity = glm::vec3(0);
-          a.timer = 3;
-          a.SetAnimation(GameData::Get().anmPlayerDown);
-          a.state = Actor::State::dead;
-        }
-      }
-    };
+    playerActor = std::make_shared<PlayerActor>(glm::vec3(10, 0, 10), 0.0f, this);
     actors.push_back(playerActor);
   }
-
-  // マウスカーソル位置を示すアクター.
-  cursorActor = std::make_shared<Actor>("cursor", &global.primitiveBuffer.Get(GameData::PrimNo::cube), texCube, glm::vec3(0));
-  cursorActor->rotation = glm::vec3(0.75f, 0.75f, 0.75f);
-  cursorActor->scale = glm::vec3(0.25f);
-  actors.push_back(cursorActor);
 
   // ゾンビを表示.
   const Mesh::Primitive* pPrimitive = &global.primitiveBuffer.Get(GameData::PrimNo::zombie_male_walk_0);
@@ -179,45 +141,9 @@ bool MainGameScene::Initialize()
     glm::vec3 pos(0);
     pos.x = std::uniform_real_distribution<float>(-18, 18)(global.random);
     pos.z = std::uniform_real_distribution<float>(-18, 18)(global.random);
-    std::shared_ptr<Actor> actor = std::make_shared<Actor>("zombie", pPrimitive, texZombie, pos);
-    actor->health = 5;
-    actor->rotation.y =
+    float rotY =
       std::uniform_real_distribution<float>(0, glm::radians(360.0f))(global.random);
-    // アニメーションを設定.
-    actor->SetAnimation(GameData::Get().anmZombieMaleWalk);
-    actor->state = Actor::State::run;
-    actor->SetCylinderCollision(1.7f, 0, 0.5f);
-
-    // 衝突処理を設定.
-    actor->OnHit = [](Actor& a, Actor& b) {
-      if (b.name == "bullet") {
-        // 耐久値を減らす.
-        a.health -= 2;
-        // 耐久値が0より大きければダメージアニメーションを再生する.
-        // 耐久値が0以下になったら死亡.
-        if (a.health > 0) {
-          // ノックバックを設定する.
-          if (glm::dot(b.velocity, b.velocity)) {
-            a.velocity += glm::normalize(b.velocity) * 2.0f;
-          }
-          // 同じアニメは再生できないのでnullptrを指定してアニメを削除する.
-          a.SetAnimation(nullptr);
-          // ダメージアニメーションを再生.
-          a.SetAnimation(GameData::Get().anmZombieMaleDamage);
-          // ダメージ状態に設定.
-          a.state = Actor::State::damage;
-        } else {
-          // 死亡アニメーションを設定.
-          a.SetAnimation(GameData::Get().anmZombieMaleDown);
-          // 衝突判定を無くす.
-          a.collision.shape = Collision::Shape::none;
-          // 死亡状態に設定.
-          a.state = Actor::State::dead;
-          // 倒したゾンビの数を1体増やす.
-          ++GameData::Get().killCount;
-        }
-      }
-    };
+    std::shared_ptr<Actor> actor = std::make_shared<ZombieActor>(pos, rotY, this);
     actors.push_back(actor);
   }
 
@@ -233,6 +159,9 @@ bool MainGameScene::Initialize()
 
   // マウスカーソルを非表示にする.
   glfwSetInputMode(gamedata.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+  // 新規アクター追加用の配列のサイズを予約する.
+  newActors.reserve(100);
 
   std::cout << "[情報] MainGameSceneを開始.\n";
   return true;
@@ -288,163 +217,16 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
     seg.end = glm::vec3(end) / end.w;
 
     const Plane plane{ glm::vec3(0, 1, 0), glm::vec3(0, 1, 0) };
-    Intersect(seg, plane, &cursorActor->position);
+    Intersect(seg, plane, &posMouseCursor);
 
-    const glm::vec3 direction(cursorActor->position - playerActor->position);
+    const glm::vec3 direction(posMouseCursor - playerActor->position);
     playerActor->rotation.y = std::atan2(-direction.z, direction.x);
   }
 
-  // プレイヤーアクターを移動させる.
-  glm::vec3 direction = glm::vec3(0);
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    direction.x -= 1;
-  } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    direction.x += 1;
-  }
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    direction.z -= 1;
-  } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    direction.z += 1;
-  }
-
-  GameData& global = GameData::Get();
-
-  std::shared_ptr<Animation> nextAnime;
-  if (glm::length(direction) > 0) {
-    //playerActor->rotation.y = std::atan2(-direction.z, direction.x);
-    const float speed = 4.0f;
-    direction = glm::normalize(direction);
-    playerActor->velocity = direction * speed;
-
-    const glm::vec3 front(std::cos(playerActor->rotation.y), 0, -std::sin(playerActor->rotation.y));
-    const float cf = glm::dot(front, direction);
-    if (cf > std::cos(glm::radians(45.0f))) {
-      nextAnime = GameData::Get().anmPlayerRunFront;
-    } else if (cf < std::cos(glm::radians(135.0f))) {
-      nextAnime = GameData::Get().anmPlayerRunBack;
-    } else {
-      const glm::vec3 right(std::cos(playerActor->rotation.y-glm::radians(90.0f)), 0, -std::sin(playerActor->rotation.y-glm::radians(90.0f)));
-      const float cr = glm::dot(right, direction);
-      if (cr > std::cos(glm::radians(90.0f))) {
-        nextAnime = GameData::Get().anmPlayerRunRight;
-      } else {
-        nextAnime = GameData::Get().anmPlayerRunLeft;
-      }
-    }
-  } else {
-    playerActor->velocity = glm::vec3(0);
-    nextAnime = GameData::Get().anmPlayerIdle;
-  }
-
-  // ダメージアニメ再生中はダメージアニメが終わるまで待つ.
-  if (playerActor->animation == global.anmPlayerDamage) {
-    if (playerActor->animationNo >= playerActor->animation->list.size() - 1) {
-      playerActor->SetAnimation(nextAnime);
-    }
-  } else {
-    playerActor->SetAnimation(nextAnime);
-  }
-
-  // 発射キーが押されていたら三点射を起動.
-  if (GameData::Get().keyPressedInLastFrame & GameData::Key::shot) {
-    leftOfRounds = maxRounds;
-    shotTimer = 0;
-  }
-  // 発射数が残っていて発射タイマーが0以下なら1発撃つ.
-  if (leftOfRounds > 0 && shotTimer <= 0) {
-    --leftOfRounds;
-    shotTimer = shotInterval;
-
-    // プレイヤーのY軸回転から正面方向を計算.
-    const float fx = std::cos(playerActor->rotation.y);
-    const float fz = -std::sin(playerActor->rotation.y); // Z軸の向きは数学と逆.
-    const glm::vec3 front = glm::vec3(fx, 0, fz);
-
-    // プレイヤーのY軸回転から右方向を計算.
-    const float rx = std::cos(playerActor->rotation.y - glm::radians(90.0f));
-    const float rz = -std::sin(playerActor->rotation.y - glm::radians(90.0f)); // 同上
-    const glm::vec3 right = glm::vec3(rx, 0, rz);
-
-    // 弾丸の発射位置(銃口)を計算. 3Dモデルを調べたところ、銃口は
-    // プレイヤーの座標(足元)から前に0.6m、右に0.2m、上に0.9mの位置にある.
-    const glm::vec3 position =
-      playerActor->position + front * 0.6f + right * 0.2f + glm::vec3(0, 0.9f, 0);
-
-    // 弾丸アクターを銃口の位置に作成.
-    std::shared_ptr<Actor> bullet = std::make_shared<Actor>("bullet",
-      &global.primitiveBuffer.Get(GameData::PrimNo::bullet), texBullet, position);
-
-    // 向き(回転)はプレイヤーアクターを継承.
-    bullet->rotation = playerActor->rotation;
-
-    // front方向へ「毎秒20m」の速度で移動するように設定.
-    bullet->velocity = front * 20.0f;
-
-    // 衝突形状を設定.
-    bullet->SetCylinderCollision(0.1f, -0.1f, 0.125f);
-    bullet->collision.blockOtherActors = false;
-
-    // 衝突処理を設定.
-    bullet->OnHit = [](Actor& a, Actor& b) {
-      // 衝突先が弾丸またはプレイヤーの場合は何もしない.
-      if (b.name == "bullet" || b.name == "player") {
-        return;
-      }
-      // 弾丸を消去.
-      a.isDead = true;
-    };
-
-    // アクターをリストに追加.
-    actors.push_back(bullet);
-  }
-
-  // 右クリックでバリケードを配置.
-  if (!builderActor) {
-    if (GameData::Get().keyPressed & GameData::Key::build) {
-      builderActor = std::make_shared<Actor>("WoodenBarrior",
-        &global.primitiveBuffer.Get(GameData::PrimNo::wooden_barrior), texBlack, cursorActor->position);
-      builderActor->texture = texWoodenBarrior;
-      // 衝突形状を設定.
-      builderActor->SetBoxCollision(glm::vec3(-1, 0, -0.1f), glm::vec3(1, 2, 0.1f));
-      builderActor->collision.blockOtherActors = true;
-    }
-  }
-
-  if (builderActor) {
-    builderActor->position = cursorActor->position;
-    builderActor->position.y = 0;
-
-    const double scroll = global.curScroll - global.prevScroll;
-    if (scroll <= -1) {
-      builderActor->rotation.y -= glm::radians(90.0f);
-    } else if (scroll >= 1) {
-      builderActor->rotation.y += glm::radians(90.0f);
-    }
-    builderActor->rotation.y = std::fmod(builderActor->rotation.y + glm::radians(360.0f), glm::radians(360.0f));
-    if (std::abs(builderActor->rotation.y - glm::radians(90.0f)) < glm::radians(5.0f)) {
-      builderActor->SetBoxCollision(glm::vec3(-0.25f, -1, -1), glm::vec3(0.25f, 1, 1));
-    } else if (std::abs(builderActor->rotation.y - glm::radians(270.0f)) < glm::radians(5.0f)) {
-      builderActor->SetBoxCollision(glm::vec3(-0.25f, -1, -1), glm::vec3(0.25f, 1, 1));
-    } else {
-      builderActor->SetBoxCollision(glm::vec3(-1, -1, -0.25f), glm::vec3(1, 1, 0.25f));
-    }
-
-    glm::vec4 color = glm::vec4(0.2f, 0.2f, 1, 0.5f);
-    for (size_t i = 0; i < actors.size(); ++i) {
-      if (DetectCollision(*builderActor, *actors[i], false)) {
-        color = glm::vec4(1, 0.2f, 0.2f, 0.5f);
-        break;
-      }
-    }
-    builderActor->baseColor = color;
-
-    if (!(GameData::Get().keyPressed & GameData::Key::build)) {
-      if (builderActor->baseColor.r < 1) {
-        builderActor->baseColor = glm::vec4(1);
-        actors.push_back(builderActor);
-      }
-      builderActor.reset();
-    }
+  playerActor->ProcessInput();
+  if (!newActors.empty()) {
+    actors.insert(actors.end(), newActors.begin(), newActors.end());
+    newActors.clear();
   }
 }
 
@@ -456,120 +238,21 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 */
 void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
-  if (leftOfRounds > 0) {
-    shotTimer -= deltaTime;
-  }
-
   float dt = deltaTime;
   deltaTime = 1.0f / 60.0f;
   for (; dt > 0; dt -= 1.0f / 60.0f) {
     if (dt < deltaTime) {
       deltaTime = dt;
     }
-    // アクターの行動を処理.
-    ActorList newActors; // 新規アクターの配列.
-    newActors.reserve(100);
-    for (auto& e : actors) {
-      // ゾンビアクターの場合.
-      if (e->name == "zombie") {
-        // ゾンビの行動.
-        // 1. +X方向に直進.
-        // 2. 現在向いている方向に直進.
-        // 3. プレイヤーの方向を向く.
-        // 4. 少しずつプレイヤーの方向を向く.
 
-        // 攻撃中以外なら攻撃範囲を削除する.
-        if (e->attackActor && e->state != Actor::State::attack) {
-          e->attackActor->isDead = true;
-          e->attackActor = nullptr;
-        }
-
-        // ダメージ状態の場合.
-        if (e->state == Actor::State::damage) {
-          // アニメが終了したら移動状態にする.
-          if (e->animationNo >= e->animation->list.size() - 1) {
-            e->velocity = glm::vec3(0);
-            e->SetAnimation(GameData::Get().anmZombieMaleWalk);
-            e->state = Actor::State::run;
-          }
-        }
-        // 攻撃中なら攻撃終了を待つ.
-        else if (e->state == Actor::State::attack) {
-          // アニメーション番号がアニメ枚数以上だったら、攻撃アニメ終了とみなす.
-          if (e->animationNo >= e->animation->list.size() - 1) {
-            e->SetAnimation(GameData::Get().anmZombieMaleWalk);
-            e->state = Actor::State::run;
-          }
-          // アニメ番号が4以上かつ攻撃範囲が存在すれば攻撃範囲を削除する.
-          else if (e->animationNo >= 4 && e->attackActor) {
-            e->attackActor->isDead = true;
-            e->attackActor.reset();
-          }
-          // アニメ番号が3以上かつ攻撃範囲が存在しなければ攻撃範囲を作成する.
-          else if (e->animationNo >= 3 && !e->attackActor) {
-            // ゾンビの正面方向を計算.
-            const glm::vec3 front(std::cos(e->rotation.y), 0, -std::sin(e->rotation.y));
-            // 攻撃判定の発生位置を計算.
-            const glm::vec3 pos = e->position + glm::vec3(0, 0.9f, 0) + front;
-            // 攻撃判定アクターを作成.
-            e->attackActor = std::make_shared<Actor>("zombie_attack", nullptr, nullptr, pos);
-            // 攻撃判定を設定.
-            e->attackActor->SetCylinderCollision(0.2f, -0.2f, 0.1f);
-            e->attackActor->collision.blockOtherActors = false;
-            newActors.push_back(e->attackActor);
-          }
-        }
-
-        // 死んでいなければ歩く.
-        else if (e->state == Actor::State::run) {
-          // プレイヤーのいる方向を計算.
-          glm::vec3 toPlayer = playerActor->position - e->position;
-          // ゾンビの正面方向を計算.
-          glm::vec3 front(std::cos(e->rotation.y), 0, -std::sin(e->rotation.y));
-          // 左右どちらに回転するかを決めるために外積を計算.
-          const glm::vec3 c = glm::cross(front, toPlayer);
-          // 垂直ベクトルのy座標がプラス側なら向きを増やし、マイナス側なら減らす.
-          constexpr float speed = glm::radians(60.0f);
-          if (c.y >= 0) {
-            e->rotation.y += speed * deltaTime;
-          } else {
-            e->rotation.y -= speed * deltaTime;
-          }
-          // 360度を超えたら0度に戻す.
-          constexpr float r360 = glm::radians(360.0f);
-          e->rotation.y = fmod(e->rotation.y + r360, r360);
-          // 向きが変化したので、正面方向のベクトルを計算しなおす.
-          front.x = std::cos(e->rotation.y);
-          front.z = -std::sin(e->rotation.y);
-          // 正面方向に1m/sの速度で移動するように設定.
-          e->velocity = front;
-
-          // プレイヤーが生存中かつ距離3m以内かつ正面60度以内にいたら攻撃.
-          if (playerActor->state != Actor::State::dead) {
-            const float distanceSq = glm::dot(toPlayer, toPlayer);
-            if (distanceSq <= 3 * 3) {
-              const float distance = std::sqrt(distanceSq);
-              const float angle = std::acos(glm::dot(front, toPlayer * (1.0f / distance)));
-              if (angle <= glm::radians(30.0f)) {
-                e->SetAnimation(GameData::Get().anmZombieMaleAttack);
-                e->state = Actor::State::attack;
-              }
-            }
-          }
-        } else {
-          e->velocity = glm::vec3(0);
-        }
-      }
-    }
+    // アクターリストに含まれるアクターの状態を更新する.
+    UpdateActorList(actors, deltaTime);
 
     // 新規アクターが存在するなら、それをアクターリストに追加する.
     if (!newActors.empty()) {
       actors.insert(actors.end(), newActors.begin(), newActors.end());
       newActors.clear();
     }
-
-    // アクターリストに含まれるアクターの状態を更新する.
-    UpdateActorList(actors, deltaTime);
 
     // 衝突判定.
     for (size_t ia = 0; ia < actors.size(); ++ia) {
@@ -682,12 +365,6 @@ void MainGameScene::Render(GLFWwindow* window) const
     actors[i]->Draw(*pipeline, matVP, Actor::DrawType::color);
   }
 
-  // 未確定の建築物を描画.
-  if (builderActor) {
-    builderActor->Draw(*pipeline, matVP, Actor::DrawType::color);
-  }
-
-  // 点光源の位置を描画.
   {
     // Y軸回転.
     const float degree = static_cast<float>(std::fmod(glfwGetTime() * 180.0, 360.0));

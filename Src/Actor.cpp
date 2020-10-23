@@ -27,6 +27,8 @@ Actor::Actor(std::string name, const Mesh::Primitive* prim,
 */
 void Actor::Update(float deltaTime)
 {
+  OnUpdate(deltaTime);
+
   // タイマー減算.
   if (timer > 0) {
     timer = std::max(0.0f, timer - deltaTime);

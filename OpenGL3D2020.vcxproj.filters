@@ -19,6 +19,9 @@
     <Filter Include="ソース ファイル\Scenes">
       <UniqueIdentifier>{1a681893-1ea2-47b7-8b4f-0dcfec3ef804}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\Actors">
+      <UniqueIdentifier>{93750975-cbbe-4d09-a421-1b841f9b22c0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Src\Main.cpp">
@@ -53,6 +56,12 @@
     </ClCompile>
     <ClCompile Include="Src\GameData.cpp">
       <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Actors\PlayerActor.cpp">
+      <Filter>ソース ファイル\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Actors\ZombieActor.cpp">
+      <Filter>ソース ファイル\Actors</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +121,12 @@
     </ClInclude>
     <ClInclude Include="Src\GameData.h">
       <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Actors\PlayerActor.h">
+      <Filter>ソース ファイル\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Actors\ZombieActor.h">
+      <Filter>ソース ファイル\Actors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

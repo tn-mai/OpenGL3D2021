@@ -9,6 +9,7 @@
 #include "Shader.h"
 #include "Texture.h"
 #include "Actor.h"
+#include "Actors/PlayerActor.h"
 #include <memory>
 
 /**
@@ -28,6 +29,12 @@ public:
   void Render(GLFWwindow*) const;
   void Finalize();
 
+  void AddActor(ActorPtr p) { newActors.push_back(p); }
+  ActorPtr GetPlayerActor() { return playerActor; }
+  const glm::mat4& GetViewMatrix() const { return matView; }
+  const glm::mat4& GetProjectionMatrix() const { return matProj; }
+  const glm::vec3& GetMouseCursor() const { return posMouseCursor; }
+
 private:
   void AddLineOfTrees(const glm::vec3& start, const glm::vec3& direction);
 
@@ -37,28 +44,23 @@ private:
   std::shared_ptr<Texture::Image2D> texCube = nullptr;
   std::shared_ptr<Texture::Image2D> texZombie;
   std::shared_ptr<Texture::Image2D> texPlayer;
-  std::shared_ptr<Texture::Image2D> texBullet;
   std::shared_ptr<Texture::Image2D> texGameClear;
   std::shared_ptr<Texture::Image2D> texGameOver;
   std::shared_ptr<Texture::Image2D> texBlack;
   std::shared_ptr<Texture::Image2D> texPointer;
-  std::shared_ptr<Texture::Image2D> texWoodenBarrior;
 
   Shader::PointLight pointLight;
 
-  glm::mat4 matProj = glm::mat4(1);
-  glm::mat4 matView = glm::mat4(1);
+  glm::mat4 matProj = glm::mat4(1); // プロジェクション行列.
+  glm::mat4 matView = glm::mat4(1); // ビュー行列.
+
+  // マウスカーソル座標.
+  glm::vec3 posMouseCursor = glm::vec3(0);
 
   ActorList actors;
-  ActorPtr playerActor;
-  ActorPtr cursorActor;
-  ActorPtr builderActor;
+  std::shared_ptr<PlayerActor> playerActor;
 
-  // 連射用変数.
-  float shotTimer = 0; // 次の弾を発射するまでの残り時間(秒).
-  const float shotInterval = 0.1f; // 弾の発射間隔(秒).
-  int leftOfRounds = 0; // 弾の残り連射回数.
-  const int maxRounds = 3; // 1回のボタン入力で発射される弾数.
+  ActorList newActors;
 
   // 出現させる敵の数.
   size_t appearanceEnemyCount = 100;
