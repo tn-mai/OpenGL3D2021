@@ -112,10 +112,10 @@ bool GameData::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_4.obj");
   primitiveBuffer.AddFromObjFile("Res/player_male/player_male_run_right_5.obj");
 
-  primitiveBuffer.AddFromObjFile("Res/player_male_down_0.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_male_down_1.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_male_down_2.obj");
-  primitiveBuffer.AddFromObjFile("Res/player_male_down_3.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_down_0.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_down_1.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_down_2.obj");
+  primitiveBuffer.AddFromObjFile("Res/player_male/player_male_down_3.obj");
 
   primitiveBuffer.AddFromObjFile("Res/player_male/player_male_damage_0.obj");
   primitiveBuffer.AddFromObjFile("Res/player_male/player_male_damage_1.obj");
