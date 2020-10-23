@@ -263,6 +263,7 @@ void GameData::Update()
       { Key::right, GLFW_KEY_D },
       { Key::up,    GLFW_KEY_W },
       { Key::down,  GLFW_KEY_S },
+      { Key::jump,  GLFW_KEY_SPACE },
     };
 
     // Œ»İ‰Ÿ‚³‚ê‚Ä‚¢‚éƒL[‚ğæ“¾.

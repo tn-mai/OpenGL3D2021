@@ -34,6 +34,11 @@ void Actor::Update(float deltaTime)
     timer = std::max(0.0f, timer - deltaTime);
   }
 
+  // 移動速度に重力を加算.
+  if (gravityScale) {
+    velocity += GameData::Get().gravity * gravityScale * deltaTime;
+  }
+
   // 座標を更新.
   position += velocity * deltaTime;
 
@@ -244,8 +249,10 @@ bool CollideCylinderAndCylinder(Actor& a, Actor& b, bool isBlock)
     // 下端が高い位置にあるアクターを上に移動.
     if (bottomA > bottomB) {
       a.position.y += topB - bottomA; // Aを上に移動.
+      a.velocity.y = 0;
     } else {
       b.position.y += topA - bottomB; // Bを上に移動.
+      b.velocity.y = 0;
     }
   } else {
     // 中心間の距離dを計算.
@@ -330,6 +337,7 @@ bool CollideCylinderAndBox(Actor& a, Actor& b, bool isBlock)
     // そうでなければ下に移動.
     if (bottomA > bottomB) {
       a.position.y += topB - bottomA;
+      a.velocity.y = 0;
     } else {
       a.position.y -= topA - bottomB; // 円柱vs円柱と違うので注意.
     }

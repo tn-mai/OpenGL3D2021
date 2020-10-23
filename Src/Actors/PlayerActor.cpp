@@ -21,6 +21,7 @@ PlayerActor::PlayerActor(const glm::vec3& pos, float rotY,
   pMainGameScene(pScene)
 {
   health = 10;
+  gravityScale = 1;
   SetAnimation(GameData::Get().anmPlayerIdle);
   SetCylinderCollision(1.7f, 0, 0.5f);
   OnHit = [](Actor& a, Actor& b) {
@@ -80,7 +81,8 @@ void PlayerActor::ProcessInput()
     //playerActor->rotation.y = std::atan2(-direction.z, direction.x);
     const float speed = 4.0f;
     direction = glm::normalize(direction);
-    velocity = direction * speed;
+    velocity.x = direction.x * speed;
+    velocity.z = direction.z * speed;
 
     const glm::vec3 front(std::cos(rotation.y), 0, -std::sin(rotation.y));
     const float cf = glm::dot(front, direction);
@@ -98,8 +100,15 @@ void PlayerActor::ProcessInput()
       }
     }
   } else {
-    velocity = glm::vec3(0);
+    velocity.x = velocity.z = 0;
     nextAnime = GameData::Get().anmPlayerIdle;
+  }
+
+  // ジャンプ.
+  // maxH = v^2 / 2g
+  // v = sqrt(maxH * 2g)
+  if (GameData::Get().keyPressedInLastFrame & GameData::Key::jump) {
+    velocity.y += 4.0f;
   }
 
   // ダメージアニメ再生中はダメージアニメが終わるまで待つ.
@@ -184,7 +193,6 @@ void PlayerActor::ProcessInput()
   if (builderActor) {
     builderActor->position = pMainGameScene->GetMouseCursor();
     builderActor->position.y = 0;
-    builderActor->baseColor = glm::vec4(0.2f, 0.2f, 1, 0.5f);
 
     const double scroll = global.curScroll - global.prevScroll;
     if (scroll <= -1) {
@@ -194,11 +202,11 @@ void PlayerActor::ProcessInput()
     }
     builderActor->rotation.y = std::fmod(builderActor->rotation.y + glm::radians(360.0f), glm::radians(360.0f));
     if (std::abs(builderActor->rotation.y - glm::radians(90.0f)) < glm::radians(5.0f)) {
-      builderActor->SetBoxCollision(glm::vec3(-0.25f, -1, -1), glm::vec3(0.25f, 1, 1));
+      builderActor->SetBoxCollision(glm::vec3(-0.25f, 0, -1), glm::vec3(0.25f, 2, 1));
     } else if (std::abs(builderActor->rotation.y - glm::radians(270.0f)) < glm::radians(5.0f)) {
-      builderActor->SetBoxCollision(glm::vec3(-0.25f, -1, -1), glm::vec3(0.25f, 1, 1));
+      builderActor->SetBoxCollision(glm::vec3(-0.25f, 0, -1), glm::vec3(0.25f, 2, 1));
     } else {
-      builderActor->SetBoxCollision(glm::vec3(-1, -1, -0.25f), glm::vec3(1, 1, 0.25f));
+      builderActor->SetBoxCollision(glm::vec3(-1, 0, -0.25f), glm::vec3(1, 2, 0.25f));
     }
 
     if (!(GameData::Get().keyPressed & GameData::Key::build)) {
@@ -219,6 +227,10 @@ void PlayerActor::ProcessInput()
         builderActor->isDead = true;
       }
       builderActor.reset();
+    }
+
+    if (builderActor) {
+      builderActor->baseColor = glm::vec4(0.2f, 0.2f, 1, 0.5f);
     }
   }
 

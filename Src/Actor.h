@@ -112,6 +112,8 @@ public:
 
   std::shared_ptr<Actor> attackActor; // 攻撃の衝突判定用アクター.
 
+  float gravityScale = 0; // 重力影響率.
+
   bool isDead = false; // 死亡フラグ.
   bool hasShadow = true;
 };

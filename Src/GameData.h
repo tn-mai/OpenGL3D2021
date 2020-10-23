@@ -40,7 +40,8 @@ public:
     up    = 0b0000'0000'0000'1000, // 矢印キー(上)
     down  = 0b0000'0000'0001'0000, // 矢印キー(下)
     shot  = 0b0000'0000'0010'0000, // 弾発射キー
-    build = 0b0000'0000'0100'0000, // 建築キー.
+    jump  = 0b0000'0000'0100'0000, // ジャンプキー.
+    build = 0b0000'0000'1000'0000, // 建築キー.
   };
   uint32_t keyPressed = 0; // 押しているキー.
   uint32_t keyPressedInLastFrame = 0; // 最後のフレームで押されたキー.
@@ -146,6 +147,9 @@ public:
 
   // 倒したゾンビの数.
   size_t killCount = 0;
+
+  // 重力.
+  glm::vec3 gravity = glm::vec3(0, -9.8f, 0);
 
   // スクロール値.
   double prevScroll = 0;

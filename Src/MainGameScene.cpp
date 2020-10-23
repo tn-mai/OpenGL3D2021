@@ -107,6 +107,14 @@ bool MainGameScene::Initialize()
   std::random_device rd;
   std::mt19937 random(rd());
 
+  // ’n–Ê‚ð•\Ž¦.
+  {
+    std::shared_ptr<Actor> actor = std::make_shared<Actor>(
+      "ground", nullptr, nullptr, glm::vec3(0, 0, 0));
+    actor->SetBoxCollision(glm::vec3(-20, -5, -20), glm::vec3(20, 0, 20));
+    actors.push_back(actor);
+  }
+
   // –Ø‚ð•\Ž¦.
   for (float j = 0; j < 4; ++j) {
     const glm::mat4 matRot = glm::rotate(glm::mat4(1), glm::radians(90.0f) * j, glm::vec3(0, 1, 0));

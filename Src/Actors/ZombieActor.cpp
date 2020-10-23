@@ -23,6 +23,8 @@ ZombieActor::ZombieActor(const glm::vec3& pos, float rotY,
 
   health = 5;
 
+  gravityScale = 1;
+
   rotation.y = rotY;
 
   // アニメーションを設定.
@@ -53,8 +55,8 @@ ZombieActor::ZombieActor(const glm::vec3& pos, float rotY,
       } else {
         // 死亡アニメーションを設定.
         a.SetAnimation(GameData::Get().anmZombieMaleDown);
-        // 衝突判定を無くす.
-        a.collision.shape = Collision::Shape::none;
+        // 衝突判定を極薄くする.
+        a.SetCylinderCollision(0.01f, 0, 0.01f);
         // 死亡状態に設定.
         a.state = Actor::State::dead;
         // 倒したゾンビの数を1体増やす.
@@ -144,7 +146,8 @@ void ZombieActor::OnUpdate(float deltaTime)
     front.x = std::cos(rotation.y);
     front.z = -std::sin(rotation.y);
     // 正面方向に1m/sの速度で移動するように設定.
-    velocity = front;
+    velocity.x = front.x;
+    velocity.z = front.z;
 
     // プレイヤーが生存中かつ距離3m以内かつ正面60度以内にいたら攻撃.
     if (playerActor->state != Actor::State::dead) {
@@ -159,7 +162,7 @@ void ZombieActor::OnUpdate(float deltaTime)
       }
     }
   } else {
-    velocity = glm::vec3(0);
+    velocity.x = velocity.z = 0;
   }
 }
 
