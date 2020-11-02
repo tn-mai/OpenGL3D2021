@@ -58,6 +58,7 @@ public:
     std::shared_ptr<Texture::Image2D> tex, const glm::vec3& pos);
 
   void Update(float deltTIme);
+  virtual void OnUpdate(float) {}
 
   // 描画の種類.
   enum DrawType {
@@ -82,9 +83,11 @@ public:
     damage, // ダメージを受けている.
     down, // 倒れている.
     dead, // 死んでいる.
+    blow_off, // 吹き飛んでいる.
   };
   State state = State::idle; // 現在の動作状態.
   float health = 0; // 耐久力.
+  float lifetime = -1; // 生存期間(秒). 負数は無限扱い.
   float timer = 0;  // 汎用タイマー.
 
   const Mesh::Primitive* primitive = nullptr;
@@ -104,9 +107,6 @@ public:
   // 衝突判定用の変数.
   Collision collision;
 
-  // 状態更新関数.
-  virtual void OnUpdate(float) {}
-
   // 衝突解決関数へのポインタ.
   void (*OnHit)(Actor&, Actor&) = [](Actor&, Actor&) {};
 
@@ -116,6 +116,8 @@ public:
 
   bool isDead = false; // 死亡フラグ.
   bool hasShadow = true;
+
+  bool iserr = false;
 };
 
 using ActorPtr = std::shared_ptr<Actor>; // アクターポインタ型.

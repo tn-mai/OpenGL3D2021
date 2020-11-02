@@ -63,6 +63,9 @@
     <ClCompile Include="Src\Actors\ZombieActor.cpp">
       <Filter>ソース ファイル\Actors</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Actors\GrenadeActor.cpp">
+      <Filter>ソース ファイル\Actors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -126,6 +129,9 @@
       <Filter>ソース ファイル\Actors</Filter>
     </ClInclude>
     <ClInclude Include="Src\Actors\ZombieActor.h">
+      <Filter>ソース ファイル\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Actors\GrenadeActor.h">
       <Filter>ソース ファイル\Actors</Filter>
     </ClInclude>
   </ItemGroup>

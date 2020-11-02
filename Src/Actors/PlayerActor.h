@@ -23,6 +23,7 @@ private:
   MainGameScene* pMainGameScene = nullptr;
 
   std::shared_ptr<Texture::Image2D> texBullet;
+  std::shared_ptr<Texture::Image2D> texGrenade;
   std::shared_ptr<Texture::Image2D> texWoodenBarrior;
   ActorPtr builderActor;
 

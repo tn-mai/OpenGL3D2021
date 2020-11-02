@@ -147,6 +147,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Src\Actor.cpp" />
+    <ClCompile Include="Src\Actors\GrenadeActor.cpp" />
     <ClCompile Include="Src\Actors\PlayerActor.cpp" />
     <ClCompile Include="Src\Actors\ZombieActor.cpp" />
     <ClCompile Include="Src\glad\src\glad.c" />
@@ -172,6 +173,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\Actor.h" />
+    <ClInclude Include="Src\Actors\GrenadeActor.h" />
     <ClInclude Include="Src\Actors\PlayerActor.h" />
     <ClInclude Include="Src\Actors\ZombieActor.h" />
     <ClInclude Include="Src\glad\include\glad\glad.h" />

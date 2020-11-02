@@ -62,6 +62,9 @@ void main()
   }
 
   fragColor = inColor * texture(texColor, inTexcoord);
+  if (fragColor.a < 0.5) {
+    discard;
+  }
   fragColor.rgb *= totalLightColor;
 }
 

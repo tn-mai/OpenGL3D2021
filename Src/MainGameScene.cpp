@@ -56,6 +56,7 @@
 #include "MainGameScene.h"
 #include "GameData.h"
 #include "SceneManager.h"
+#include "Actors/PlayerActor.h"
 #include "Actors/ZombieActor.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -74,7 +75,7 @@ void MainGameScene::AddLineOfTrees(const glm::vec3& start, const glm::vec3& dire
       &global.primitiveBuffer.Get(GameData::PrimNo::tree),
       texTree, start + direction * i);
     actor->rotation.y = glm::radians(i * 30);
-    actor->SetBoxCollision(glm::vec3(-1, 0, -1), glm::vec3(1, 6, 1));
+    actor->SetBoxCollision(glm::vec3(-1, 0, -1), glm::vec3(1, 100, 1));
     actors.push_back(actor);
   }
 }
@@ -111,7 +112,7 @@ bool MainGameScene::Initialize()
   {
     std::shared_ptr<Actor> actor = std::make_shared<Actor>(
       "ground", nullptr, nullptr, glm::vec3(0, 0, 0));
-    actor->SetBoxCollision(glm::vec3(-20, -5, -20), glm::vec3(20, 0, 20));
+    actor->SetBoxCollision(glm::vec3(-20, -10, -20), glm::vec3(20, 0, 20));
     actors.push_back(actor);
   }
 
@@ -246,12 +247,21 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 */
 void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
+//#define USE_FIXED_DELTATIME
+#ifdef USE_FIXED_DELTATIME
+  const float maxDeltaTime = 1.0f / 30.0f;
   float dt = deltaTime;
-  deltaTime = 1.0f / 60.0f;
-  for (; dt > 0; dt -= 1.0f / 60.0f) {
-    if (dt < deltaTime) {
+  deltaTime = maxDeltaTime;
+  for (; dt > 0; dt -= maxDeltaTime)
+#endif
+
+  {
+
+#ifdef USE_FIXED_DELTATIME
+    if (dt < maxDeltaTime) {
       deltaTime = dt;
     }
+#endif
 
     // アクターリストに含まれるアクターの状態を更新する.
     UpdateActorList(actors, deltaTime);
@@ -519,4 +529,14 @@ void MainGameScene::Finalize()
   glfwSetInputMode(GameData::Get().window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
   std::cout << "[情報] MainGameSceneを終了.\n";
+}
+
+/**
+* 新規アクターを追加する.
+* 
+* @param p 追加するアクターのポインタ.
+*/
+void MainGameScene::AddActor(ActorPtr p)
+{
+  newActors.push_back(p);
 }

@@ -63,6 +63,15 @@ void Actor::Update(float deltaTime)
     }
     primitive = animation->list[animationNo];
   }
+
+  // 生存期間チェック.
+  if (lifetime > 0) {
+    // 生存期間を減らした結果が0以下になったら死亡.
+    lifetime -= deltaTime;
+    if (lifetime <= 0) {
+      isDead = true;
+    }
+  }
 }
 
 /**
@@ -241,11 +250,11 @@ bool CollideCylinderAndCylinder(Actor& a, Actor& b, bool isBlock)
   const float overlapY = std::min(topA, topB) - std::max(bottomA, bottomB);
 
   // 短いほうの円柱の高さの半分を計算.
-  const float halfY = std::min(topA - bottomA, topB - bottomB) * 0.5f;
+  const float shortY = std::min(topA - bottomA, topB - bottomB);
 
   // 重なっている長さが短い方の円柱の高さの半分未満なら上に押し返す.
   // 半分以上なら横に押し返す.
-  if (overlapY < halfY || d2 <= 0) {
+  if (overlapY < shortY * 0.5f) {
     // 下端が高い位置にあるアクターを上に移動.
     if (bottomA > bottomB) {
       a.position.y += topB - bottomA; // Aを上に移動.
@@ -254,7 +263,7 @@ bool CollideCylinderAndCylinder(Actor& a, Actor& b, bool isBlock)
       b.position.y += topA - bottomB; // Bを上に移動.
       b.velocity.y = 0;
     }
-  } else {
+  } else if (d2 >= 0.0001f) {
     // 中心間の距離dを計算.
     const float d = std::sqrt(d2);
     // 押し返す距離sを計算.
@@ -264,6 +273,21 @@ bool CollideCylinderAndCylinder(Actor& a, Actor& b, bool isBlock)
     // アクターAとBを均等に押し返す.
     a.position += n * s * 0.5f;
     b.position -= n * s * 0.5f;
+  } else {
+    // XZ平面で完全に重なっている場合、ベロシティの差を押し返す方向とする.
+    // 差も0の場合はあきらめてX方向に押し出す.
+    glm::vec3 n(1, 0, 0); // 押し出す方向.
+    // ベロシティの差を計算.
+    const float vx = b.velocity.x - a.velocity.x;
+    const float vz = b.velocity.z - a.velocity.z;
+    float v = vx * vx + vz * vz;
+    if (v > 0) {
+      v = std::sqrt(v);
+      n = glm::vec3(vx / v, 0, vz / v);
+    }
+    // アクターAとBを均等に押し返す.
+    a.position += n * r * 0.5f;
+    b.position -= n * r * 0.5f;
   }
   return true;
 }
@@ -337,9 +361,14 @@ bool CollideCylinderAndBox(Actor& a, Actor& b, bool isBlock)
     // そうでなければ下に移動.
     if (bottomA > bottomB) {
       a.position.y += topB - bottomA;
-      a.velocity.y = 0;
+      if (a.velocity.y < 0) {
+        a.velocity.y = 0;
+      }
     } else {
       a.position.y -= topA - bottomB; // 円柱vs円柱と違うので注意.
+      if (a.velocity.y > 0) {
+        a.velocity.y = 0;
+      }
     }
   } else if (d2 > 0) {
     // 中心軸と最近接点の距離dを計算.
@@ -351,6 +380,59 @@ bool CollideCylinderAndBox(Actor& a, Actor& b, bool isBlock)
     // アクターAを押し返す.
     a.position += n * s;
   } else {
+#if 0
+    // 直方体の中心座標(cx, cz)を計算.
+    const glm::vec3 c = b.position + (b.collision.boxMin + b.collision.boxMax) * 0.5f;
+    // 直方体のX及びZ軸方向の長さの半分(hx, hz)を計算.
+    const glm::vec3 h = (b.collision.boxMax - b.collision.boxMin) * 0.5f;
+    // 直方体の中心座標から円柱の中心軸への距離(ox, oz)を計算.
+    const glm::vec3 o = a.position - c;
+    // 押し出す距離を計算.
+    glm::vec3 p;
+    p.x = a.collision.radius + h.x - std::abs(o.x);
+    // 円柱の中心軸が直方体の中心座標より左側にあるなら-X方向へ押し出す.
+    // 右側にあるなら+X方向へ押し出す.
+    if (o.x < 0) {
+      p.x = -p.x;
+    }
+    p.z = a.collision.radius + h.z - std::abs(o.z);
+    // 円柱の中心軸が直方体の中心座標より奥側にあるなら-Z方向へ押し出す.
+    // 手前側にあるなら+Z方向へ押し出す.
+    if (o.z < 0) {
+      p.z = -p.z;
+    }
+    // 円柱の中心軸が直方体の中心座標より奥側にあるなら-Z方向へ押し出す.
+    // 手前側にあるなら+Z方向へ押し出す.
+    if (o.y < 0) {
+      p.y = -(h.y + o.y + a.collision.top);
+    } else {
+      p.y = h.y - o.y - a.collision.bottom;
+    }
+
+    // 押し出す距離が最も短い方向へ押し出す.
+    const glm::vec3 absP = glm::abs(p);
+    if (absP.x < absP.y) {
+      if (absP.x < absP.z) {
+        a.position.x += p.x;
+        a.velocity.x = 0;
+      } else {
+        a.position.z += p.z;
+        a.velocity.z = 0;
+      }
+    } else {
+      if (absP.y < absP.z) {
+        a.position.y += p.y;
+        a.velocity.y = 0;
+      } else {
+        a.position.z += p.z;
+        a.velocity.z = 0;
+      }
+    }
+    if (std::abs(a.position.x) > 100 || std::abs(a.position.y) > 100 || std::abs(a.position.z) > 100) {
+      std::cerr << "[警告]" << __func__ << "計算エラー\n";
+    }
+
+#else
     // 直方体の中心座標(cx, cz)を計算.
     const float cx = b.position.x +
       (b.collision.boxMin.x + b.collision.boxMax.x) * 0.5f;
@@ -358,8 +440,8 @@ bool CollideCylinderAndBox(Actor& a, Actor& b, bool isBlock)
       (b.collision.boxMin.z + b.collision.boxMax.z) * 0.5f;
 
     // 直方体のX及びZ軸方向の長さの半分(hx, hz)を計算.
-    const float hx = b.collision.boxMax.x - cx;
-    const float hz = b.collision.boxMax.z - cz;
+    const float hx = (b.collision.boxMax.x - b.collision.boxMin.x) * 0.5f;
+    const float hz = (b.collision.boxMax.z - b.collision.boxMin.z) * 0.5f;
 
     // 直方体の中心座標から円柱の中心軸への距離(ox, oz)を計算.
     const float ox = a.position.x - cx;
@@ -385,6 +467,7 @@ bool CollideCylinderAndBox(Actor& a, Actor& b, bool isBlock)
         a.position.z += pz;
       }
     }
+#endif
   }
 
   return true;

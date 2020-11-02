@@ -29,7 +29,7 @@ public:
   void Render(GLFWwindow*) const;
   void Finalize();
 
-  void AddActor(ActorPtr p) { newActors.push_back(p); }
+  void AddActor(ActorPtr p);
   ActorPtr GetPlayerActor() { return playerActor; }
   const glm::mat4& GetViewMatrix() const { return matView; }
   const glm::mat4& GetProjectionMatrix() const { return matProj; }

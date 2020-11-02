@@ -2,8 +2,9 @@
 * @file ZombieActor.cpp
 */
 #include "ZombieActor.h"
-#include "../GameData.h"
 #include "../MainGameScene.h"
+#include "../GameData.h"
+#include "glm/gtc/matrix_transform.hpp"
 
 /**
 * コンストラクタ.
@@ -19,23 +20,26 @@ ZombieActor::ZombieActor(const glm::vec3& pos, float rotY,
     pos),
   pMainGameScene(pScene)
 {
-  GameData& gamedata = GameData::Get();
-
-  health = 5;
-
+  // 重力の影響率を設定.
   gravityScale = 1;
 
+  // アクターの耐久値を設定.
+  health = 5;
+
+  moveSpeed = 1;// std::uniform_real_distribution<float>(1.0f, 3.0f)(GameData::Get().random);
+  // アクターのY軸回転を設定.
   rotation.y = rotY;
-
-  // アニメーションを設定.
-  SetAnimation(gamedata.anmZombieMaleWalk);
-  state = State::run;
-
-  // 衝突判定を設定.
+  // 垂直円柱型の衝突判定を設定.
   SetCylinderCollision(1.7f, 0, 0.5f);
 
   // 衝突処理を設定.
   OnHit = [](Actor& a, Actor& b) {
+    if (a.state == State::dead) {
+      if (b.name == "ground") {
+        a.velocity.x = a.velocity.z = 0;
+      }
+      return;
+    }
     if (b.name == "bullet") {
       // 耐久値を減らす.
       a.health -= 2;
@@ -56,14 +60,39 @@ ZombieActor::ZombieActor(const glm::vec3& pos, float rotY,
         // 死亡アニメーションを設定.
         a.SetAnimation(GameData::Get().anmZombieMaleDown);
         // 衝突判定を極薄くする.
-        a.SetCylinderCollision(0.01f, 0, 0.01f);
+        a.SetCylinderCollision(0.2f, 0, 0.1f);
         // 死亡状態に設定.
         a.state = Actor::State::dead;
         // 倒したゾンビの数を1体増やす.
         ++GameData::Get().killCount;
       }
+      ZombieActor& zombie = static_cast<ZombieActor&>(a);
+      zombie.AddBloodActor();
+      zombie.AddBloodActor();
+      zombie.AddBloodActor();
+    } else if (b.name == "blast") {
+      a.health -= 5;
+      if (a.health > 0) {
+      } else {
+        // 死亡アニメーションを設定.
+        a.SetAnimation(GameData::Get().anmZombieMaleDown);
+        // 衝突判定を極薄くする.
+        a.SetCylinderCollision(0.2f, 0, 0.1f);
+        // 死亡状態に設定.
+        a.state = Actor::State::dead;
+        // 倒したゾンビの数を1体増やす.
+        ++GameData::Get().killCount;
+      }
+      ZombieActor& zombie = static_cast<ZombieActor&>(a);
+      zombie.AddBloodActor();
+      zombie.AddBloodActor();
+      zombie.AddBloodActor();
     }
   };
+
+  // アニメーションを設定.
+  SetAnimation(GameData::Get().anmZombieMaleWalk);
+  state = State::run;
 }
 
 /**
@@ -146,8 +175,8 @@ void ZombieActor::OnUpdate(float deltaTime)
     front.x = std::cos(rotation.y);
     front.z = -std::sin(rotation.y);
     // 正面方向に1m/sの速度で移動するように設定.
-    velocity.x = front.x;
-    velocity.z = front.z;
+    velocity.x = front.x * moveSpeed;
+    velocity.z = front.z * moveSpeed;
 
     // プレイヤーが生存中かつ距離3m以内かつ正面60度以内にいたら攻撃.
     if (playerActor->state != Actor::State::dead) {
@@ -161,8 +190,33 @@ void ZombieActor::OnUpdate(float deltaTime)
         }
       }
     }
-  } else {
+  } else if (state != State::dead) {
     velocity.x = velocity.z = 0;
   }
+}
+
+/**
+*
+*/
+void ZombieActor::AddBloodActor()
+{
+  GameData& gamedata = GameData::Get();
+  ActorPtr blood = std::make_shared<Actor>("blood",
+    &gamedata.primitiveBuffer.Get(GameData::PrimNo::plane),
+    gamedata.texBlood, position + glm::vec3(0, 1, 0));
+
+  const float speed = std::uniform_real_distribution<float>(1.5f, 4.0f)(gamedata.random);
+  const glm::mat4 matRotX = glm::rotate(glm::mat4(1),
+    std::uniform_real_distribution<float>(0, glm::radians(90.0f))(gamedata.random),
+    glm::vec3(1, 0, 0));
+  const glm::mat4 matRotY = glm::rotate(glm::mat4(1),
+    std::uniform_real_distribution<float>(0, glm::radians(360.0f))(gamedata.random),
+    glm::vec3(0, 1, 0));
+  blood->velocity = matRotY * matRotX * glm::vec4(0, speed, 0, 1);
+  blood->rotation.z = std::uniform_real_distribution<float>(0, glm::radians(360.0f))(gamedata.random);
+  blood->scale = glm::vec3(std::normal_distribution<float>(0, 1)(gamedata.random) * 0.5f + 0.75f);
+  blood->gravityScale = 1;
+  blood->lifetime = 0.5f;
+  pMainGameScene->AddActor(blood);
 }
 

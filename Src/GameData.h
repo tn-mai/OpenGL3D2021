@@ -34,14 +34,17 @@ public:
    押された瞬間を知りたい場合はkeyPressedInLastFrameを使う.
   */
   enum Key {
-    enter = 0b0000'0000'0000'0001, // Enterキー
-    left  = 0b0000'0000'0000'0010, // 矢印キー(左)
-    right = 0b0000'0000'0000'0100, // 矢印キー(右)
-    up    = 0b0000'0000'0000'1000, // 矢印キー(上)
-    down  = 0b0000'0000'0001'0000, // 矢印キー(下)
-    shot  = 0b0000'0000'0010'0000, // 弾発射キー
-    jump  = 0b0000'0000'0100'0000, // ジャンプキー.
-    build = 0b0000'0000'1000'0000, // 建築キー.
+    enter      = 0b0000'0000'0000'0001, // Enterキー
+    left       = 0b0000'0000'0000'0010, // 矢印キー(左)
+    right      = 0b0000'0000'0000'0100, // 矢印キー(右)
+    up         = 0b0000'0000'0000'1000, // 矢印キー(上)
+    down       = 0b0000'0000'0001'0000, // 矢印キー(下)
+    shot       = 0b0000'0000'0010'0000, // 弾発射キー
+    jump       = 0b0000'0000'0100'0000, // ジャンプキー.
+    grenade    = 0b0000'0000'1000'0000, // 手榴弾キー.
+    build      = 0b0000'0001'0000'0000, // 建築キー.
+    scrollup   = 0b0001'0000'0000'0000, // マウスホイール上.
+    scrolldown = 0b0010'0000'0000'0000, // マウスホイール下.
   };
   uint32_t keyPressed = 0; // 押しているキー.
   uint32_t keyPressedInLastFrame = 0; // 最後のフレームで押されたキー.
@@ -58,6 +61,7 @@ public:
     cube,
     plane,
     bullet,
+    m67_grenade,
     wooden_barrior,
     zombie_male_walk_0,
     zombie_male_walk_1,
@@ -144,6 +148,8 @@ public:
   std::shared_ptr<Animation> anmPlayerRunRight;
   std::shared_ptr<Animation> anmPlayerDown;
   std::shared_ptr<Animation> anmPlayerDamage;
+
+  std::shared_ptr<Texture::Image2D> texBlood;
 
   // 倒したゾンビの数.
   size_t killCount = 0;

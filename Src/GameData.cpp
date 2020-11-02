@@ -53,6 +53,7 @@ bool GameData::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/Cube.obj");
   primitiveBuffer.AddFromObjFile("Res/Plane.obj");
   primitiveBuffer.AddFromObjFile("Res/Bullet.obj");
+  primitiveBuffer.AddFromObjFile("Res/m67_grenade.obj");
   primitiveBuffer.AddFromObjFile("Res/wooden_barrier.obj");
 
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_0.obj");
@@ -241,6 +242,8 @@ bool GameData::Initialize(GLFWwindow* window)
   anmPlayerDamage->interval = 0.1f;
   anmPlayerDamage->isLoop = false;
 
+  texBlood = std::make_shared<Texture::Image2D>("Res/blood.tga");
+
   std::cout << "[情報] ゲームデータの初期化を完了.\n";
   return true;
 }
@@ -277,8 +280,19 @@ void GameData::Update()
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
       newKey |= Key::shot;
     }
+    // マウスの右ボタンで手榴弾を投げる.
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-      newKey |= Key::build;
+      newKey |= Key::grenade;
+    }
+
+    // スクロールの更新.
+    prevScroll = curScroll;
+    curScroll = tmpScroll;
+    const double scroll = curScroll - prevScroll;
+    if (scroll <= -1) {
+      newKey |= Key::scrollup;
+    } else if (scroll >= 1) {
+      newKey |= Key::scrolldown;
     }
 
     // 前回のUpdateで押されておらず(~keyPressed)、
@@ -313,12 +327,6 @@ void GameData::Update()
     // (OpenGLは基本的にfloat型で処理を行うので、型を合わせておくと扱いやすい).
     cursorPosition.x = static_cast<float>(x);
     cursorPosition.y = static_cast<float>(y);
-  }
-
-  // スクロールの更新.
-  {
-    prevScroll = curScroll;
-    curScroll = tmpScroll;
   }
 }
 

@@ -2,6 +2,7 @@
 * @file PlayerActor.cpp
 */
 #include "PlayerActor.h"
+#include "GrenadeActor.h"
 #include "../MainGameScene.h"
 #include "../GameData.h"
 #include "glm/gtc/matrix_transform.hpp"
@@ -20,8 +21,10 @@ PlayerActor::PlayerActor(const glm::vec3& pos, float rotY,
     pos),
   pMainGameScene(pScene)
 {
-  health = 10;
+  // 重力の影響率を設定.
   gravityScale = 1;
+
+  health = 10;
   SetAnimation(GameData::Get().anmPlayerIdle);
   SetCylinderCollision(1.7f, 0, 0.5f);
   OnHit = [](Actor& a, Actor& b) {
@@ -53,6 +56,7 @@ PlayerActor::PlayerActor(const glm::vec3& pos, float rotY,
   };
 
   texBullet = std::make_shared<Texture::Image2D>("Res/Bullet.tga");
+  texGrenade = std::make_shared<Texture::Image2D>("Res/m67_grenade.tga");
   texWoodenBarrior = std::make_shared<Texture::Image2D>("Res/wooden_barrier.tga");
 }
 
@@ -173,6 +177,20 @@ void PlayerActor::ProcessInput()
     pMainGameScene->AddActor(bullet);
   }
 
+  // 手榴弾を投げる.
+  if (GameData::Get().keyPressedInLastFrame & GameData::Key::grenade) {
+    // front方向へ「毎秒20m」の速度で移動するように設定.
+    // プレイヤーのY軸回転から正面方向を計算.
+    const float fx = std::cos(rotation.y);
+    const float fz = -std::sin(rotation.y); // Z軸の向きは数学と逆.
+    const glm::vec3 front = glm::vec3(fx, 0, fz);
+    const glm::vec3 vel(front.x * 4, 4, front.z * 4);
+
+    ActorPtr grenade = std::make_shared<GrenadeActor>(
+      position + + front * 0.6f + glm::vec3(0, 1.5f, 0), vel, rotation.y, pMainGameScene);
+    pMainGameScene->AddActor(grenade);
+  }
+
   // 右クリックでバリケードを配置.
   if (!builderActor) {
     if (GameData::Get().keyPressed & GameData::Key::build) {
@@ -194,12 +212,15 @@ void PlayerActor::ProcessInput()
     builderActor->position = pMainGameScene->GetMouseCursor();
     builderActor->position.y = 0;
 
-    const double scroll = global.curScroll - global.prevScroll;
-    if (scroll <= -1) {
+    // 配置方向を90°単位で回転.
+    if (GameData::Get().keyPressed & GameData::Key::scrollup) {
       builderActor->rotation.y -= glm::radians(90.0f);
-    } else if (scroll >= 1) {
+    }
+    if (GameData::Get().keyPressed & GameData::Key::scrolldown) {
       builderActor->rotation.y += glm::radians(90.0f);
     }
+
+    // 角度に合わせて衝突判定を設定.
     builderActor->rotation.y = std::fmod(builderActor->rotation.y + glm::radians(360.0f), glm::radians(360.0f));
     if (std::abs(builderActor->rotation.y - glm::radians(90.0f)) < glm::radians(5.0f)) {
       builderActor->SetBoxCollision(glm::vec3(-0.25f, 0, -1), glm::vec3(0.25f, 2, 1));
@@ -209,6 +230,7 @@ void PlayerActor::ProcessInput()
       builderActor->SetBoxCollision(glm::vec3(-1, 0, -0.25f), glm::vec3(1, 2, 0.25f));
     }
 
+    // キーが離されたらバリケードを配置.
     if (!(GameData::Get().keyPressed & GameData::Key::build)) {
       if (builderActor->baseColor.r < 1) {
         builderActor->baseColor = glm::vec4(1);

@@ -19,6 +19,9 @@ public:
   virtual void OnUpdate(float) override;
 
 private:
+  void AddBloodActor();
+
+  float moveSpeed = 2;
   MainGameScene* pMainGameScene = nullptr;
 };
 
