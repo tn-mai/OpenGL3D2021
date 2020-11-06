@@ -540,3 +540,23 @@ void MainGameScene::AddActor(ActorPtr p)
 {
   newActors.push_back(p);
 }
+
+/**
+* プレイヤーアクターを取得する.
+*
+* @return プレイヤーアクターへのポインタ.
+*/
+ActorPtr MainGameScene::GetPlayerActor()
+{
+  return playerActor;
+}
+
+/**
+* マウスカーソル座標を取得する.
+*
+* @return マウスカーソル座標.
+*/
+const glm::vec3& MainGameScene::GetMouseCursor() const
+{
+  return posMouseCursor;
+}

@@ -30,10 +30,8 @@ public:
   void Finalize();
 
   void AddActor(ActorPtr p);
-  ActorPtr GetPlayerActor() { return playerActor; }
-  const glm::mat4& GetViewMatrix() const { return matView; }
-  const glm::mat4& GetProjectionMatrix() const { return matProj; }
-  const glm::vec3& GetMouseCursor() const { return posMouseCursor; }
+  ActorPtr GetPlayerActor();
+  const glm::vec3& GetMouseCursor() const;
 
 private:
   void AddLineOfTrees(const glm::vec3& start, const glm::vec3& direction);
@@ -58,9 +56,8 @@ private:
   glm::vec3 posMouseCursor = glm::vec3(0);
 
   ActorList actors;
-  std::shared_ptr<PlayerActor> playerActor;
-
   ActorList newActors;
+  std::shared_ptr<PlayerActor> playerActor;
 
   // èoåªÇ≥ÇπÇÈìGÇÃêî.
   size_t appearanceEnemyCount = 100;
