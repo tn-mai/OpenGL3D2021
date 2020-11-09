@@ -59,6 +59,7 @@ public:
 
   void Update(float deltTIme);
   virtual void OnUpdate(float) {}
+  virtual void OnDestroy() {}
 
   // •`‰æ‚Ìí—Ş.
   enum DrawType {
@@ -87,7 +88,7 @@ public:
   };
   State state = State::idle; // Œ»İ‚Ì“®ìó‘Ô.
   float health = 0; // ‘Ï‹v—Í.
-  float lifetime = -1; // ¶‘¶ŠúŠÔ(•b). •‰”‚Í–³ŒÀˆµ‚¢.
+  float lifespan = 0; // õ–½(•b). 0ˆÈ‰º‚Í–³ŒÀˆµ‚¢.
   float timer = 0;  // ”Ä—pƒ^ƒCƒ}[.
 
   const Mesh::Primitive* primitive = nullptr;
@@ -113,6 +114,8 @@ public:
   std::shared_ptr<Actor> attackActor; // UŒ‚‚ÌÕ“Ë”»’è—pƒAƒNƒ^[.
 
   float gravityScale = 0; // d—Í‰e‹¿—¦.
+  float friction = 0.7f;  // –€CŒW”.
+  float drag = 0;         // ”­¶‚µ‚½–€C—Í.
 
   bool isDead = false; // €–Sƒtƒ‰ƒO.
   bool hasShadow = true;

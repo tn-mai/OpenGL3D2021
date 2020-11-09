@@ -17,10 +17,9 @@ public:
   virtual ~GrenadeActor() = default;
 
   virtual void OnUpdate(float) override;
+  virtual void OnDestroy() override;
 
 private:
-  float timer = 3;
-  bool hasRotation = true;
   MainGameScene* pMainGameScene = nullptr;
 };
 
