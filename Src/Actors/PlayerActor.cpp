@@ -5,7 +5,6 @@
 #include "GrenadeActor.h"
 #include "../MainGameScene.h"
 #include "../GameData.h"
-#include "glm/gtc/matrix_transform.hpp"
 
 /**
 * コンストラクタ.
@@ -112,7 +111,7 @@ void PlayerActor::ProcessInput()
   // maxH = v^2 / 2g
   // v = sqrt(maxH * 2g)
   if (GameData::Get().keyPressedInLastFrame & GameData::Key::jump) {
-    velocity.y += 4.0f;
+    velocity.y = 4.0f;
   }
 
   // ダメージアニメ再生中はダメージアニメが終わるまで待つ.
@@ -187,7 +186,7 @@ void PlayerActor::ProcessInput()
     const glm::vec3 vel(front.x * 4, 4, front.z * 4);
 
     ActorPtr grenade = std::make_shared<GrenadeActor>(
-      position + + front * 0.6f + glm::vec3(0, 1.5f, 0), vel, rotation.y, pMainGameScene);
+      position + front * 0.6f + glm::vec3(0, 1.5f, 0), vel, rotation.y, pMainGameScene);
     pMainGameScene->AddActor(grenade);
   }
 
