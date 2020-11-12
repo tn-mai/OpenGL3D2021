@@ -242,7 +242,7 @@ void RenderActorList(const ActorList& actorList,
 * @retval true  Õ“Ë‚µ‚Ä‚¢‚é.
 * @retval false Õ“Ë‚µ‚Ä‚¢‚È‚¢.
 */
-bool CollideCylinderAndCylinder(Actor& a, Actor& b, bool isBlock)
+bool CollideCylinders(Actor& a, Actor& b, bool isBlock)
 {
   // ‰~’ŒA‚Ì‰º’[‚ª‰~’ŒB‚Ìã’[‚Ìã‚É‚ ‚é‚È‚çÕ“Ë‚µ‚Ä‚¢‚È‚¢.
   const float bottomA = a.position.y + a.collision.bottom;
@@ -631,7 +631,7 @@ bool DetectCollision(Actor& a, Actor& b, bool block)
   case Collision::Shape::cylinder:
     switch (b.collision.shape) {
     case Collision::Shape::cylinder:
-      return CollideCylinderAndCylinder(a, b, isBlock);
+      return CollideCylinders(a, b, isBlock);
     case Collision::Shape::box:
       return CollideCylinderAndBox(a, b, isBlock);
     default:
