@@ -119,8 +119,6 @@ public:
 
   bool isDead = false; // 死亡フラグ.
   bool hasShadow = true;
-
-  bool iserr = false;
 };
 
 using ActorPtr = std::shared_ptr<Actor>; // アクターポインタ型.
