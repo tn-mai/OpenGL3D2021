@@ -26,8 +26,9 @@ GrenadeActor::GrenadeActor(const glm::vec3& pos, const glm::vec3& vel, float rot
   //friction = 0.2f;
 
   // è’ìÀå`èÛÇê›íË.
-  scale = glm::vec3(1.5f);
-  SetCylinderCollision(0.15f, -0.15f, 0.15f);
+  const float scaleFactor = 1;
+  scale = glm::vec3(scaleFactor);
+  SetCylinderCollision(0.1f * scaleFactor, -0.1f * scaleFactor, 0.1f * scaleFactor);
 }
 
 /**
