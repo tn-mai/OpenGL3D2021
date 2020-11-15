@@ -47,6 +47,15 @@ struct Collision
 };
 
 /**
+* 軸並行境界ボックス.
+*/
+struct AABB
+{
+  glm::vec3 c = glm::vec3(0); // 中心座標.
+  glm::vec3 r = glm::vec3(0); // 各軸の半径.
+};
+
+/**
 * アクター.
 */
 class Actor
@@ -107,6 +116,7 @@ public:
 
   // 衝突判定用の変数.
   Collision collision;
+  AABB boundingBox;
 
   // 衝突解決関数へのポインタ.
   void (*OnHit)(Actor&, Actor&) = [](Actor&, Actor&) {};

@@ -247,22 +247,10 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
 */
 void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 {
-//#define USE_FIXED_DELTATIME
-#ifdef USE_FIXED_DELTATIME
   const float maxDeltaTime = 1.0f / 30.0f;
-  float dt = deltaTime;
-  deltaTime = maxDeltaTime;
-  for (; dt > 0; dt -= maxDeltaTime)
-#endif
-
-  {
-
-#ifdef USE_FIXED_DELTATIME
-    if (dt < maxDeltaTime) {
-      deltaTime = dt;
-    }
-#endif
-
+  remainingDeltaTime += deltaTime;
+  deltaTime = std::min(remainingDeltaTime, maxDeltaTime);
+  do {
     // アクターリストに含まれるアクターの状態を更新する.
     UpdateActorList(actors, deltaTime);
 
@@ -273,28 +261,80 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
     }
 
     // 衝突判定.
-    for (size_t ia = 0; ia < actors.size(); ++ia) {
-      Actor& a = *actors[ia]; // アクターA
-      // アクターAが死亡している場合は衝突しない.
-      if (a.isDead) {
-        continue;
-      }
+
+    // 衝突する可能性のあるペアを格納する配列.
+    std::vector<std::pair<Actor&, Actor&>> potentiallyCollidingPairs;
+    potentiallyCollidingPairs.reserve(1000);
+
+    // 衝突したペアを格納する配列.
+    std::vector<std::pair<Actor*, Actor*>> collidedPairs;
+    collidedPairs.reserve(1000);
+
+    // 衝突判定を持つアクターだけを取り出す.
+    ActorList actorsWithCollider;
+    actorsWithCollider.reserve(actors.size());
+    std::copy_if(
+      actors.begin(), actors.end(), std::back_inserter(actorsWithCollider),
+      [](const ActorPtr& a) { return a->collision.shape != Collision::Shape::none; });
+
+    // 衝突しそうなペアをリストアップ.
+    for (size_t ia = 0; ia < actorsWithCollider.size(); ++ia) {
+      Actor& a = *actorsWithCollider[ia]; // アクターA
       // 計算済み及び自分自身を除く、残りのアクターとの間で衝突判定を実行.
-      for (size_t ib = ia + 1; ib < actors.size(); ++ib) {
-        Actor& b = *actors[ib]; // アクターB
-        // アクターBが死亡している場合は衝突しない.
-        if (b.isDead) {
+      for (size_t ib = ia + 1; ib < actorsWithCollider.size(); ++ib) {
+        Actor& b = *actorsWithCollider[ib]; // アクターB
+
+        // 2つの衝突AABBが交差していなければ衝突しない(多分).
+        const glm::vec3 d = glm::abs(b.boundingBox.c - a.boundingBox.c);
+        const glm::vec3 r = a.boundingBox.r + b.boundingBox.r;
+        if (d.x > r.x || d.y > r.y || d.z > r.z) {
           continue;
         }
-        // 衝突判定.
-        if (DetectCollision(a, b, true)) {
-          // 衝突していたら、双方のOnHit関数を実行する.
-          a.OnHit(a, b);
-          b.OnHit(b, a);
+
+        // どちらかがブロックしない、または衝突形状が直方体同士の場合はここで衝突判定を行う.
+        if (!a.collision.blockOtherActors || !b.collision.blockOtherActors || (
+          a.collision.shape == Collision::Shape::box &&
+          b.collision.shape == Collision::Shape::box)) {
+          if (DetectCollision(a, b, true)) {
+            collidedPairs.emplace_back(&a, &b);
+          }
+          continue;
         }
-      } // 閉じ括弧の数に注意.
+
+        // ここまで来たら衝突の可能性がある.
+        potentiallyCollidingPairs.emplace_back(a, b);
+      }
     }
-  }
+
+    // 本当に衝突するかを調べる.
+    for (size_t loop = 0; loop < 5; ++loop) {
+      bool hasCollision = false;
+      for (auto& pair : potentiallyCollidingPairs) {
+          if (DetectCollision(pair.first, pair.second, true)) {
+            collidedPairs.emplace_back(&pair.first, &pair.second);
+            hasCollision = true;
+          }
+      }
+      if (!hasCollision) {
+        break;
+      }
+    }
+
+    // 重複するペアを除外する.
+    std::sort(collidedPairs.begin(), collidedPairs.end());
+    const auto itr = std::unique(collidedPairs.begin(), collidedPairs.end());
+    collidedPairs.erase(itr, collidedPairs.end());
+
+    // OnHitを呼び出す.
+    for (auto& e : collidedPairs) {
+      e.first->OnHit(*e.first, *e.second);
+      e.second->OnHit(*e.second, *e.first);
+    }
+
+    // 今回の更新で消費した時間を残り経過時間から減算.
+    // 経過時間が固定値以上ならループ.
+    remainingDeltaTime -= deltaTime;
+  } while (remainingDeltaTime >= maxDeltaTime);
 
   // まだクリアしていない?
   if (!isGameClear) {

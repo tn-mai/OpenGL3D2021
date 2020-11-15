@@ -65,6 +65,9 @@ private:
   // クリア条件を満たしたかどうか.
   bool isGameClear = false;
   bool isGameOver = false;
+
+  // 残り経過時間.
+  float remainingDeltaTime = 0;
 };
 
 #endif // MAINGAMESCENE_H_INCLUDED

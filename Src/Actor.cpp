@@ -72,6 +72,22 @@ void Actor::Update(float deltaTime)
   // 座標を更新.
   position += velocity * deltaTime;
 
+  // 衝突しそうな範囲を更新.
+  const float vl = glm::length(velocity)* deltaTime * 2.0f;
+  switch (collision.shape) {
+  case Collision::Shape::cylinder:
+    boundingBox.c = position;
+    boundingBox.c.y += (collision.top + collision.bottom) * 0.5f;
+    boundingBox.r.x = collision.radius + vl;
+    boundingBox.r.y = (collision.top - collision.bottom) * 0.5f + vl;
+    boundingBox.r.z = boundingBox.r.x;
+    break;
+  case Collision::Shape::box:
+    boundingBox.c = position + (collision.boxMin + collision.boxMax) * 0.5f;
+    boundingBox.r = (collision.boxMax - collision.boxMin) * 0.5f + vl;
+    break;
+  }
+
   // アニメーションデータがあればアニメーションする.
   if (animation && !animation->list.empty()) {
     // ループフラグがtrue、またはループフラグがfalse
@@ -155,6 +171,12 @@ void Actor::SetCylinderCollision(float top, float bottom, float radius)
   collision.top = top;
   collision.bottom = bottom;
   collision.radius = radius;
+
+  boundingBox.c = position;
+  boundingBox.c.y += (collision.top + collision.bottom) * 0.5f;
+  boundingBox.r.x = collision.radius;
+  boundingBox.r.y = (collision.top - collision.bottom) * 0.5f;
+  boundingBox.r.z = boundingBox.r.x;
 }
 
 /**
@@ -168,6 +190,9 @@ void Actor::SetBoxCollision(const glm::vec3& min, const glm::vec3& max)
   collision.shape = Collision::Shape::box;
   collision.boxMin = min;
   collision.boxMax = max;
+
+  boundingBox.c = position + (collision.boxMin + collision.boxMax) * 0.5f;
+  boundingBox.r = (collision.boxMax - collision.boxMin) * 0.5f;
 }
 
 /**
@@ -274,26 +299,45 @@ bool CollideCylinders(Actor& a, Actor& b, bool isBlock)
 
   // ブロック指定があるので相手を押し返す.
 
-#if 0
-  // Aの中心座標がBの中心座標の上側にあるなら上に、下にあるなら下に押し出す.
-  const float ay = (topA + bottomA) * 0.5f;
-  const float by = (topB + bottomB) * 0.5f;
-  float py;
-  if (ay >= by) {
-    py = topB - bottomA;
+#if 1
+  // 上下の押し返す距離が短い方向をpyとする.
+  float py = 0;
+  const float y0 = bottomB - topA;
+  const float y1 = topB - bottomA;
+  if (std::abs(y0) <= std::abs(y1)) {
+    py = y0;
   } else {
-    py = bottomB - topA;
+    py = y1;
   }
+
   // Y方向の押し出す距離がXZ方向の押し出す距離より短ければY方向に押し出す.
   // 長ければXZ方向に押し出す.
-  if (py * py < d2) {
-    a.position.y += py * 0.5f;
-    b.position.y -= py * 0.5f;
+  // 中心間の距離dを計算.
+  const float d = std::sqrt(d2);
+  // 押し返す距離sを計算.
+  const float s = r - d;
+  if (std::abs(py) < s) {
+#if 0
+    a.AddCollisionPenalty(glm::vec3(0, py * 0.5f, 0));
+    b.AddCollisionPenalty(glm::vec3(0, -py * 0.5f, 0));
     if (py >= 0) {
       a.velocity.y = std::max(a.velocity.y, 0.0f);
     } else {
       b.velocity.y = std::max(b.velocity.y, 0.0f);
     }
+    a.drag = (a.friction + b.friction) * 0.5f * GameData::Get().gravity.y;
+#else
+    // 上方向が近い場合はAを上に移動.
+    if (py >= 0) {
+      a.position.y += topB - bottomA; // Aを上に移動.
+      a.velocity.y = std::max(a.velocity.y, 0.0f);
+      a.drag = (a.friction + b.friction) * 0.5f * GameData::Get().gravity.y;
+    } else {
+      b.position.y += topA - bottomB; // Bを上に移動.
+      b.velocity.y = std::max(b.velocity.y, 0.0f);
+      b.drag = (a.friction + b.friction) * 0.5f * GameData::Get().gravity.y;
+    }
+#endif
   } else {
     // AとBがぴったり重なっている場合は+X方向に押し出す.
     if (d2 < 0.00001f) {
@@ -302,10 +346,6 @@ bool CollideCylinders(Actor& a, Actor& b, bool isBlock)
       a.position += n * r * 0.5f;
       b.position -= n * r * 0.5f;
     } else {
-      // 中心間の距離dを計算.
-      const float d = std::sqrt(d2);
-      // 押し返す距離sを計算.
-      const float s = r - d;
       // 円柱の中心軸間の方向ベクトルnを計算.
       const glm::vec3 n(dx / d, 0, dz / d);
       // アクターAとBを均等に押し返す.
@@ -409,33 +449,45 @@ bool CollideCylinderAndBox(Actor& a, Actor& b, bool isBlock)
 
   // ブロック指定があるので円柱を押し返す.
 
-#if 0
+#if 1
   // 直方体の中心座標(cx, cz)を計算.
-  const glm::vec3 c = b.position + (b.collision.boxMin + b.collision.boxMax) * 0.5f;
-  // 直方体のX及びZ軸方向の長さの半分(hx, hz)を計算.
-  const glm::vec3 h = (b.collision.boxMax - b.collision.boxMin) * 0.5f;
-  // 直方体の中心座標から円柱の中心軸への距離(ox, oz)を計算.
-  const glm::vec3 o = a.position - c;
-  // 押し出す距離を計算.
-  glm::vec3 p;
-  p.x = a.collision.radius + h.x - std::abs(o.x);
-  // 円柱の中心軸が直方体の中心座標より左側にあるなら-X方向へ押し出す.
-  // 右側にあるなら+X方向へ押し出す.
-  if (o.x < 0) {
-    p.x = -p.x;
-  }
-  p.z = a.collision.radius + h.z - std::abs(o.z);
-  // 円柱の中心軸が直方体の中心座標より奥側にあるなら-Z方向へ押し出す.
-  // 手前側にあるなら+Z方向へ押し出す.
-  if (o.z < 0) {
-    p.z = -p.z;
-  }
-  // 円柱の中心軸が直方体の中心座標より奥側にあるなら-Y方向へ押し出す.
-  // 手前側にあるなら+Y方向へ押し出す.
-  if (o.y < 0) {
-    p.y = -(h.y + o.y + a.collision.top);
+  const float cx = b.position.x +
+    (b.collision.boxMin.x + b.collision.boxMax.x) * 0.5f;
+  const float cz = b.position.z +
+    (b.collision.boxMin.z + b.collision.boxMax.z) * 0.5f;
+
+  // 直方体のX及びZ軸方向の中心座標からの長さ(hx, hz)を計算.
+  const float hx = (b.collision.boxMax.x - b.collision.boxMin.x) * 0.5f;
+  const float hz = (b.collision.boxMax.z - b.collision.boxMin.z) * 0.5f;
+
+  // 直方体の中心座標から円柱の中心軸までの距離(ox, oz)を計算.
+  const float ox = a.position.x - cx;
+  const float oz = a.position.z - cz;
+
+  // 押し返す距離pを計算.
+  // 速度vが0でなければ移動方向に向かう面まで押し返す.
+  // 0の場合は押し返す距離が短い方向を選択.
+  const float r = a.collision.radius;
+  glm::vec3 p = glm::vec3(0);
+
+  if (ox < 0) {
+    p.x = -(r + hx) - ox;
   } else {
-    p.y = h.y - o.y - a.collision.bottom;
+    p.x = (r + hx) - ox;
+  }
+
+  const float y0 = bottomB - topA;
+  const float y1 = topB - bottomA;
+  if (std::abs(y0) <= std::abs(y1)) {
+    p.y = y0;
+  } else {
+    p.y = y1;
+  }
+ 
+  if (oz < 0) {
+    p.z = -(r + hz) - oz;
+  } else {
+    p.z = (r + hz) - oz;
   }
 
   // 押し出す距離が最も短い方向へ押し出す.
@@ -451,7 +503,11 @@ bool CollideCylinderAndBox(Actor& a, Actor& b, bool isBlock)
   } else {
     if (absP.y < absP.z) {
       a.position.y += p.y;
-      a.velocity.y = 0;
+      // 上に押し返す場合は摩擦を発生させ、落下していたらY要素を0にする.
+      if (p.y >= 0) {
+        a.drag = (a.friction + b.friction) * 0.5f * GameData::Get().gravity.y;
+        a.velocity.y = std::max(a.velocity.y, 0.0f);
+      }
     } else {
       a.position.z += p.z;
       a.velocity.z = 0;
