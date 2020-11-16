@@ -495,22 +495,34 @@ bool CollideCylinderAndBox(Actor& a, Actor& b, bool isBlock)
   if (absP.x < absP.y) {
     if (absP.x < absP.z) {
       a.position.x += p.x;
-      a.velocity.x = 0;
+      // ‰Ÿ‚µ•Ô‚·•ûŒü‚Æ‹tŒü‚«‚ÉˆÚ“®‚µ‚Ä‚¢‚½‚ç‘¬“x‚ð0‚É‚·‚é.
+      if (a.velocity.x * p.x < 0) {
+        a.velocity.x = 0;
+      }
     } else {
       a.position.z += p.z;
-      a.velocity.z = 0;
+      // ‰Ÿ‚µ•Ô‚·•ûŒü‚Æ‹tŒü‚«‚ÉˆÚ“®‚µ‚Ä‚¢‚½‚ç‘¬“x‚ð0‚É‚·‚é.
+      if (a.velocity.z * p.z < 0) {
+        a.velocity.z = 0;
+      }
     }
   } else {
     if (absP.y < absP.z) {
       a.position.y += p.y;
+      // ‰Ÿ‚µ•Ô‚·•ûŒü‚Æ‹tŒü‚«‚ÉˆÚ“®‚µ‚Ä‚¢‚½‚ç‘¬“x‚ð0‚É‚·‚é.
+      if (a.velocity.y * p.y < 0) {
+        a.velocity.y = 0;
+      }
       // ã‚É‰Ÿ‚µ•Ô‚·ê‡‚Í–€ŽC‚ð”­¶‚³‚¹A—Ž‰º‚µ‚Ä‚¢‚½‚çY—v‘f‚ð0‚É‚·‚é.
       if (p.y >= 0) {
         a.drag = (a.friction + b.friction) * 0.5f * GameData::Get().gravity.y;
-        a.velocity.y = std::max(a.velocity.y, 0.0f);
       }
     } else {
       a.position.z += p.z;
-      a.velocity.z = 0;
+      // ‰Ÿ‚µ•Ô‚·•ûŒü‚Æ‹tŒü‚«‚ÉˆÚ“®‚µ‚Ä‚¢‚½‚ç‘¬“x‚ð0‚É‚·‚é.
+      if (a.velocity.z * p.z < 0) {
+        a.velocity.z = 0;
+      }
     }
   }
   if (std::abs(a.position.x) > 100 || std::abs(a.position.y) > 100 || std::abs(a.position.z) > 100) {
