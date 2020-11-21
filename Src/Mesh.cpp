@@ -94,7 +94,7 @@ bool PrimitiveBuffer::Allocate(GLsizei maxVertexCount, GLsizei maxIndexCount)
 }
 
 /**
-* プリミティブ用のメモリを開放する.
+* プリミティブ用のメモリを解放する.
 */
 void PrimitiveBuffer::Free()
 {
