@@ -19,14 +19,15 @@ namespace GLContext {
 *
 * @param size データのサイズ.
 * @param data データへのポインタ.
+* @param flags バッファオブジェクトの機能フラグ.
 *
 * @return 作成したバッファオブジェクト.
 */
-GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data)
+GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data, GLbitfield flags)
 {
   GLuint id = 0;
   glCreateBuffers(1, &id);
-  glNamedBufferStorage(id, size, data, 0);
+  glNamedBufferStorage(id, size, data, flags);
   return id;
 }
 

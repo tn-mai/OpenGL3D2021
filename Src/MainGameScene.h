@@ -10,6 +10,7 @@
 #include "Texture.h"
 #include "Actor.h"
 #include "Actors/PlayerActor.h"
+#include "Sprite.h"
 #include <memory>
 
 /**
@@ -30,6 +31,10 @@ public:
   void Finalize();
 
   void AddActor(ActorPtr p);
+  void AddSprite(const std::shared_ptr<Sprite>& sprite) {
+    sprites.push_back(sprite);
+  }
+  void AddBloodSprite(const glm::vec3& position);
   ActorPtr GetPlayerActor();
   const glm::vec3& GetMouseCursor() const;
 
@@ -68,6 +73,9 @@ private:
 
   // Žc‚èŒo‰ßŽžŠÔ.
   float remainingDeltaTime = 0;
+
+  std::vector<std::shared_ptr<Sprite>> sprites;
+  SpriteRenderer spriteRenderer;
 };
 
 #endif // MAINGAMESCENE_H_INCLUDED

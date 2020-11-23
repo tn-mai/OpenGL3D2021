@@ -172,6 +172,9 @@ bool MainGameScene::Initialize()
   // 新規アクター追加用の配列のサイズを予約する.
   newActors.reserve(100);
 
+  sprites.reserve(1000);
+  spriteRenderer.Allocate(1000);
+
   std::cout << "[情報] MainGameSceneを開始.\n";
   return true;
 }
@@ -364,6 +367,9 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
     glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 500.0f);
   matView =
     glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
+
+  UpdateSpriteList(sprites, deltaTime);
+  spriteRenderer.Update(sprites, matView);
 }
 
 /**
@@ -503,6 +509,9 @@ void MainGameScene::Render(GLFWwindow* window) const
     glDepthMask(GL_TRUE);
   }
 
+  // スプライトを描画.
+  spriteRenderer.Draw(pipeline, matProj * matView);
+
   // 2D表示.
   {
     glDisable(GL_CULL_FACE);
@@ -519,6 +528,8 @@ void MainGameScene::Render(GLFWwindow* window) const
 
     std::shared_ptr<Shader::Pipeline> pipeline2D = GameData::Get().pipelineSimple;
     pipeline2D->Bind();
+
+    primitiveBuffer.BindVertexArray();
 
     // マウスカーソル位置を描画.
     {
@@ -599,4 +610,66 @@ ActorPtr MainGameScene::GetPlayerActor()
 const glm::vec3& MainGameScene::GetMouseCursor() const
 {
   return posMouseCursor;
+}
+
+/**
+* 血しぶきスプライトを追加する.
+*
+* @param position スプライトを表示する座標.
+*/
+void MainGameScene::AddBloodSprite(const glm::vec3& position)
+{
+  GameData& gamedata = GameData::Get();
+#if 0
+  std::shared_ptr<Sprite> blood =
+    std::make_shared<Sprite>(position + glm::vec3(0, 1, 0),gamedata.texBlood);
+  const float vx = std::uniform_real_distribution<float>(-3, 3)(gamedata.random);
+  const float vy = std::uniform_real_distribution<float>(-3, 3)(gamedata.random);
+  const float vz = std::uniform_real_distribution<float>(-3, 3)(gamedata.random);
+  blood->velocity = glm::vec3(vx, vy, vz);
+  blood->scale = glm::vec2(
+    std::uniform_real_distribution<float>(0.25f, 1)(gamedata.random));
+  blood->gravityScale = 1;
+  blood->lifespan = 0.5f;
+
+  sprites.push_back(blood);
+#elif 1
+  std::shared_ptr<Sprite> blood =
+    std::make_shared<Sprite>(position + glm::vec3(0, 1, 0),gamedata.texBlood);
+  const float speed = std::uniform_real_distribution<float>(1.5f, 6.0f)(gamedata.random);
+  const glm::mat4 matRotX = glm::rotate(glm::mat4(1),
+    std::uniform_real_distribution<float>(0, glm::radians(90.0f))(gamedata.random),
+    glm::vec3(1, 0, 0));
+  const glm::mat4 matRotY = glm::rotate(glm::mat4(1),
+    std::uniform_real_distribution<float>(0, glm::radians(360.0f))(gamedata.random),
+    glm::vec3(0, 1, 0));
+  blood->velocity = matRotY * matRotX * glm::vec4(0, speed, 0, 1);
+  blood->rotation = std::uniform_real_distribution<float>(0, glm::radians(360.0f))(gamedata.random);
+  blood->scale = glm::vec3(std::normal_distribution<float>(0, 1)(gamedata.random) * 0.25f + 0.5f);
+  blood->angularVelocity= std::uniform_real_distribution<float>(glm::radians(30.0f), glm::radians(180.0f))(gamedata.random);
+  blood->lifespan = std::normal_distribution<float>(0, 1)(gamedata.random) * 0.125f + 0.25f;
+  blood->color = glm::vec4(1, 1, 1, 2);
+  blood->colorVelocity = glm::vec4(0, 0, 0, -4.0f * (blood->lifespan / 0.5f));
+  blood->scaleVelocity = glm::vec2(-0.5f);
+  blood->gravityScale = 1;
+  sprites.push_back(blood);
+#else
+  ActorPtr blood = std::make_shared<Actor>("blood",
+    &gamedata.primitiveBuffer.Get(GameData::PrimNo::plane),
+    gamedata.texBlood, position + glm::vec3(0, 1, 0));
+
+  const float speed = std::uniform_real_distribution<float>(1.5f, 6.0f)(gamedata.random);
+  const glm::mat4 matRotX = glm::rotate(glm::mat4(1),
+    std::uniform_real_distribution<float>(0, glm::radians(90.0f))(gamedata.random),
+    glm::vec3(1, 0, 0));
+  const glm::mat4 matRotY = glm::rotate(glm::mat4(1),
+    std::uniform_real_distribution<float>(0, glm::radians(360.0f))(gamedata.random),
+    glm::vec3(0, 1, 0));
+  blood->velocity = matRotY * matRotX * glm::vec4(0, speed, 0, 1);
+  blood->rotation.z = std::uniform_real_distribution<float>(0, glm::radians(360.0f))(gamedata.random);
+  blood->scale = glm::vec3(std::normal_distribution<float>(0, 1)(gamedata.random) * 0.5f + 0.75f);
+  blood->gravityScale = 1;
+  blood->lifespan = 0.5f;
+  AddActor(blood);
+#endif
 }

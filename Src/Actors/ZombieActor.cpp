@@ -66,9 +66,9 @@ ZombieActor::ZombieActor(const glm::vec3& pos, float rotY,
         std::cout << "[î•ñ] ƒ]ƒ“ƒrŽ€–S\n";
       }
       ZombieActor& zombie = static_cast<ZombieActor&>(a);
-      zombie.AddBloodActor();
-      zombie.AddBloodActor();
-      zombie.AddBloodActor();
+      for (int i = 0; i < 10; ++i) {
+        zombie.pMainGameScene->AddBloodSprite(zombie.position);
+      }
     } else if (b.name == "explosion") {
       a.health -= 5;
       if (a.health > 0) {
@@ -83,9 +83,9 @@ ZombieActor::ZombieActor(const glm::vec3& pos, float rotY,
         ++GameData::Get().killCount;
       }
       ZombieActor& zombie = static_cast<ZombieActor&>(a);
-      zombie.AddBloodActor();
-      zombie.AddBloodActor();
-      zombie.AddBloodActor();
+      for (int i = 0; i < 10; ++i) {
+        zombie.pMainGameScene->AddBloodSprite(zombie.position);
+      }
     }
   };
 
@@ -195,29 +195,3 @@ void ZombieActor::OnUpdate(float deltaTime)
     velocity.x = velocity.z = 0;
   }
 }
-
-/**
-*
-*/
-void ZombieActor::AddBloodActor()
-{
-  GameData& gamedata = GameData::Get();
-  ActorPtr blood = std::make_shared<Actor>("blood",
-    &gamedata.primitiveBuffer.Get(GameData::PrimNo::plane),
-    gamedata.texBlood, position + glm::vec3(0, 1, 0));
-
-  const float speed = std::uniform_real_distribution<float>(1.5f, 6.0f)(gamedata.random);
-  const glm::mat4 matRotX = glm::rotate(glm::mat4(1),
-    std::uniform_real_distribution<float>(0, glm::radians(90.0f))(gamedata.random),
-    glm::vec3(1, 0, 0));
-  const glm::mat4 matRotY = glm::rotate(glm::mat4(1),
-    std::uniform_real_distribution<float>(0, glm::radians(360.0f))(gamedata.random),
-    glm::vec3(0, 1, 0));
-  blood->velocity = matRotY * matRotX * glm::vec4(0, speed, 0, 1);
-  blood->rotation.z = std::uniform_real_distribution<float>(0, glm::radians(360.0f))(gamedata.random);
-  blood->scale = glm::vec3(std::normal_distribution<float>(0, 1)(gamedata.random) * 0.5f + 0.75f);
-  blood->gravityScale = 1;
-  blood->lifespan = 0.5f;
-  pMainGameScene->AddActor(blood);
-}
-

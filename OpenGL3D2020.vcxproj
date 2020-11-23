@@ -158,6 +158,7 @@
     <ClCompile Include="Src\Mesh.cpp" />
     <ClCompile Include="Src\SceneManager.cpp" />
     <ClCompile Include="Src\Shader.cpp" />
+    <ClCompile Include="Src\Sprite.cpp" />
     <ClCompile Include="Src\Texture.cpp" />
     <ClCompile Include="Src\TitleScene.cpp" />
   </ItemGroup>
@@ -184,6 +185,7 @@
     <ClInclude Include="Src\Mesh.h" />
     <ClInclude Include="Src\SceneManager.h" />
     <ClInclude Include="Src\Shader.h" />
+    <ClInclude Include="Src\Sprite.h" />
     <ClInclude Include="Src\Texture.h" />
     <ClInclude Include="Src\TitleScene.h" />
   </ItemGroup>
