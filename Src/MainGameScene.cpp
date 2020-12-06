@@ -53,11 +53,15 @@
 * - すしざんまいのポーズ.
 * - ボスゾンビ.
 */
+#define NOMINMAX
 #include "MainGameScene.h"
 #include "GameData.h"
 #include "SceneManager.h"
 #include "Actors/PlayerActor.h"
 #include "Actors/ZombieActor.h"
+#include "Audio.h"
+#include "Audio/MainWorkUnit/SE.h"
+#include "Audio/MainWorkUnit/BGM.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <algorithm>
@@ -175,6 +179,8 @@ bool MainGameScene::Initialize()
   sprites.reserve(1000);
   spriteRenderer.Allocate(1000);
 
+  Audio::Instance().Play(4, CRI_BGM_BENSOUND_HIGHOCTANE);
+
   std::cout << "[情報] MainGameSceneを開始.\n";
   return true;
 }
@@ -206,12 +212,15 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
   }
 
   // プレイヤーが死んでいたら
-  if (playerActor->state == Actor::State::dead) {
-    // アニメーションが終了していたらゲームオーバーにする.
-    if (playerActor->animationNo >= playerActor->animation->list.size() - 1) {
-      isGameOver = true;
+  if (!isGameOver) {
+    if (playerActor->state == Actor::State::dead) {
+      // アニメーションが終了していたらゲームオーバーにする.
+      if (playerActor->animationNo >= playerActor->animation->list.size() - 1) {
+        Audio::Instance().Play(4, CRI_BGM_GAME_OVER);
+        isGameOver = true;
+      }
+      return;
     }
-    return;
   }
 
   // マウスポインタを地面に表示.
@@ -349,6 +358,8 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
       // プレイヤーアクターを待機状態にする.
       playerActor->velocity = glm::vec3(0);
       playerActor->SetAnimation(GameData::Get().anmPlayerIdle);
+
+      Audio::Instance().Play(4, CRI_BGM_SUCCESS);
 
       std::cout << "[情報] ゲームクリア条件を達成\n";
     }
@@ -578,6 +589,8 @@ void MainGameScene::Finalize()
 {
   // マウスカーソルを表示する.
   glfwSetInputMode(GameData::Get().window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+  Audio::Instance().Stop(4);
 
   std::cout << "[情報] MainGameSceneを終了.\n";
 }

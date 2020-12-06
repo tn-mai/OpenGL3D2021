@@ -4,6 +4,8 @@
 #include "TitleScene.h"
 #include "SceneManager.h"
 #include "GameData.h"
+#include "Audio.h"
+#include "Audio/MainWorkUnit/SE.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
@@ -30,6 +32,7 @@ void TitleScene::ProcessInput(GLFWwindow* window)
 {
   GameData& gamedata = GameData::Get();
   if (gamedata.keyPressedInLastFrame & GameData::Key::enter) {
+    Audio::Instance().Play(0, CRI_SE_BANG_1);
     SceneManager::Get().ChangeScene(MAINGAME_SCENE_NAME);
   }
 }

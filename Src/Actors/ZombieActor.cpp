@@ -4,7 +4,9 @@
 #include "ZombieActor.h"
 #include "../MainGameScene.h"
 #include "../GameData.h"
-#include "glm/gtc/matrix_transform.hpp"
+#include "../Audio.h"
+#include "../Audio/MainWorkUnit/SE.h"
+#include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
 /**
@@ -63,12 +65,14 @@ ZombieActor::ZombieActor(const glm::vec3& pos, float rotY,
         a.state = Actor::State::dead;
         // ì|ÇµÇΩÉ]ÉìÉrÇÃêîÇ1ëÃëùÇ‚Ç∑.
         ++GameData::Get().killCount;
+        Audio::Instance().Play(3, CRI_SE_ZOMBIE_VOICE_0);
         std::cout << "[èÓïÒ] É]ÉìÉréÄñS\n";
       }
       ZombieActor& zombie = static_cast<ZombieActor&>(a);
       for (int i = 0; i < 10; ++i) {
         zombie.pMainGameScene->AddBloodSprite(zombie.position);
       }
+      Audio::Instance().Play(3, CRI_SE_GUTTING_0);
     } else if (b.name == "explosion") {
       a.health -= 5;
       if (a.health > 0) {
@@ -86,6 +90,7 @@ ZombieActor::ZombieActor(const glm::vec3& pos, float rotY,
       for (int i = 0; i < 10; ++i) {
         zombie.pMainGameScene->AddBloodSprite(zombie.position);
       }
+      Audio::Instance().Play(3, CRI_SE_GUTTING_1);
     }
   };
 

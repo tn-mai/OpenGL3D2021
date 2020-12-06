@@ -1,10 +1,13 @@
 /**
 * @file PlayerActor.cpp
 */
+#define NOMINMAX
 #include "PlayerActor.h"
 #include "GrenadeActor.h"
 #include "../MainGameScene.h"
 #include "../GameData.h"
+#include "../Audio.h"
+#include "../Audio/MainWorkUnit/SE.h"
 
 /**
 * コンストラクタ.
@@ -174,6 +177,8 @@ void PlayerActor::ProcessInput()
 
     // アクターをリストに追加.
     pMainGameScene->AddActor(bullet);
+
+    Audio::Instance().Play(1, CRI_SE_BANG_1);
   }
 
   // 手榴弾を投げる.
@@ -188,6 +193,8 @@ void PlayerActor::ProcessInput()
     ActorPtr grenade = std::make_shared<GrenadeActor>(
       position + front * 0.6f + glm::vec3(0, 1.5f, 0), vel, rotation.y, pMainGameScene);
     pMainGameScene->AddActor(grenade);
+
+    Audio::Instance().Play(1, CRI_SE_SLAP_0);
   }
 
   // 右クリックでバリケードを配置.

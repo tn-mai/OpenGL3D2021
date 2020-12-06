@@ -1,9 +1,12 @@
 /**
 * @file GrenadeActor.cpp
 */
+#define NOMINMAX
 #include "GrenadeActor.h"
 #include "../MainGameScene.h"
 #include "../GameData.h"
+#include "../Audio.h"
+#include "../Audio/MainWorkUnit/SE.h"
 
 /**
 * コンストラクタ.
@@ -101,4 +104,6 @@ void GrenadeActor::OnDestroy()
     }
   };
   pMainGameScene->AddActor(actor);
+
+  Audio::Instance().Play(2, CRI_SE_BANG_2);
 }

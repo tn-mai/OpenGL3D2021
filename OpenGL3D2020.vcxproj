@@ -87,12 +87,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;C:\usr\local\bin\cri\pc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cri_ware_pcx86_le_import.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\usr\local\bin\cri\pc\libs\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -117,14 +118,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;C:\usr\local\bin\cri\pc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cri_ware_pcx86_le_import.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\usr\local\bin\cri\pc\libs\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -150,6 +152,7 @@
     <ClCompile Include="Src\Actors\GrenadeActor.cpp" />
     <ClCompile Include="Src\Actors\PlayerActor.cpp" />
     <ClCompile Include="Src\Actors\ZombieActor.cpp" />
+    <ClCompile Include="Src\Audio.cpp" />
     <ClCompile Include="Src\glad\src\glad.c" />
     <ClCompile Include="Src\GLContext.cpp" />
     <ClCompile Include="Src\GameData.cpp" />
@@ -177,6 +180,7 @@
     <ClInclude Include="Src\Actors\GrenadeActor.h" />
     <ClInclude Include="Src\Actors\PlayerActor.h" />
     <ClInclude Include="Src\Actors\ZombieActor.h" />
+    <ClInclude Include="Src\Audio.h" />
     <ClInclude Include="Src\glad\include\glad\glad.h" />
     <ClInclude Include="Src\glad\include\KHR\khrplatform.h" />
     <ClInclude Include="Src\GLContext.h" />

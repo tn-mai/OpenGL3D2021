@@ -5,6 +5,8 @@
 #include "GLContext.h"
 #include "GameData.h"
 #include "SceneManager.h"
+#include "Audio.h"
+#include "Audio/OpenGL3D2020_acf.h"
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
@@ -24,7 +26,8 @@
 *
 * 詳細は(https://www.khronos.org/opengl/wiki/Debug_Output)を参照.
 */
-void GLAPIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+void GLAPIENTRY DebugCallback(GLenum source, GLenum type, GLuint id,
+  GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
   if (length < 0) {
     std::cerr << "[MSG] " << message << "\n";
@@ -108,6 +111,12 @@ int main()
 #undef Output
   }
 
+  // オーディオ初期化.
+  Audio& audio = Audio::Instance();
+  audio.Initialize("Res/Audio/OpenGL3D2020.acf", CRI_OPENGL3D2020_ACF_DSPSETTING_DSPBUSSETTING_0);
+  audio.Load(0, "Res/Audio/WorkUnit_0/SE.acb", nullptr);
+  audio.Load(1, "Res/Audio/WorkUnit_0/BGM.acb", "Res/Audio/WorkUnit_0/BGM.awb");
+
   // ゲーム全体で使うデータを初期化する.
   GameData& gamedata = GameData::Get();
   if (!gamedata.Initialize(window)) {
@@ -137,11 +146,17 @@ int main()
     sceneManager.Update(window, deltaTime);
     sceneManager.Render(window);
 
+    // 音声の更新
+    audio.Update();
+
     glfwPollEvents();
     glfwSwapBuffers(window);
   }
 
   sceneManager.Finalize();
+
+  // 音声の終了.
+  audio.Finalize();
 
   // GLFWの終了.
   glfwTerminate();
