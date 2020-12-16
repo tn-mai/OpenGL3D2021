@@ -11,6 +11,7 @@
 #include "Actor.h"
 #include "Actors/PlayerActor.h"
 #include "Sprite.h"
+#include "FramebufferObject.h"
 #include <memory>
 
 /**
@@ -76,6 +77,8 @@ private:
 
   std::vector<std::shared_ptr<Sprite>> sprites;
   SpriteRenderer spriteRenderer;
+
+  std::shared_ptr<FramebufferObject> fboMain;
 };
 
 #endif // MAINGAMESCENE_H_INCLUDED

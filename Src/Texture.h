@@ -4,6 +4,7 @@
 #ifndef TEXTURE_H_INCLUDED
 #define TEXTURE_H_INCLUDED
 #include <glad/glad.h>
+#include <string>
 
 namespace Texture {
 
@@ -15,7 +16,7 @@ class Image2D
 public:
   Image2D() = default;
   explicit Image2D(const char* filename);
-  Image2D(GLsizei width, GLsizei height, const void* data, GLenum format, GLenum type);
+  Image2D(const char* name, GLsizei width, GLsizei height, const void* data, GLenum format, GLenum type);
   ~Image2D();
   Image2D(const Image2D&) = delete;
   Image2D& operator=(const Image2D&) = delete;
@@ -27,7 +28,11 @@ public:
   GLsizei Width() const;
   GLsizei Height() const;
 
+  // テクスチャIDを取得する.
+  GLuint GetId() const { return id; }
+
 private:
+  std::string name;
   GLuint id = 0;
   GLsizei width = 0;
   GLsizei height = 0;

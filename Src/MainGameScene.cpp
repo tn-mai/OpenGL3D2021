@@ -92,6 +92,14 @@ void MainGameScene::AddLineOfTrees(const glm::vec3& start, const glm::vec3& dire
 */
 bool MainGameScene::Initialize()
 {
+  // FBOを初期化する.
+  int w, h;
+  glfwGetFramebufferSize(GameData::Get().window, &w, &h);
+  fboMain = std::make_shared<FramebufferObject>(w, h, FboType::ColorDepthStencil);
+  if (!fboMain || !fboMain->GetId()) {
+    return false;
+  }
+
   texGround = std::make_shared<Texture::Image2D>("Res/Ground.tga");
   texTree   = std::make_shared<Texture::Image2D>("Res/Tree.tga");
   texHouse  = std::make_shared<Texture::Image2D>("Res/House.tga");
@@ -396,10 +404,12 @@ void MainGameScene::Render(GLFWwindow* window) const
     return;
   }
 
+  // 描画先をフレームバッファオブジェクトに変更.
+  fboMain->Bind();
+
   GameData& global = GameData::Get();
   std::shared_ptr<Shader::Pipeline> pipeline = global.pipeline;
   Mesh::PrimitiveBuffer& primitiveBuffer = global.primitiveBuffer;
-  Texture::Sampler& sampler = global.sampler;
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
@@ -421,7 +431,8 @@ void MainGameScene::Render(GLFWwindow* window) const
 
   primitiveBuffer.BindVertexArray();
   pipeline->Bind();
-  sampler.Bind(0);
+  global.samplers[0].Bind(0);
+  global.samplers[1].Bind(1);
 
   // 地面を描画.
   {
@@ -440,7 +451,7 @@ void MainGameScene::Render(GLFWwindow* window) const
     actors[i]->Draw(*pipeline, matVP, Actor::DrawType::color);
   }
 
-  {
+  if (0) {
     // Y軸回転.
     const float degree = static_cast<float>(std::fmod(glfwGetTime() * 180.0, 360.0));
     const glm::mat4 matModelR =
@@ -523,6 +534,12 @@ void MainGameScene::Render(GLFWwindow* window) const
   // スプライトを描画.
   spriteRenderer.Draw(pipeline, matProj * matView);
 
+  // 3Dモデル用のVAOをバインドしなおしておく.
+  primitiveBuffer.BindVertexArray();
+
+  // 描画先をデフォルトのフレームバッファに戻す.
+  fboMain->Unbind();
+
   // 2D表示.
   {
     glDisable(GL_CULL_FACE);
@@ -540,16 +557,53 @@ void MainGameScene::Render(GLFWwindow* window) const
     std::shared_ptr<Shader::Pipeline> pipeline2D = GameData::Get().pipelineSimple;
     pipeline2D->Bind();
 
-    primitiveBuffer.BindVertexArray();
-
-    // マウスカーソル位置を描画.
+    // 3D描画結果を描画.
     {
+      //auto pipeline = GameData::Get().pipelineSobelFilter;
+      auto pipeline = GameData::Get().pipelineOutline;
+      pipeline->Bind();
+
+      glDisable(GL_BLEND);
+      fboMain->BindColorTexture(0);
+
+      fboMain->BindDepthStencilTexture(1);
+      GameData::Get().samplers[1].SetWrapMode(GL_CLAMP_TO_EDGE);
+
+      //GameData::Get().texHatching->Bind(1);
+      //GameData::Get().samplers[1].SetWrapMode(GL_REPEAT);
+
+      const glm::mat4 matModelS = glm::scale(glm::mat4(1),
+        glm::vec3(fbw, fbh, 1));
+      const glm::mat4 matModelT = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
+      const glm::mat4 matModel = matModelT * matModelS;
+      pipeline->SetMVP(matVP * matModel);
+      primitiveBuffer.Get(GameData::PrimNo::plane).Draw();
+
+      fboMain->UnbindColorTexture();
+      fboMain->UnbindDepthStencilTexture();
+      glEnable(GL_BLEND);
+    }
+
+    pipeline2D->Bind();
+
+    // マウスカーソルを表示.
+    {
+      // マウスカーソル画像のテクスチャのピクセル数を拡大率に設定.
       const glm::mat4 matModelS = glm::scale(glm::mat4(1),
         glm::vec3(texPointer->Width(), texPointer->Height(), 1));
-      const glm::mat4 matModelT = glm::translate(glm::mat4(1), glm::vec3(GameData::Get().cursorPosition, 0));
+
+      // マウスカーソル座標を表示位置に設定.
+      const glm::mat4 matModelT = glm::translate(glm::mat4(1),
+        glm::vec3(GameData::Get().cursorPosition, 0));
+
+      // MVP行列を計算し、GPUメモリに転送.
       const glm::mat4 matModel = matModelT * matModelS;
       pipeline2D->SetMVP(matVP * matModel);
+
+      // マウスカーソル画像のテクスチャをグラフィックスパイプラインに割り当てる.
       texPointer->Bind(0);
+
+      // 上の設定が適用された四角形を描画.
       primitiveBuffer.Get(GameData::PrimNo::plane).Draw();
     }
 

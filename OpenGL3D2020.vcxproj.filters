@@ -72,6 +72,9 @@
     <ClCompile Include="Src\Audio.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Src\FramebufferObject.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -94,6 +97,21 @@
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="Res\Shadow.vert">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\SobelFilter.frag">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\Filter_GaussianBlur.frag">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\Filter_Posterization.frag">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\Filter_Hatching.frag">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\Filter_Outline.frag">
       <Filter>リソース ファイル</Filter>
     </None>
   </ItemGroup>
@@ -146,6 +164,9 @@
     <ClInclude Include="Src\Audio.h">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Src\FramebufferObject.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Res\Ground.tga">
@@ -161,6 +182,9 @@
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="Res\Pointer.tga">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Res\Hatching.tga">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>

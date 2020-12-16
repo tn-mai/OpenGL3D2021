@@ -5,10 +5,10 @@
  *  ACF  Ver.          : Ver.1.20.03
  *  File Path          : C:/usr/local/projects/OpenGL3D2020/Works/CriAtomCraft/OpenGL3D2020/Public
  *  File Name          : OpenGL3D2020_acf.h
- *  File Size          : 5216 bytes
- *  Date Time          : 2020/12/05 20:58:19
+ *  File Size          : 5120 bytes
+ *  Date Time          : 2020/12/15 00:50:11
  *  Target             : Public
- *  Categories         : 2
+ *  Categories         : 1
  *  AISAC Controls     : 16
  *  Global AISACs      : 0
  *  Voice Limit Groups : 2
@@ -22,7 +22,7 @@
  *===========================================================================*/
 
 #define CRI_OPENGL3D2020_ACF_NUM_CATEGORIES_PER_PLAYBACK (4)
-#define CRI_OPENGL3D2020_ACF_CATEGORYNUM (2)
+#define CRI_OPENGL3D2020_ACF_CATEGORYNUM (1)
 #define CRI_OPENGL3D2020_ACF_AISACCONTROLNUM (16)
 #define CRI_OPENGL3D2020_ACF_GLOBALAISACNUM (0)
 #define CRI_OPENGL3D2020_ACF_VOICELIMITGROUPNUM (2)
@@ -34,8 +34,7 @@
 #define CRI_OPENGL3D2020_ACF_REACTNUM (0)
 
 /* Category List (Category ID) */
-#define CRI_OPENGL3D2020_ACF_CATEGORY_CATEGORY_SE          ( 0) /*  */
-#define CRI_OPENGL3D2020_ACF_CATEGORY_CATEGORY_BGM         ( 1) /*  */
+#define CRI_OPENGL3D2020_ACF_CATEGORY_CATEGORY_0           ( 0) /*  */
 
 /* AISAC Control List (AISAC Control ID) */
 #define CRI_OPENGL3D2020_ACF_AISACCONTROL_AISACCONTROL_00      ( 0) /*  */

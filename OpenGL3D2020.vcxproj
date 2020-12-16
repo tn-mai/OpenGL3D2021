@@ -153,6 +153,7 @@
     <ClCompile Include="Src\Actors\PlayerActor.cpp" />
     <ClCompile Include="Src\Actors\ZombieActor.cpp" />
     <ClCompile Include="Src\Audio.cpp" />
+    <ClCompile Include="Src\FramebufferObject.cpp" />
     <ClCompile Include="Src\glad\src\glad.c" />
     <ClCompile Include="Src\GLContext.cpp" />
     <ClCompile Include="Src\GameData.cpp" />
@@ -167,12 +168,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Res\Filter_Hatching.frag" />
+    <None Include="Res\Filter_Outline.frag" />
+    <None Include="Res\Filter_Posterization.frag" />
     <None Include="Res\FragmentLighting.frag" />
     <None Include="Res\FragmentLighting.vert" />
+    <None Include="Res\Filter_GaussianBlur.frag" />
     <None Include="Res\Shadow.frag" />
     <None Include="Res\Shadow.vert" />
     <None Include="Res\Simple.frag" />
     <None Include="Res\Simple.vert" />
+    <None Include="Res\SobelFilter.frag" />
     <None Include="Res\VertexLighting.vert" />
   </ItemGroup>
   <ItemGroup>
@@ -181,6 +187,7 @@
     <ClInclude Include="Src\Actors\PlayerActor.h" />
     <ClInclude Include="Src\Actors\ZombieActor.h" />
     <ClInclude Include="Src\Audio.h" />
+    <ClInclude Include="Src\FramebufferObject.h" />
     <ClInclude Include="Src\glad\include\glad\glad.h" />
     <ClInclude Include="Src\glad\include\KHR\khrplatform.h" />
     <ClInclude Include="Src\GLContext.h" />
@@ -196,6 +203,7 @@
   <ItemGroup>
     <Image Include="Res\Black.tga" />
     <Image Include="Res\Ground.tga" />
+    <Image Include="Res\Hatching.tga" />
     <Image Include="Res\House.tga" />
     <Image Include="Res\Pointer.tga" />
     <Image Include="Res\Tree.tga" />

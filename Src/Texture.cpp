@@ -56,7 +56,8 @@ void UnbindAllSamplers()
 *
 * @param filename 2Dテクスチャとして読み込むファイル名.
 */
-Image2D::Image2D(const char* filename) : id(GLContext::CreateImage2D(filename))
+Image2D::Image2D(const char* filename) : name(filename),
+  id(GLContext::CreateImage2D(filename))
 {
   if (id) {
     glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_WIDTH, &width);
@@ -67,13 +68,16 @@ Image2D::Image2D(const char* filename) : id(GLContext::CreateImage2D(filename))
 /**
 * コンストラクタ.
 *
+* @param name    テクスチャを識別するための名前.
 * @param width   画像の幅(ピクセル数).
 * @param height  画像の高さ(ピクセル数).
 * @param data    画像データへのポインタ.
 * @param pixelFormat  画像のピクセル形式(GL_BGRAなど).
 * @param type    画像データの型.
 */
-Image2D::Image2D(GLsizei width, GLsizei height, const void* data, GLenum format, GLenum type) :
+Image2D::Image2D(const char* name, GLsizei width, GLsizei height, const void* data,
+  GLenum format, GLenum type) :
+  name(name),
   id(GLContext::CreateImage2D(width, height, data, format, type))
 {
   if (id) {

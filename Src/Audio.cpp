@@ -297,8 +297,7 @@ void Audio::SetMasterVolume(float volume)
     return;
   }
   masterVolume = volume;
-  criAtomExCategory_SetVolumeById(CRI_OPENGL3D2020_ACF_CATEGORY_CATEGORY_SE, masterVolume);
-  criAtomExCategory_SetVolumeById(CRI_OPENGL3D2020_ACF_CATEGORY_CATEGORY_BGM, masterVolume);
+  criAtomExCategory_SetVolumeById(CRI_OPENGL3D2020_ACF_CATEGORY_CATEGORY_0, masterVolume);
 }
 
 /**

@@ -135,10 +135,37 @@ bool GameData::Initialize(GLFWwindow* window)
   if (!pipelineShadow || !*pipelineShadow) {
     return false;
   }
+  pipelineSobelFilter = std::make_shared<Shader::Pipeline>("Res/Simple.vert", "Res/SobelFilter.frag");
+  if (!pipelineSobelFilter || !*pipelineSobelFilter) {
+    return false;
+  }
+  pipelineGaussianFilter = std::make_shared<Shader::Pipeline>("Res/Simple.vert", "Res/Filter_GaussianBlur.frag");
+  if (!pipelineGaussianFilter || !*pipelineGaussianFilter) {
+    return false;
+  }
+  pipelinePosterization = std::make_shared<Shader::Pipeline>("Res/Simple.vert", "Res/Filter_Posterization.frag");
+  if (!pipelinePosterization || !*pipelinePosterization) {
+    return false;
+  }
+  pipelineHatching = std::make_shared<Shader::Pipeline>("Res/Simple.vert", "Res/Filter_Hatching.frag");
+  if (!pipelineHatching || !*pipelineHatching) {
+    return false;
+  }
+  pipelineOutline = std::make_shared<Shader::Pipeline>("Res/Simple.vert", "Res/Filter_Outline.frag");
+  if (!pipelineOutline || !*pipelineOutline) {
+    return false;
+  }
 
   // サンプラ・オブジェクトを作成する.
   sampler.SetWrapMode(GL_REPEAT);
   sampler.SetFilter(GL_NEAREST);
+
+  for (auto& e : samplers) {
+    e.SetWrapMode(GL_REPEAT);
+    e.SetFilter(GL_LINEAR);
+  }
+  samplers[1].SetWrapMode(GL_CLAMP_TO_EDGE);
+  //samplers[1].SetFilter(GL_NEAREST);
 
   this->window = window;
 
@@ -243,6 +270,7 @@ bool GameData::Initialize(GLFWwindow* window)
   anmPlayerDamage->isLoop = false;
 
   texBlood = std::make_shared<Texture::Image2D>("Res/blood.tga");
+  texHatching = std::make_shared<Texture::Image2D>("Res/Hatching.tga");
 
   std::cout << "[情報] ゲームデータの初期化を完了.\n";
   return true;

@@ -214,15 +214,21 @@ GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data, GLenum pix
 
   // テクスチャ・オブジェクトを作成し、GPUメモリを確保する.
   glCreateTextures(GL_TEXTURE_2D, 1, &id);
-  glTextureStorage2D(id, 1, GL_RGBA8, width, height);
+  if (pixelFormat == GL_DEPTH_STENCIL) {
+    glTextureStorage2D(id, 1, GL_DEPTH24_STENCIL8, width, height);
+  } else {
+    glTextureStorage2D(id, 1, GL_RGBA8, width, height);
+  }
   //glTextureStorage2D(id, 1, GL_SRGB8_ALPHA8, width, height);
 
   // GPUメモリにデータを転送する.
-  GLint alignment;
-  glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glTextureSubImage2D(id, 0, 0, 0, width, height, pixelFormat, type, data);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+  if (data) {
+    GLint alignment;
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTextureSubImage2D(id, 0, 0, 0, width, height, pixelFormat, type, data);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+  }
   const GLenum result = glGetError();
   if (result != GL_NO_ERROR) {
     std::cerr << "[エラー]" << __func__ << "テクスチャの作成に失敗\n";

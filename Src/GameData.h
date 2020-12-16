@@ -130,8 +130,14 @@ public:
   std::shared_ptr<Shader::Pipeline> pipeline = nullptr;
   std::shared_ptr<Shader::Pipeline> pipelineSimple;
   std::shared_ptr<Shader::Pipeline> pipelineShadow;
+  std::shared_ptr<Shader::Pipeline> pipelineSobelFilter;
+  std::shared_ptr<Shader::Pipeline> pipelineGaussianFilter;
+  std::shared_ptr<Shader::Pipeline> pipelinePosterization;
+  std::shared_ptr<Shader::Pipeline> pipelineHatching;
+  std::shared_ptr<Shader::Pipeline> pipelineOutline;
   Mesh::PrimitiveBuffer primitiveBuffer;
   Texture::Sampler sampler;
+  Texture::Sampler samplers[8];
   GLFWwindow* window = nullptr;
 
   std::mt19937 random;
@@ -150,6 +156,7 @@ public:
   std::shared_ptr<Animation> anmPlayerDamage;
 
   std::shared_ptr<Texture::Image2D> texBlood;
+  std::shared_ptr<Texture::Image2D> texHatching;
 
   // “|‚µ‚½ƒ]ƒ“ƒr‚Ì”.
   size_t killCount = 0;

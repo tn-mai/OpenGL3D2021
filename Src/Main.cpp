@@ -114,8 +114,8 @@ int main()
   // オーディオ初期化.
   Audio& audio = Audio::Instance();
   audio.Initialize("Res/Audio/OpenGL3D2020.acf", CRI_OPENGL3D2020_ACF_DSPSETTING_DSPBUSSETTING_0);
-  audio.Load(0, "Res/Audio/WorkUnit_0/SE.acb", nullptr);
-  audio.Load(1, "Res/Audio/WorkUnit_0/BGM.acb", "Res/Audio/WorkUnit_0/BGM.awb");
+  audio.Load(0, "Res/Audio/MainWorkUnit/SE.acb", nullptr);
+  audio.Load(1, "Res/Audio/MainWorkUnit/BGM.acb", "Res/Audio/MainWorkUnit/BGM.awb");
 
   // ゲーム全体で使うデータを初期化する.
   GameData& gamedata = GameData::Get();
