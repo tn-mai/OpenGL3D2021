@@ -62,9 +62,8 @@ void main()
   }
 
   fragColor = inColor * texture(texColor, inTexcoord);
-  if (fragColor.a < 0.5) {
-    discard;
-  }
   fragColor.rgb *= totalLightColor;
+  //float a = clamp(inColor.a, 0, 1);
+  //fragColor.a = smoothstep(1 - a, 1.2 - a, fragColor.a);
 }
 
