@@ -158,14 +158,9 @@ bool GameData::Initialize(GLFWwindow* window)
 
   // サンプラ・オブジェクトを作成する.
   sampler.SetWrapMode(GL_REPEAT);
-  sampler.SetFilter(GL_NEAREST);
-
-  for (auto& e : samplers) {
-    e.SetWrapMode(GL_REPEAT);
-    e.SetFilter(GL_LINEAR);
-  }
-  samplers[1].SetWrapMode(GL_CLAMP_TO_EDGE);
-  //samplers[1].SetFilter(GL_NEAREST);
+  sampler.SetFilter(GL_LINEAR);
+  samplerClampToEdge.SetWrapMode(GL_CLAMP_TO_EDGE);
+  samplerClampToEdge.SetFilter(GL_LINEAR);
 
   this->window = window;
 

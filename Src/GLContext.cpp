@@ -214,7 +214,7 @@ GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data, GLenum pix
 
   // テクスチャ・オブジェクトを作成し、GPUメモリを確保する.
   glCreateTextures(GL_TEXTURE_2D, 1, &id);
-  if (pixelFormat == GL_DEPTH_STENCIL) {
+  if (type == GL_UNSIGNED_INT_24_8) {
     glTextureStorage2D(id, 1, GL_DEPTH24_STENCIL8, width, height);
   } else {
     glTextureStorage2D(id, 1, GL_RGBA8, width, height);

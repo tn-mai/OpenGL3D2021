@@ -9,7 +9,7 @@ out vec4 fragColor;
 
 // ユニフォーム変数
 layout(binding=0) uniform sampler2D texColor;
-layout(binding=1) uniform sampler2D texDepth;
+layout(binding=2) uniform sampler2D texDepth;
 
 float GetZ(vec2 offset)
 {

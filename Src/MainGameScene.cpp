@@ -383,7 +383,7 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
   glfwGetWindowSize(window, &w, &h);
   const float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
   matProj =
-    glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 500.0f);
+    glm::perspective(glm::radians(45.0f), aspectRatio, 2.0f, 200.0f);
   matView =
     glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
 
@@ -431,8 +431,8 @@ void MainGameScene::Render(GLFWwindow* window) const
 
   primitiveBuffer.BindVertexArray();
   pipeline->Bind();
-  global.samplers[0].Bind(0);
-  global.samplers[1].Bind(1);
+  global.sampler.Bind(0);
+  global.samplerClampToEdge.Bind(2);
 
   // ’n–Ê‚ð•`‰æ.
   {
@@ -560,17 +560,15 @@ void MainGameScene::Render(GLFWwindow* window) const
     // 3D•`‰æŒ‹‰Ê‚ð•`‰æ.
     {
       //auto pipeline = GameData::Get().pipelineSobelFilter;
-      auto pipeline = GameData::Get().pipelineOutline;
+      auto pipeline = GameData::Get().pipelineHatching;
       pipeline->Bind();
 
       glDisable(GL_BLEND);
       fboMain->BindColorTexture(0);
 
-      fboMain->BindDepthStencilTexture(1);
-      GameData::Get().samplers[1].SetWrapMode(GL_CLAMP_TO_EDGE);
+      fboMain->BindDepthStencilTexture(2);
 
-      //GameData::Get().texHatching->Bind(1);
-      //GameData::Get().samplers[1].SetWrapMode(GL_REPEAT);
+      GameData::Get().texHatching->Bind(1);
 
       const glm::mat4 matModelS = glm::scale(glm::mat4(1),
         glm::vec3(fbw, fbh, 1));
@@ -579,6 +577,7 @@ void MainGameScene::Render(GLFWwindow* window) const
       pipeline->SetMVP(matVP * matModel);
       primitiveBuffer.Get(GameData::PrimNo::plane).Draw();
 
+      GameData::Get().texHatching->Unbind();
       fboMain->UnbindColorTexture();
       fboMain->UnbindDepthStencilTexture();
       glEnable(GL_BLEND);

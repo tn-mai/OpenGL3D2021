@@ -137,7 +137,7 @@ public:
   std::shared_ptr<Shader::Pipeline> pipelineOutline;
   Mesh::PrimitiveBuffer primitiveBuffer;
   Texture::Sampler sampler;
-  Texture::Sampler samplers[8];
+  Texture::Sampler samplerClampToEdge;
   GLFWwindow* window = nullptr;
 
   std::mt19937 random;
