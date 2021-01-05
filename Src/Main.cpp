@@ -101,6 +101,8 @@ int main()
     Output(GL_MAX_VERTEX_ATTRIB_STRIDE); // è≠Ç»Ç≠Ç∆Ç‡2048
     Output(GL_MAX_UNIFORM_LOCATIONS); // è≠Ç»Ç≠Ç∆Ç‡1024
     Output(GL_MAX_UNIFORM_BLOCK_SIZE); // è≠Ç»Ç≠Ç∆Ç‡16k
+    Output(GL_MAX_VERTEX_UNIFORM_COMPONENTS); // è≠Ç»Ç≠Ç∆Ç‡1024
+    Output(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS); // è≠Ç»Ç≠Ç∆Ç‡1024
     Output(GL_MAX_VARYING_COMPONENTS); // è≠Ç»Ç≠Ç∆Ç‡60
     Output(GL_MAX_VARYING_VECTORS); // è≠Ç»Ç≠Ç∆Ç‡15
     Output(GL_MAX_VARYING_FLOATS); // è≠Ç»Ç≠Ç∆Ç‡32
