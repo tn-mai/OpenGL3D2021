@@ -47,10 +47,19 @@ bool CopyData(GLuint id, size_t unitSize, GLsizei offsetCount, size_t count, con
 
 /**
 * プリミティブを描画する.
+*
+* @param morphTarget モーフィング終了時のプリミティブ.
+*                    モーフィングしない場合はnullptrを指定する.
 */
-void Primitive::Draw() const
+void Primitive::Draw(const Primitive* morphTarget) const
 {
-  glDrawElementsBaseVertex(mode, count, GL_UNSIGNED_SHORT, indices, baseVertex);
+  primitiveBuffer->SetMorphBaseMesh(baseVertex);
+  if (morphTarget) {
+    primitiveBuffer->SetMorphTargetMesh(morphTarget->baseVertex);
+  } else {
+    primitiveBuffer->SetMorphTargetMesh(baseVertex);
+  }
+  glDrawElementsBaseVertex(mode, count, GL_UNSIGNED_SHORT, indices, 0);
 }
 
 /**
@@ -172,7 +181,7 @@ bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
   }
 
   primitives.push_back(Primitive(GL_TRIANGLES, static_cast<GLsizei>(indexCount),
-    sizeof(GLushort) * curIndexCount, curVertexCount));
+    sizeof(GLushort) * curIndexCount, curVertexCount, this));
 
   curVertexCount += static_cast<GLsizei>(vertexCount);
   curIndexCount += static_cast<GLsizei>(indexCount);
@@ -420,6 +429,26 @@ void PrimitiveBuffer::BindVertexArray() const
 void PrimitiveBuffer::UnbindVertexArray() const
 {
   glBindVertexArray(0);
+}
+
+/**
+* モーフィング開始時のメッシュを設定する.
+*
+* @param baseVertex 頂点データの位置.
+*/
+void PrimitiveBuffer::SetMorphBaseMesh(GLuint baseVertex) const
+{
+  GLContext::SetMorphBaseMesh(vao, vboPosition, vboColor, vboTexcoord, vboNormal, baseVertex);
+}
+
+/**
+* モーフィング終了時のメッシュを設定する.
+*
+* @param baseVertex 頂点データの位置.
+*/
+void PrimitiveBuffer::SetMorphTargetMesh(GLuint baseVertex) const
+{
+  GLContext::SetMorphTargetMesh(vao, vboPosition, vboNormal, baseVertex);
 }
 
 } // namespace Mesh

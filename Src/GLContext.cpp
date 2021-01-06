@@ -14,6 +14,19 @@
 */
 namespace GLContext {
 
+const GLuint positionIndex = 0;
+const GLuint positionBindingIndex = 0;
+const GLuint colorIndex = 1;
+const GLuint colorBindingIndex = 1;
+const GLuint texcoordIndex = 2;
+const GLuint texcoordBindingIndex = 2;
+const GLuint normalIndex = 3;
+const GLuint normalBindingIndex = 3;
+const GLuint morphPositionIndex = 4;
+const GLuint morphPositionBindingIndex = 4;
+const GLuint morphNormalIndex = 5;
+const GLuint morphNormalBindingIndex = 5;
+
 /**
 * バッファ・オブジェクトを作成する.
 *
@@ -51,37 +64,77 @@ GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor, GLuint vboTexcoord
   GLuint id = 0;
   glCreateVertexArrays(1, &id);
 
-  const GLuint positionIndex = 0;
-  const GLuint positionBindingIndex = 0;
   glEnableVertexArrayAttrib(id, positionIndex);
   glVertexArrayAttribFormat(id, positionIndex, 3, GL_FLOAT, GL_FALSE, 0);
   glVertexArrayAttribBinding(id, positionIndex, positionBindingIndex);
   glVertexArrayVertexBuffer(id, positionBindingIndex, vboPosition, 0, sizeof(Position));
 
-  const GLuint colorIndex = 1;
-  const GLuint colorBindingIndex = 1;
   glEnableVertexArrayAttrib(id, colorIndex);
   glVertexArrayAttribFormat(id, colorIndex, 4, GL_FLOAT, GL_FALSE, 0);
   glVertexArrayAttribBinding(id, colorIndex, colorBindingIndex);
   glVertexArrayVertexBuffer(id, colorBindingIndex, vboColor, 0, sizeof(Color));
 
-  const GLuint texcoordIndex = 2;
-  const GLuint texcoordBindingIndex = 2;
   glEnableVertexArrayAttrib(id, texcoordIndex);
   glVertexArrayAttribFormat(id, texcoordIndex, 2, GL_FLOAT, GL_FALSE, 0);
   glVertexArrayAttribBinding(id,texcoordIndex, texcoordBindingIndex);
   glVertexArrayVertexBuffer(id, texcoordBindingIndex, vboTexcoord, 0, sizeof(glm::vec2));
 
-  const GLuint normalIndex = 3;
-  const GLuint normalBindingIndex = 3;
   glEnableVertexArrayAttrib(id, normalIndex);
   glVertexArrayAttribFormat(id, normalIndex, 3, GL_FLOAT, GL_FALSE, 0);
   glVertexArrayAttribBinding(id,normalIndex, normalBindingIndex);
   glVertexArrayVertexBuffer(id, normalBindingIndex, vboNormal, 0, sizeof(glm::vec3));
 
+  glEnableVertexArrayAttrib(id, morphPositionIndex);
+  glVertexArrayAttribFormat(id, morphPositionIndex, 3, GL_FLOAT, GL_FALSE, 0);
+  glVertexArrayAttribBinding(id,morphPositionIndex, morphPositionBindingIndex);
+  glVertexArrayVertexBuffer(id, morphPositionBindingIndex, vboPosition, 0, sizeof(Position));
+
+  glEnableVertexArrayAttrib(id, morphNormalIndex);
+  glVertexArrayAttribFormat(id, morphNormalIndex, 3, GL_FLOAT, GL_FALSE, 0);
+  glVertexArrayAttribBinding(id,morphNormalIndex, morphNormalBindingIndex);
+  glVertexArrayVertexBuffer(id, morphNormalBindingIndex, vboNormal, 0, sizeof(glm::vec3));
+
   glVertexArrayElementBuffer(id, ibo);
 
   return id;
+}
+
+/**
+* ベースメッシュを設定する.
+*
+* @param vboPosition VAOに関連付けられる座標データ.
+* @param vboColor    VAOに関連付けられるカラーデータ.
+* @param vboTexcoord VAOに関連付けられるテクスチャ座標データ.
+* @param vboNormal   VAOに関連付けられる法線データ.
+* @param baseVertex  メッシュの頂点データの位置.
+*/
+void SetMorphBaseMesh(GLuint vao, GLuint vboPosition, GLuint vboColor,
+  GLuint vboTexcoord, GLuint vboNormal, GLuint baseVertex)
+{
+  glVertexArrayVertexBuffer(vao, positionBindingIndex, vboPosition,
+    baseVertex * sizeof(Position), sizeof(Position));
+  glVertexArrayVertexBuffer(vao, colorBindingIndex, vboColor,
+    baseVertex * sizeof(Color), sizeof(Color));
+  glVertexArrayVertexBuffer(vao, texcoordBindingIndex, vboTexcoord,
+    baseVertex * sizeof(glm::vec2), sizeof(glm::vec2));
+  glVertexArrayVertexBuffer(vao, normalBindingIndex, vboNormal,
+    baseVertex * sizeof(glm::vec3), sizeof(glm::vec3));
+}
+
+/**
+* モーフターゲットを設定する.
+*
+* @param vboPosition VAOに関連付けられる座標データ.
+* @param vboNormal   VAOに関連付けられる法線データ.
+* @param baseVertex  メッシュの頂点データの位置.
+*/
+void SetMorphTargetMesh(GLuint vao, GLuint vboPosition,
+  GLuint vboNormal, GLuint baseVertex)
+{
+  glVertexArrayVertexBuffer(vao, morphPositionBindingIndex, vboPosition,
+    baseVertex * sizeof(Position), sizeof(Position));
+  glVertexArrayVertexBuffer(vao, morphNormalBindingIndex, vboNormal,
+    baseVertex * sizeof(glm::vec3), sizeof(glm::vec3));
 }
 
 /**

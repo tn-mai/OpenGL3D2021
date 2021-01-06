@@ -108,6 +108,15 @@ void Actor::Update(float deltaTime)
       }
     }
     primitive = animation->list[animationNo];
+
+    // モーフターゲットを更新.
+    size_t nextAnimationNo = animationNo + 1;
+    if (animation->isLoop) {
+      nextAnimationNo %= animation->list.size();
+    } else {
+      nextAnimationNo = std::min(nextAnimationNo, animation->list.size() - 1);
+    }
+    morphTarget = animation->list[nextAnimationNo];
   }
 }
 
@@ -151,11 +160,19 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP,
   }
   pipeline.SetMVP(matVP * matModel);
 
+  // ベースメッシュとモーフターゲットの合成比率を設定.
+  if (animation) {
+    pipeline.SetMorphWeight(
+      glm::clamp(animationTimer / animation->interval, 0.0f, 1.0f));
+  } else {
+    pipeline.SetMorphWeight(0);
+  }
+
   // テクスチャイメージスロット0番にテクスチャを割り当てる.
   texture->Bind(0);
 
   // プリミティブを描画.
-  primitive->Draw();
+  primitive->Draw(morphTarget);
 }
 
 /**

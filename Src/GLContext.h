@@ -22,7 +22,12 @@ struct Color
 namespace GLContext {
 
 GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data, GLbitfield flags = 0);
-GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor, GLuint vboTexcoord, GLuint vboNormal, GLuint ibo);
+GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor,
+  GLuint vboTexcoord, GLuint vboNormal, GLuint ibo);
+void SetMorphBaseMesh(GLuint vao, GLuint vboPosition, GLuint vboColor,
+  GLuint vboTexcoord, GLuint vboNormal, GLuint baseVertex);
+void SetMorphTargetMesh(GLuint vao, GLuint vboPosition,
+  GLuint vboNormal, GLuint baseVertex);
 GLuint CreateProgram(GLenum type, const GLchar* code);
 GLuint CreateProgramFromFile(GLenum type, const char* filename);
 GLuint CreatePipeline(GLuint vp, GLuint fp);

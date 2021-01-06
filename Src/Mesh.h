@@ -9,6 +9,9 @@
 
 namespace Mesh {
 
+// 先行宣言.
+class PrimitiveBuffer;
+
 /**
 * プリミティブデータ.
 */
@@ -16,18 +19,19 @@ class Primitive
 {
 public:
   Primitive() = default;
-  Primitive(GLenum m, GLsizei c, GLsizeiptr o, GLint b) :
-    mode(m), count(c), indices(reinterpret_cast<GLvoid*>(o)), baseVertex(b)
+  Primitive(GLenum m, GLsizei c, GLsizeiptr o, GLint b, const PrimitiveBuffer* pb) :
+    mode(m), count(c), indices(reinterpret_cast<GLvoid*>(o)), baseVertex(b), primitiveBuffer(pb)
   {}
   ~Primitive() = default;
 
-  void Draw() const;
+  void Draw(const Primitive* morphTarget = nullptr) const;
 
 private:
   GLenum mode = GL_TRIANGLES; ///< プリミティブの種類.
   GLsizei count = 0; ///< 描画するインデックス数.
   const GLvoid* indices = 0; ///< 描画開始インデックスのバイトオフセット.
   GLint baseVertex = 0; ///< インデックス0番とみなされる頂点配列内の位置.
+  const PrimitiveBuffer* primitiveBuffer = nullptr;
 };
 
 /**
@@ -54,6 +58,9 @@ public:
   // VAOバインド管理.
   void BindVertexArray() const;
   void UnbindVertexArray() const;
+
+  void SetMorphBaseMesh(GLuint offset) const;
+  void SetMorphTargetMesh(GLuint offset) const;
 
 private:
   std::vector<Primitive> primitives;

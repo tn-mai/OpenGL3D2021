@@ -47,6 +47,7 @@ public:
   bool SetLight(const PointLight& light) const;
   bool SetAmbientLight(const glm::vec3& color) const;
   bool SetObjectColor(const glm::vec4&) const;
+  bool SetMorphWeight(float weight) const;
 
 private:
   GLuint id = 0;

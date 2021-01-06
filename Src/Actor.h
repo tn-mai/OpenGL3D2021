@@ -101,6 +101,7 @@ public:
   float timer = 0;  // 汎用タイマー.
 
   const Mesh::Primitive* primitive = nullptr;
+  const Mesh::Primitive* morphTarget = nullptr;
   std::shared_ptr<Texture::Image2D> texture;
 
   glm::vec3 position = glm::vec3(0); // アクターの表示位置.

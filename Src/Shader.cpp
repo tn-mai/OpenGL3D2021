@@ -183,11 +183,30 @@ bool Pipeline::SetObjectColor(const glm::vec4& color) const
 {
   glGetError(); // エラー状態をリセット.
 
-  const GLint locObjectColor = 2;
+  const GLint locObjectColor = 8;
 
   glProgramUniform4fv(vp, locObjectColor, 1, &color.x);
   if (glGetError() != GL_NO_ERROR) {
     std::cerr << "[エラー]" << __func__ << ":オブジェクトカラーの設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
+/**
+* モーフィングの合成比率を設定する.
+*
+* @param weight モーフィングの合成比率(0.0～1.0の範囲で指定すること).
+*/
+bool Pipeline::SetMorphWeight(float weight) const
+{
+  glGetError(); // エラー状態をリセット.
+
+  const GLint locMorphRatio = 10;
+
+  glProgramUniform1f(vp, locMorphRatio, weight);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":モーフィング合成比率の設定に失敗.\n";
     return false;
   }
   return true;

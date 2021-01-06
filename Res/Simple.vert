@@ -14,7 +14,7 @@ out gl_PerVertex {
 
 // ユニフォーム変数
 layout(location=0) uniform mat4 matMVP;
-layout(location=2) uniform vec4 objectColor;
+layout(location=8) uniform vec4 objectColor;
 
 // 頂点シェーダプログラム
 void main()
