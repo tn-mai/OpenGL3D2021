@@ -27,6 +27,16 @@ const GLuint morphPositionBindingIndex = 4;
 const GLuint morphNormalIndex = 5;
 const GLuint morphNormalBindingIndex = 5;
 
+const GLuint prevBasePositionIndex = 6;
+const GLuint prevBasePositionBindingIndex = 6;
+const GLuint prevBaseNormalIndex = 7;
+const GLuint prevBaseNormalBindingIndex = 7;
+
+const GLuint prevMorphPositionIndex = 8;
+const GLuint prevMorphPositionBindingIndex = 8;
+const GLuint prevMorphNormalIndex = 9;
+const GLuint prevMorphNormalBindingIndex = 9;
+
 /**
 * バッファ・オブジェクトを作成する.
 *
@@ -84,15 +94,37 @@ GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor, GLuint vboTexcoord
   glVertexArrayAttribBinding(id,normalIndex, normalBindingIndex);
   glVertexArrayVertexBuffer(id, normalBindingIndex, vboNormal, 0, sizeof(glm::vec3));
 
+  // モーフィング用の座標データの頂点アトリビュートを設定.
   glEnableVertexArrayAttrib(id, morphPositionIndex);
   glVertexArrayAttribFormat(id, morphPositionIndex, 3, GL_FLOAT, GL_FALSE, 0);
   glVertexArrayAttribBinding(id,morphPositionIndex, morphPositionBindingIndex);
   glVertexArrayVertexBuffer(id, morphPositionBindingIndex, vboPosition, 0, sizeof(Position));
 
+  // モーフィング用の法線データの頂点アトリビュートを設定.
   glEnableVertexArrayAttrib(id, morphNormalIndex);
   glVertexArrayAttribFormat(id, morphNormalIndex, 3, GL_FLOAT, GL_FALSE, 0);
   glVertexArrayAttribBinding(id,morphNormalIndex, morphNormalBindingIndex);
   glVertexArrayVertexBuffer(id, morphNormalBindingIndex, vboNormal, 0, sizeof(glm::vec3));
+
+  // 直前のアニメーション用ベースメッシュの頂点アトリビュートを設定.
+  glEnableVertexArrayAttrib(id, prevBasePositionIndex);
+  glVertexArrayAttribFormat(id, prevBasePositionIndex, 3, GL_FLOAT, GL_FALSE, 0);
+  glVertexArrayAttribBinding(id,prevBasePositionIndex, prevBasePositionBindingIndex);
+  glVertexArrayVertexBuffer(id, prevBasePositionBindingIndex, vboPosition, 0, sizeof(Position));
+  glEnableVertexArrayAttrib(id, prevBaseNormalIndex);
+  glVertexArrayAttribFormat(id, prevBaseNormalIndex, 3, GL_FLOAT, GL_FALSE, 0);
+  glVertexArrayAttribBinding(id,prevBaseNormalIndex, prevBaseNormalBindingIndex);
+  glVertexArrayVertexBuffer(id, prevBaseNormalBindingIndex, vboNormal, 0, sizeof(glm::vec3));
+
+  // 直前のアニメーション用モーフターゲットの頂点アトリビュートを設定.
+  glEnableVertexArrayAttrib(id, prevMorphPositionIndex);
+  glVertexArrayAttribFormat(id, prevMorphPositionIndex, 3, GL_FLOAT, GL_FALSE, 0);
+  glVertexArrayAttribBinding(id,prevMorphPositionIndex, prevMorphPositionBindingIndex);
+  glVertexArrayVertexBuffer(id, prevMorphPositionBindingIndex, vboPosition, 0, sizeof(Position));
+  glEnableVertexArrayAttrib(id, prevMorphNormalIndex);
+  glVertexArrayAttribFormat(id, prevMorphNormalIndex, 3, GL_FLOAT, GL_FALSE, 0);
+  glVertexArrayAttribBinding(id,prevMorphNormalIndex, prevMorphNormalBindingIndex);
+  glVertexArrayVertexBuffer(id, prevMorphNormalBindingIndex, vboNormal, 0, sizeof(glm::vec3));
 
   glVertexArrayElementBuffer(id, ibo);
 
@@ -135,6 +167,28 @@ void SetMorphTargetMesh(GLuint vao, GLuint vboPosition,
     baseVertex * sizeof(Position), sizeof(Position));
   glVertexArrayVertexBuffer(vao, morphNormalBindingIndex, vboNormal,
     baseVertex * sizeof(glm::vec3), sizeof(glm::vec3));
+}
+
+/**
+* 直前のアニメーションのベースメッシュ及びモーフターゲットを設定する.
+*
+* @param vboPosition           VAOに関連付けられる座標データ.
+* @param vboNormal             VAOに関連付けられる法線データ.
+* @param baseMeshBaseVertex    直前のベースメッシュの頂点データの位置.
+* @param morphTargetBaseVertex 直前のモーフターゲットの頂点データの位置.
+*/
+void SetPreviousMorphMesh(GLuint vao, GLuint vboPosition, GLuint vboNormal,
+  GLuint baseMeshBaseVertex, GLuint morphTargetBaseVertex)
+{
+  glVertexArrayVertexBuffer(vao, prevBasePositionBindingIndex, vboPosition,
+    baseMeshBaseVertex * sizeof(Position), sizeof(Position));
+  glVertexArrayVertexBuffer(vao, prevBaseNormalBindingIndex, vboNormal,
+    baseMeshBaseVertex * sizeof(glm::vec3), sizeof(glm::vec3));
+
+  glVertexArrayVertexBuffer(vao, prevMorphPositionBindingIndex, vboPosition,
+    morphTargetBaseVertex * sizeof(Position), sizeof(Position));
+  glVertexArrayVertexBuffer(vao, prevMorphNormalBindingIndex, vboNormal,
+    morphTargetBaseVertex * sizeof(glm::vec3), sizeof(glm::vec3));
 }
 
 /**

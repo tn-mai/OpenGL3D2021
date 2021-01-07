@@ -48,17 +48,39 @@ bool CopyData(GLuint id, size_t unitSize, GLsizei offsetCount, size_t count, con
 /**
 * プリミティブを描画する.
 *
-* @param morphTarget モーフィング終了時のプリミティブ.
-*                    モーフィングしない場合はnullptrを指定する.
+* @param morphTarget     モーフィング終了時のプリミティブ.
+*                        モーフィングしない場合はnullptrを指定する.
+* @param prevBaseMesh    直前のアニメーションのモーフィング開始時のプリミティブ.
+*                        モーフィングしない場合はnullptrを指定する.
+* @param prevMorphTarget 直前のアニメーションのモーフィング終了時のプリミティブ.
+*                        モーフィングしない場合はnullptrを指定する.
 */
-void Primitive::Draw(const Primitive* morphTarget) const
+void Primitive::Draw(const Primitive* morphTarget,
+  const Primitive* prevBaseMesh,
+  const Primitive* prevMorphTarget) const
 {
+  // ベースメッシュの頂点データの位置を設定.
   primitiveBuffer->SetMorphBaseMesh(baseVertex);
+
+  // モーフターゲットの頂点データの位置を設定.
   if (morphTarget) {
     primitiveBuffer->SetMorphTargetMesh(morphTarget->baseVertex);
   } else {
     primitiveBuffer->SetMorphTargetMesh(baseVertex);
   }
+
+  // 直前のアニメーションの頂点データの位置を設定.
+  if (prevBaseMesh && prevMorphTarget) {
+    primitiveBuffer->SetPreviousMorphMesh(
+      prevBaseMesh->baseVertex, prevMorphTarget->baseVertex);
+  } else if (morphTarget) {
+    primitiveBuffer->SetPreviousMorphMesh(baseVertex,
+      morphTarget->baseVertex);
+  } else {
+    primitiveBuffer->SetPreviousMorphMesh(baseVertex,
+      baseVertex);
+  }
+
   glDrawElementsBaseVertex(mode, count, GL_UNSIGNED_SHORT, indices, 0);
 }
 
@@ -449,6 +471,19 @@ void PrimitiveBuffer::SetMorphBaseMesh(GLuint baseVertex) const
 void PrimitiveBuffer::SetMorphTargetMesh(GLuint baseVertex) const
 {
   GLContext::SetMorphTargetMesh(vao, vboPosition, vboNormal, baseVertex);
+}
+
+/**
+* 直前のアニメーションのメッシュを設定する.
+*
+* @param baseMeshBaseVertex    直前のベースメッシュの頂点データの位置.
+* @param morhpTargetBaseVertex 直前のモーフターゲットの頂点データの位置.
+*/
+void PrimitiveBuffer::SetPreviousMorphMesh(
+  GLuint baseMeshBaseVertex, GLuint morhpTargetBaseVertex) const
+{
+  GLContext::SetPreviousMorphMesh(vao, vboPosition, vboNormal,
+    baseMeshBaseVertex, morhpTargetBaseVertex);
 }
 
 } // namespace Mesh

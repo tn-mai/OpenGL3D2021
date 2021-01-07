@@ -28,6 +28,8 @@ void SetMorphBaseMesh(GLuint vao, GLuint vboPosition, GLuint vboColor,
   GLuint vboTexcoord, GLuint vboNormal, GLuint baseVertex);
 void SetMorphTargetMesh(GLuint vao, GLuint vboPosition,
   GLuint vboNormal, GLuint baseVertex);
+void SetPreviousMorphMesh(GLuint vao, GLuint vboPosition,
+  GLuint vboNormal, GLuint baseVertex0, GLuint baseVertex1);
 GLuint CreateProgram(GLenum type, const GLchar* code);
 GLuint CreateProgramFromFile(GLenum type, const char* filename);
 GLuint CreatePipeline(GLuint vp, GLuint fp);

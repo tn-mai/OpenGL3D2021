@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <iostream>
 
+/// モーフィングアニメーションの切り替えにかかる時間.
+const float maxMorphTransitionTime = 0.2f;
+
 /**
 * コンストラクタ.
 *
@@ -109,6 +112,19 @@ void Actor::Update(float deltaTime)
     }
     primitive = animation->list[animationNo];
 
+    // アニメーション切り替えタイマーを減算し、
+    // 0以下になったら切り替え完了として直前のアニメーションを解除.
+    if (morphTransitionTimer > 0) {
+      morphTransitionTimer -= deltaTime;
+      if (morphTransitionTimer <= 0) {
+        // 直前のアニメーションを解除.
+        prevMorphWeight = 0;
+        prevBaseMesh = nullptr;
+        prevMorphTarget = nullptr;
+        morphTransitionTimer = 0;
+      }
+    }
+
     // モーフターゲットを更新.
     size_t nextAnimationNo = animationNo + 1;
     if (animation->isLoop) {
@@ -162,17 +178,19 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP,
 
   // ベースメッシュとモーフターゲットの合成比率を設定.
   if (animation) {
-    pipeline.SetMorphWeight(
-      glm::clamp(animationTimer / animation->interval, 0.0f, 1.0f));
+    pipeline.SetMorphWeight(glm::vec3(
+      glm::clamp(animationTimer / animation->interval, 0.0f, 1.0f),
+      prevMorphWeight,
+      morphTransitionTimer / maxMorphTransitionTime));
   } else {
-    pipeline.SetMorphWeight(0);
+    pipeline.SetMorphWeight(glm::vec3(0));
   }
 
   // テクスチャイメージスロット0番にテクスチャを割り当てる.
   texture->Bind(0);
 
   // プリミティブを描画.
-  primitive->Draw(morphTarget);
+  primitive->Draw(morphTarget, prevBaseMesh, prevMorphTarget);
 }
 
 /**
@@ -223,6 +241,14 @@ void Actor::SetAnimation(
   // 既に同じアニメーションが設定されている場合は何もしない.
   if (this->animation == animation) {
     return;
+  }
+
+  // 現在のアニメーションを直前のモーフィングデータとして記録
+  if (this->animation) {
+    prevMorphWeight = glm::clamp(animationTimer / this->animation->interval, 0.0f, 1.0f);
+    prevBaseMesh = primitive;
+    prevMorphTarget = morphTarget;
+    morphTransitionTimer = maxMorphTransitionTime;
   }
 
   this->animation = animation;

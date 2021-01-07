@@ -24,7 +24,9 @@ public:
   {}
   ~Primitive() = default;
 
-  void Draw(const Primitive* morphTarget = nullptr) const;
+  void Draw(const Primitive* morphTarget = nullptr,
+    const Primitive* prevBaseMesh = nullptr,
+    const Primitive* prevMorphTarget = nullptr) const;
 
 private:
   GLenum mode = GL_TRIANGLES; ///< プリミティブの種類.
@@ -59,8 +61,10 @@ public:
   void BindVertexArray() const;
   void UnbindVertexArray() const;
 
-  void SetMorphBaseMesh(GLuint offset) const;
-  void SetMorphTargetMesh(GLuint offset) const;
+  void SetMorphBaseMesh(GLuint baseVertex) const;
+  void SetMorphTargetMesh(GLuint baseVertex) const;
+  void SetPreviousMorphMesh(GLuint baseMeshBaseVertex,
+    GLuint morphTargetBaseVertex) const;
 
 private:
   std::vector<Primitive> primitives;

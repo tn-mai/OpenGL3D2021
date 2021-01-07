@@ -442,7 +442,7 @@ void MainGameScene::Render(GLFWwindow* window) const
     pipeline->SetMVP(matMVP);
     pipeline->SetModelMatrix(matModel);
     pipeline->SetObjectColor(glm::vec4(1));
-    pipeline->SetMorphWeight(0);
+    pipeline->SetMorphWeight(glm::vec3(0));
     texGround->Bind(0);
     primitiveBuffer.Get(GameData::PrimNo::ground).Draw();
   }
@@ -523,7 +523,7 @@ void MainGameScene::Render(GLFWwindow* window) const
     // 画面全体に影色を塗る.
     texBlack->Bind(0);
     pipelineShadow->SetMVP(glm::scale(glm::mat4(1), glm::vec3(2)));
-    pipelineShadow->SetMorphWeight(0);
+    pipelineShadow->SetMorphWeight(glm::vec3(0));
     primitiveBuffer.Get(GameData::PrimNo::plane).Draw();
 
     // ステンシルバッファを無効化.
