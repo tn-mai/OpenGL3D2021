@@ -224,6 +224,7 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
     if (playerActor->state == Actor::State::dead) {
       // アニメーションが終了していたらゲームオーバーにする.
       if (playerActor->animationNo >= playerActor->animation->list.size() - 1) {
+        Audio::Instance().Stop(4);
         Audio::Instance().Play(4, CRI_BGM_GAME_OVER);
         isGameOver = true;
       }
@@ -367,6 +368,7 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
       playerActor->velocity = glm::vec3(0);
       playerActor->SetAnimation(GameData::Get().anmPlayerIdle);
 
+      Audio::Instance().Stop(4);
       Audio::Instance().Play(4, CRI_BGM_SUCCESS);
 
       std::cout << "[情報] ゲームクリア条件を達成\n";
