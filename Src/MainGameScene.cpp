@@ -385,7 +385,7 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
   glfwGetWindowSize(window, &w, &h);
   const float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
   matProj =
-    glm::perspective(glm::radians(45.0f), aspectRatio, 2.0f, 200.0f);
+    glm::perspective(glm::radians(45.0f), aspectRatio, 1.0f, 500.0f);
   matView =
     glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
 

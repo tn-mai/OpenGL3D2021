@@ -21,7 +21,7 @@ float GetZ(vec2 offset)
 {
   float w = texture(texDepth, inTexcoord + offset).r;
 #if USE_REAL_Z
-  float near = 0.1;
+  float near = 1;
   float far = 500;
   float n = 2 * w - 1; // }1‚Ì”ÍˆÍ‚É•ÏŠ·.
   n = -2 * near * far / (far + near - n * (far - near));

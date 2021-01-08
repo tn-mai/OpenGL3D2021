@@ -1,5 +1,7 @@
 #version 450
 
+#define USE_REAL_Z 1
+
 // 入力変数
 layout(location=0) in vec4 inColor;
 layout(location=1) in vec2 inTexcoord;
@@ -14,12 +16,15 @@ layout(binding=2) uniform sampler2D texDepth;
 float GetZ(vec2 offset)
 {
   float w = texture(texDepth, inTexcoord + offset).r;
-  //return w;
-  float near = 0.1;
+#if USE_REAL_Z
+  float near = 1;
   float far = 500;
   float n = w;//2 * w - 1; // ±1の範囲に変換.
   n = -2 * near * far / (far + near - w * (far - near));
   return n / (far - near);
+#else
+  return w;
+#endif
 }
 
 // フラグメントシェーダプログラム
