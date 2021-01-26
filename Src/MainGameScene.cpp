@@ -138,6 +138,7 @@ bool MainGameScene::Initialize()
   {
     std::shared_ptr<Actor> actor = std::make_shared<Actor>(
       "house", &global.primitiveBuffer.Get(GameData::PrimNo::house), texHouse, glm::vec3(0));
+    actor->texNormal = std::make_shared<Texture::Image2D>("Res/house_normal.tga");
     actor->SetBoxCollision(glm::vec3(-3, 0, -3), glm::vec3(3, 5, 3));
     actors.push_back(actor);
   }
@@ -173,6 +174,31 @@ bool MainGameScene::Initialize()
     glm::vec4(8, 10,-8, 0),
     glm::vec4(0.4f, 0.7f, 1.0f, 0) * 200.0f
   };
+
+  lightManager = std::make_shared<Light::LightManager>();
+
+  // ライトフラスタムを作成.
+  {
+    GameData& gamedata = GameData::Get();
+    int w, h;
+    glfwGetWindowSize(GameData::Get().window, &w, &h);
+    const float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+    matProj = glm::perspective(glm::radians(45.0f), aspectRatio, 1.0f, 500.0f);
+    frustum = Light::CreateFrustum(matProj, 1, 500);
+
+    for (int i = 0; i < 100; ++i) {
+      //const float x = std::uniform_real_distribution<float>(-18, 18)(gamedata.random);
+      //const float y = std::uniform_real_distribution<float>(0.5f, 3)(gamedata.random);
+      //const float z = std::uniform_real_distribution<float>(-18, 18)(gamedata.random);
+      const float x = static_cast<float>(i % 10) * 4 - 18;
+      const float z = static_cast<float>(i / 10) * 4 - 18;
+      const int c = std::uniform_int_distribution<>(1, 7)(gamedata.random);
+      const float range = std::uniform_real_distribution<float>(0.5f, 2.5f)(gamedata.random);
+
+      const glm::vec3 color = glm::vec3(c & 1, (c >> 1) & 1, (c >> 2) & 1) * range * range;
+      lightManager->CreateLight(glm::vec3(x, 0.5f, z), color);
+    }
+  }
 
   // ゲームデータの初期設定.
   GameData& gamedata = GameData::Get();
@@ -246,7 +272,7 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
     const glm::vec4 end = matInverseVP * glm::vec4(screenPosition, 1, 1);
     seg.end = glm::vec3(end) / end.w;
 
-    const Plane plane{ glm::vec3(0, 1, 0), glm::vec3(0, 1, 0) };
+    const Plane plane{ playerActor->position + glm::vec3(0, 1, 0), glm::vec3(0, 1, 0) };
     Intersect(seg, plane, &posMouseCursor);
 
     const glm::vec3 direction(posMouseCursor - playerActor->position);
@@ -391,6 +417,8 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
 
   UpdateSpriteList(sprites, deltaTime);
   spriteRenderer.Update(sprites, matView);
+
+  lightManager->Update(matView, frustum);
 }
 
 /**
@@ -429,13 +457,16 @@ void MainGameScene::Render(GLFWwindow* window) const
   };
   pipeline->SetLight(directionalLight);
 
-  pipeline->SetLight(pointLight);
+  //pipeline->SetLight(pointLight);
+  // ライト用SSBOをバインド.
+  lightManager->Bind(0);
 
   primitiveBuffer.BindVertexArray();
   pipeline->Bind();
   global.sampler.Bind(0);
   global.sampler.Bind(1);
   global.samplerClampToEdge.Bind(2);
+
 
   // 地面を描画.
   {
@@ -446,10 +477,12 @@ void MainGameScene::Render(GLFWwindow* window) const
     pipeline->SetObjectColor(glm::vec4(1));
     pipeline->SetMorphWeight(glm::vec3(0));
     texGround->Bind(0);
+    GameData::Get().texGroundNormal->Bind(1);
     primitiveBuffer.Get(GameData::PrimNo::ground).Draw();
   }
 
   // アクターリストを描画.
+  pipeline->SetViewPosition(playerActor->position + glm::vec3(0, 7, 7));
   const glm::mat4 matVP = matProj * matView;
   for (size_t i = 0; i < actors.size(); ++i) {
     actors[i]->Draw(*pipeline, matVP, Actor::DrawType::color);
@@ -538,6 +571,9 @@ void MainGameScene::Render(GLFWwindow* window) const
 
   // スプライトを描画.
   spriteRenderer.Draw(pipeline, matProj * matView);
+
+  // ライト用SSBOのバインドを解除.
+  lightManager->Unbind(0);
 
   // 3Dモデル用のVAOをバインドしなおしておく.
   primitiveBuffer.BindVertexArray();

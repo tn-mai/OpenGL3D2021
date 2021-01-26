@@ -157,11 +157,13 @@
     <ClCompile Include="Src\glad\src\glad.c" />
     <ClCompile Include="Src\GLContext.cpp" />
     <ClCompile Include="Src\GameData.cpp" />
+    <ClCompile Include="Src\Light.cpp" />
     <ClCompile Include="Src\Main.cpp" />
     <ClCompile Include="Src\MainGameScene.cpp" />
     <ClCompile Include="Src\Mesh.cpp" />
     <ClCompile Include="Src\SceneManager.cpp" />
     <ClCompile Include="Src\Shader.cpp" />
+    <ClCompile Include="Src\ShaderStorageBufferObject.cpp" />
     <ClCompile Include="Src\Sprite.cpp" />
     <ClCompile Include="Src\Texture.cpp" />
     <ClCompile Include="Src\TitleScene.cpp" />
@@ -192,10 +194,12 @@
     <ClInclude Include="Src\glad\include\KHR\khrplatform.h" />
     <ClInclude Include="Src\GLContext.h" />
     <ClInclude Include="Src\GameData.h" />
+    <ClInclude Include="Src\Light.h" />
     <ClInclude Include="Src\MainGameScene.h" />
     <ClInclude Include="Src\Mesh.h" />
     <ClInclude Include="Src\SceneManager.h" />
     <ClInclude Include="Src\Shader.h" />
+    <ClInclude Include="Src\ShaderStorageBufferObject.h" />
     <ClInclude Include="Src\Sprite.h" />
     <ClInclude Include="Src\Texture.h" />
     <ClInclude Include="Src\TitleScene.h" />

@@ -12,6 +12,7 @@
 #include "Actors/PlayerActor.h"
 #include "Sprite.h"
 #include "FramebufferObject.h"
+#include "Light.h"
 #include <memory>
 
 /**
@@ -79,6 +80,9 @@ private:
   SpriteRenderer spriteRenderer;
 
   std::shared_ptr<FramebufferObject> fboMain;
+
+  Light::LightManagerPtr lightManager;
+  Light::FrustumPtr frustum;
 };
 
 #endif // MAINGAMESCENE_H_INCLUDED
