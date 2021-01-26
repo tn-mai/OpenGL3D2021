@@ -104,6 +104,27 @@ bool Pipeline::SetModelMatrix(const glm::mat4& matModel) const
 }
 
 /**
+* シェーダに視点座標を設定する.
+*
+* @param p 設定する視点座標.
+*
+* @retval true  設定成功.
+* @retval false 設定失敗.
+*/
+bool Pipeline::SetViewPosition(const glm::vec3& p) const
+{
+  glGetError(); // エラー状態をリセット.
+
+  const GLint locMatModel = 11;
+  glProgramUniform3f(vp, locMatModel, p.x, p.y, p.z);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":モデル行列の設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
+/**
 * シェーダにライトデータを設定する.
 *
 * @param light 設定するライトデータ.

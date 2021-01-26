@@ -43,6 +43,7 @@ public:
   void Unbind() const;
   bool SetMVP(const glm::mat4&) const;
   bool SetModelMatrix(const glm::mat4&) const;
+  bool SetViewPosition(const glm::vec3& p) const;
   bool SetLight(const DirectionalLight& light) const;
   bool SetLight(const PointLight& light) const;
   bool SetAmbientLight(const glm::vec3& color) const;
