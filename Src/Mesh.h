@@ -57,6 +57,9 @@ public:
   bool AddFromObjFile(const char* filename);
   const Primitive& Get(size_t n) const;
 
+  const Primitive& Back() const { return primitives.back(); }
+  size_t Size() const { return primitives.size(); }
+
   // VAOƒoƒCƒ“ƒhŠÇ—.
   void BindVertexArray() const;
   void UnbindVertexArray() const;

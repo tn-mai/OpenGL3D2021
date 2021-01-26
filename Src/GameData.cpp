@@ -30,6 +30,25 @@ GameData::~GameData()
 }
 
 /**
+* アニメーションを読み込む.
+*/
+std::shared_ptr<Animation> GameData::LoadAnimation(
+  const char* filename, size_t size,
+  float interval, bool isLoop)
+{
+  std::shared_ptr<Animation> anm = std::make_shared<Animation>();
+  std::string str(filename);
+  for (size_t i = 0; i < size; ++i) {
+    primitiveBuffer.AddFromObjFile((str + '_' + std::to_string(i) + ".obj").c_str());
+    anm->list.push_back(&primitiveBuffer.Back());
+  }
+  anm->interval = interval;
+  anm->isLoop = isLoop;
+
+  return anm;
+}
+
+/**
 * グローバルデータを初期化する.
 *
 * @param window GLFWウィンドウへのポインタ.
@@ -204,7 +223,6 @@ bool GameData::Initialize(GLFWwindow* window)
   anmZombieMaleDamage->interval = 0.1f;
   anmZombieMaleDamage->isLoop = false;
 
-
   anmPlayerIdle = std::make_shared<Animation>();
   anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_0));
   anmPlayerIdle->list.push_back(&primitiveBuffer.Get(PrimNo::player_idle_1));
@@ -264,8 +282,16 @@ bool GameData::Initialize(GLFWwindow* window)
   anmPlayerDamage->interval = 0.1f;
   anmPlayerDamage->isLoop = false;
 
+  anmBigZombieWalk = LoadAnimation("Res/big_zombie/big_zombie_walk", 6, 0.2f, true);
+  anmBigZombieDamage= LoadAnimation("Res/big_zombie/big_zombie_damage", 5, 0.125f, false);
+  anmBigZombieDown = LoadAnimation("Res/big_zombie/big_zombie_down", 8, 0.25f, false);
+  anmBigZombieAttack = LoadAnimation("Res/big_zombie/big_zombie_attack_front", 7, 0.15f, false);
+
   texBlood = std::make_shared<Texture::Image2D>("Res/blood.tga");
   texHatching = std::make_shared<Texture::Image2D>("Res/Hatching.tga");
+
+  texGroundNormal = std::make_shared<Texture::Image2D>("Res/Ground_normal.tga");
+  texZombieNormal = std::make_shared<Texture::Image2D>("Res/zombie_male/zombie_male_normal.tga");
 
   std::cout << "[情報] ゲームデータの初期化を完了.\n";
   return true;

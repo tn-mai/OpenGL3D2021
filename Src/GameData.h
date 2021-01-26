@@ -147,6 +147,12 @@ public:
   std::shared_ptr<Animation> anmZombieMaleDown;
   std::shared_ptr<Animation> anmZombieMaleAttack;
   std::shared_ptr<Animation> anmZombieMaleDamage;
+
+  std::shared_ptr<Animation> anmBigZombieWalk;
+  std::shared_ptr<Animation> anmBigZombieDamage;
+  std::shared_ptr<Animation> anmBigZombieDown;
+  std::shared_ptr<Animation> anmBigZombieAttack;
+
   std::shared_ptr<Animation> anmPlayerIdle;
   std::shared_ptr<Animation> anmPlayerRunFront;
   std::shared_ptr<Animation> anmPlayerRunBack;
@@ -157,6 +163,9 @@ public:
 
   std::shared_ptr<Texture::Image2D> texBlood;
   std::shared_ptr<Texture::Image2D> texHatching;
+
+  std::shared_ptr<Texture::Image2D> texGroundNormal;
+  std::shared_ptr<Texture::Image2D> texZombieNormal;
 
   // ì|ÇµÇΩÉ]ÉìÉrÇÃêî.
   size_t killCount = 0;
@@ -174,6 +183,8 @@ private:
   ~GameData();
   GameData(const GameData&) = delete;
   GameData& operator=(const GameData&) = delete;
+
+  std::shared_ptr<Animation> LoadAnimation(const char* filename, size_t size, float interval, bool isLoop);
 };
 
 
