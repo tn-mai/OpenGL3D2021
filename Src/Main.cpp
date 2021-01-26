@@ -101,6 +101,7 @@ int main()
     Output(GL_MAX_VERTEX_ATTRIB_STRIDE); // è≠Ç»Ç≠Ç∆Ç‡2048
     Output(GL_MAX_UNIFORM_LOCATIONS); // è≠Ç»Ç≠Ç∆Ç‡1024
     Output(GL_MAX_UNIFORM_BLOCK_SIZE); // è≠Ç»Ç≠Ç∆Ç‡16k
+    Output(GL_MAX_UNIFORM_BUFFER_BINDINGS); // è≠Ç»Ç≠Ç∆Ç‡36
     Output(GL_MAX_VERTEX_UNIFORM_COMPONENTS); // è≠Ç»Ç≠Ç∆Ç‡1024
     Output(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS); // è≠Ç»Ç≠Ç∆Ç‡1024
     Output(GL_MAX_VARYING_COMPONENTS); // è≠Ç»Ç≠Ç∆Ç‡60
@@ -110,6 +111,8 @@ int main()
     Output(GL_MAX_TEXTURE_SIZE); // è≠Ç»Ç≠Ç∆Ç‡1024
     Output(GL_MAX_TEXTURE_IMAGE_UNITS); // è≠Ç»Ç≠Ç∆Ç‡16
     Output(GL_MAX_TEXTURE_BUFFER_SIZE); // è≠Ç»Ç≠Ç∆Ç‡64k
+    Output(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS); // è≠Ç»Ç≠Ç∆Ç‡8
+    Output(GL_MAX_SHADER_STORAGE_BLOCK_SIZE); // è≠Ç»Ç≠Ç∆Ç‡16MB
 #undef Output
   }
 

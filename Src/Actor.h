@@ -107,6 +107,7 @@ public:
   float prevMorphWeight = 0;
   float morphTransitionTimer = 0;
   std::shared_ptr<Texture::Image2D> texture;
+  std::shared_ptr<Texture::Image2D> texNormal;
 
   glm::vec3 position = glm::vec3(0); // アクターの表示位置.
   glm::vec3 rotation = glm::vec3(0); // アクターの向き.
@@ -155,6 +156,26 @@ struct Segment
 };
 
 /**
+* 球.
+*/
+struct Sphere
+{
+  glm::vec3 center;
+  float radius;
+};
+
+/**
+* 円錐.
+*/
+struct Cone
+{
+  glm::vec3 tip;
+  float height;
+  glm::vec3 direction;
+  float radius;
+};
+
+/**
 * 平面.
 */
 struct Plane
@@ -164,5 +185,7 @@ struct Plane
 };
 
 bool Intersect(const Segment& seg, const Plane& plane, glm::vec3* p);
+bool SphereInsidePlane(const Sphere& sphere, const Plane& plane);
+bool ConeInsidePlane(const Cone& cone, const Plane& plane);
 
 #endif // ACTOR_H_INCLUDED

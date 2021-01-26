@@ -188,6 +188,12 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP,
 
   // テクスチャイメージスロット0番にテクスチャを割り当てる.
   texture->Bind(0);
+  if (texNormal) {
+    texNormal->Bind(1);
+  } else {
+    GLuint id = 0;
+    glBindTextures(1, 1, &id);
+  }
 
   // プリミティブを描画.
   primitive->Draw(morphTarget, prevBaseMesh, prevMorphTarget);
@@ -720,6 +726,42 @@ bool Intersect(const Segment& seg, const Plane& plane, glm::vec3* p)
   // 交点は線分上にある.
   *p = seg.start + v * t;
   return true;
+}
+
+/**
+* 球が平面の表側にあるかどうかを調べる.
+*
+* @param sphere 球.
+* @param plane  平面.
+*
+* @retval true  平面の表側にあるか、部分的に重なっている.
+* @retval false 完全に裏側にある.
+*/
+bool SphereInsidePlane(const Sphere& sphere, const Plane& plane)
+{
+  const float d = glm::dot(plane.normal, sphere.center - plane.point);
+  return d >= -sphere.radius;
+}
+
+/**
+* 円錐が平面の表側にあるかどうかを調べる.
+*
+* @param cone   円錐.
+* @param plane  平面.
+*
+* @retval true  平面の表側にあるか、部分的に重なっている.
+* @retval false 完全に裏側にある.
+*/
+bool ConeInsidePlane(const Cone& cone, const Plane& plane)
+{
+  if (glm::dot(plane.normal, cone.tip - plane.point) >= 0) {
+    return true;
+  }
+  const glm::vec3 m = glm::cross(
+    glm::cross(plane.normal, cone.direction), cone.direction);
+  const glm::vec3 q = cone.tip +
+    cone.direction * cone.height - m * cone.radius;
+  return glm::dot(plane.normal, q - plane.point) >= 0;
 }
 
 /**
