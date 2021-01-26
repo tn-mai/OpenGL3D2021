@@ -97,6 +97,8 @@ ZombieActor::ZombieActor(const glm::vec3& pos, float rotY,
   // アニメーションを設定.
   SetAnimation(GameData::Get().anmZombieMaleWalk);
   state = State::run;
+
+  texNormal = GameData::Get().texZombieNormal;
 }
 
 /**
