@@ -26,6 +26,9 @@ ShaderStorageBufferObject::~ShaderStorageBufferObject()
 {
   glUnmapNamedBuffer(id);
   glDeleteBuffers(1, &id);
+#ifdef AVOID_AMD_DRIVER_BUG_FOR_PERSISTENT_MAP
+  glDeleteSync(sync);
+#endif
 }
 
 /**
@@ -44,7 +47,20 @@ void ShaderStorageBufferObject::CopyData(
       ",offset=" << offset << "/" << this->size << ").\n";
     return;
   }
+#ifdef AVOID_AMD_DRIVER_BUG_FOR_PERSISTENT_MAP
+  if (sync) {
+    glClientWaitSync(sync, 0, 1000ULL*1000ULL);
+    glDeleteSync(sync);
+  }
+#endif
+
   memcpy(static_cast<char*>(p) + offset, data, size);
+
+#ifdef AVOID_AMD_DRIVER_BUG_FOR_PERSISTENT_MAP
+  sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+#else
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+#endif
 }
 
 /**
