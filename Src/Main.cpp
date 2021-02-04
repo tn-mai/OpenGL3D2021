@@ -84,6 +84,8 @@ int main()
 
   glDebugMessageCallback(DebugCallback, nullptr);
 
+  glfwSwapInterval(1);
+
   // OpenGLの情報をコンソールウィンドウへ出力する.
   {
 #define Output(name) {\
