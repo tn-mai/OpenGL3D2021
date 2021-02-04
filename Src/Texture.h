@@ -37,6 +37,7 @@ private:
   GLsizei width = 0;
   GLsizei height = 0;
 };
+void UnbindTexture(GLuint unit);
 void UnbindAllTextures();
 
 /**

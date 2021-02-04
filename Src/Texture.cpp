@@ -8,6 +8,19 @@
 // インテルグラフィックスドライバのバグによりglBindTextureUnit(i, 0)が機能しないことへの対応.
 #define AVOID_INTEL_DRIVER_BUG_FOR_GLBINDTEXTUREUNIT
 
+// AMDドライバのバグによりglBindTextures, glBindTextureUnitを使うとバインド解除が遅延する問題への対応.
+// glBindTextures, glBindTextureUnitによってテクスチャをバインドしたとき、
+// バインド解除にglBindTextures, glBindTextureUnitを使うと直後の描画ではバインドが解除されないことがある.
+// 同じテクスチャを「バインド->アンバインド」する場合は問題ないが、「バインド*n->アンバインド」とすると遅延が発生する.
+// 参照カウントを疑ったが「バインド*n->アンバインド*n」でも遅延するので、そうでない可能性がある.
+// しかし、アンバインドにglActiveTexture&glBindTextureを使うと遅延せず、直後の描画コマンドでも正しくアンバインドされている.
+// また、バインドにglActiveTexture&glBindTextureを使うと、どの方法でも1回で正しくアンバインドされる.
+// バインドに`glActiveTexture&glBindTexture`を使っておけばアンバインドはどの方法でも機能するように見えるが、
+// 正直なところ、バインドとアンバインドで異なる関数を使った結果、またバグを踏むかもしれず不安は残る.
+// 結局、"AMDドライバではglBindTextures, glBindTextureUnitを使うな"ということになる.
+// なおAMDは既にOpenGLドライバの更新を終了してVulkanに移行している. この問題が改善される日は来ないだろう.
+#define AVOID_AMD_DRIVER_BUG_FOR_GLBINDTEXTURES
+
 /**
 * テクスチャ関連の機能を格納する名前空間.
 */
@@ -30,14 +43,51 @@ GLuint samplerBindingState[16] = {};
 } // unnamed namespace
 
 /**
+* テクスチャのバインドを解除する.
+*
+* @param unit 解除するバインディングポイント.
+*/
+void UnbindTexture(GLuint unit)
+{
+#ifndef AVOID_INTEL_DRIVER_BUG_FOR_GLBINDTEXTUREUNIT 
+  glBindTextureUnit(unit, 0);
+#else
+# ifndef AVOID_AMD_DRIVER_BUG_FOR_GLBINDTEXTURES
+  glBindTextures(unit, 1, nullptr);
+# else
+  static const GLenum targets[] = {
+    GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D,
+    GL_TEXTURE_1D_ARRAY, GL_TEXTURE_2D_ARRAY,
+    GL_TEXTURE_RECTANGLE,
+    GL_TEXTURE_CUBE_MAP, GL_TEXTURE_CUBE_MAP_ARRAY,
+    GL_TEXTURE_BUFFER,
+    GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY
+  };
+  glActiveTexture(GL_TEXTURE0 + unit);
+  for (auto e : targets) {
+    glBindTexture(e, 0);
+  }
+  glActiveTexture(GL_TEXTURE0);
+# endif
+#endif
+  textureBindingState[unit] = 0;
+}
+
+/**
 * 全てのテクスチャのバインドを解除する.
 */
 void UnbindAllTextures()
 {
+#ifndef AVOID_AMD_DRIVER_BUG_FOR_GLBINDTEXTURES
   for (GLuint i = 0; i < std::size(textureBindingState); ++i) {
     textureBindingState[i] = 0;
   }
   glBindTextures(0, static_cast<GLsizei>(std::size(textureBindingState)), textureBindingState);
+#else
+  for (GLuint i = 0; i < std::size(textureBindingState); ++i) {
+    UnbindTexture(i);
+  }
+#endif
 }
 
 /**
@@ -106,11 +156,16 @@ void Image2D::Bind(GLuint unit) const
     std::cerr << "[エラー]" << __func__ << ": ユニット番号が大きすぎます(unit=" << unit << ")\n";
     return;
   }
-// インテルグラフィックスドライバのバグによりglBindTextureUnit(i, 0)が機能しないことへの対応.
 #ifndef AVOID_INTEL_DRIVER_BUG_FOR_GLBINDTEXTUREUNIT 
   glBindTextureUnit(unit, id);
 #else
+# ifndef AVOID_AMD_DRIVER_BUG_FOR_GLBINDTEXTURES
   glBindTextures(unit, 1, &id);
+# else
+  glActiveTexture(GL_TEXTURE0 + unit);
+  glBindTexture(GL_TEXTURE_2D, id);
+  glActiveTexture(GL_TEXTURE0);
+# endif
 #endif
   textureBindingState[unit] = id;
 }
@@ -122,14 +177,7 @@ void Image2D::Unbind() const
 {
   for (GLuint i = 0; i < std::size(textureBindingState); ++i) {
     if (textureBindingState[i] == id) {
-      textureBindingState[i] = 0;
-// インテルグラフィックスドライバのバグによりglBindTextureUnit(i, 0)が機能しないことへの対応.
-#ifndef AVOID_INTEL_DRIVER_BUG_FOR_GLBINDTEXTUREUNIT 
-      glBindTextureUnit(i, 0);
-#else
-      const GLuint id = 0;
-      glBindTextures(i, 1, &id);
-#endif
+      UnbindTexture(i);
     }
   }
 }
