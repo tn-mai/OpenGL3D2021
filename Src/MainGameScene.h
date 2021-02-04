@@ -54,6 +54,10 @@ private:
   std::shared_ptr<Texture::Image2D> texBlack;
   std::shared_ptr<Texture::Image2D> texPointer;
 
+  std::shared_ptr<Texture::Image2D> texStreetLampA;
+  std::shared_ptr<Texture::Image2D> texStreetLampBC;
+  std::shared_ptr<Texture::Image2D> texStreetLampD;
+
   Shader::PointLight pointLight;
 
   glm::mat4 matProj = glm::mat4(1); // プロジェクション行列.
@@ -83,6 +87,8 @@ private:
 
   Light::LightManagerPtr lightManager;
   Light::FrustumPtr frustum;
+
+  Light::LightPtr flashLight;
 };
 
 #endif // MAINGAMESCENE_H_INCLUDED

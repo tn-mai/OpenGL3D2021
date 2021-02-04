@@ -75,6 +75,11 @@ bool GameData::Initialize(GLFWwindow* window)
   primitiveBuffer.AddFromObjFile("Res/m67_grenade.obj");
   primitiveBuffer.AddFromObjFile("Res/wooden_barrier.obj");
 
+  primitiveBuffer.AddFromObjFile("Res/street_lamp_a.obj");
+  primitiveBuffer.AddFromObjFile("Res/street_lamp_b.obj");
+  primitiveBuffer.AddFromObjFile("Res/street_lamp_c.obj");
+  primitiveBuffer.AddFromObjFile("Res/street_lamp_d.obj");
+
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_0.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_1.obj");
   primitiveBuffer.AddFromObjFile("Res/zombie_male_walk_2.obj");

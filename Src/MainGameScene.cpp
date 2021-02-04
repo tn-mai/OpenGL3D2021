@@ -114,6 +114,9 @@ bool MainGameScene::Initialize()
   texGameOver = std::make_shared<Texture::Image2D>("Res/GameOver.tga");
   texBlack = std::make_shared<Texture::Image2D>("Res/Black.tga");
   texPointer = std::make_shared<Texture::Image2D>("Res/Pointer.tga");
+  texStreetLampA = std::make_shared<Texture::Image2D>("Res/street_lamp_a.tga");
+  texStreetLampBC = std::make_shared<Texture::Image2D>("Res/street_lamp_bc.tga");
+  texStreetLampD = std::make_shared<Texture::Image2D>("Res/street_lamp_d.tga");
 
   GameData& global = GameData::Get();
 
@@ -193,10 +196,30 @@ bool MainGameScene::Initialize()
       const float x = static_cast<float>(i % 10) * 4 - 18;
       const float z = static_cast<float>(i / 10) * 4 - 18;
       const int c = std::uniform_int_distribution<>(1, 7)(gamedata.random);
-      const float range = std::uniform_real_distribution<float>(0.5f, 2.5f)(gamedata.random);
+      const float range = std::uniform_real_distribution<float>(0.5f, 1.5f)(gamedata.random);
 
       const glm::vec3 color = glm::vec3(c & 1, (c >> 1) & 1, (c >> 2) & 1) * range * range;
-      lightManager->CreateLight(glm::vec3(x, 0.5f, z), color);
+      lightManager->CreateLight(glm::vec3(x, 0.25f, z), color);
+    }
+    flashLight = lightManager->CreateSpotLight(playerActor->position + glm::vec3(0, 1, 0),
+      glm::vec3(1, 0.9f, 0.8f) * 10.0f, glm::vec3(1, 0, 0),
+      glm::radians(20.0f), glm::radians(5.0f));
+  }
+
+  // 街灯を表示
+  if (1) {
+    static const glm::vec3 pos[] = {
+      { -16, 0, -16 }, { -16, 0, -10 }, { -16, 0, -4 },
+      { -16, 0,   2 }, { -16, 0,   8 }, { -16, 0, 14 },
+    };
+    for (const auto& e : pos) {
+      std::shared_ptr<Actor> actor = std::make_shared<Actor>(
+        "StreetLamp", &global.primitiveBuffer.Get(GameData::PrimNo::street_lamp_a), texStreetLampA, e);
+      actor->SetBoxCollision(glm::vec3(-0.2f, 0, -0.2f), glm::vec3(0.2f, 4, 0.2f));
+      //actor->rotation.y = glm::radians(180.0f);
+      actors.push_back(actor);
+      lightManager->CreateSpotLight(e + glm::vec3(1, 4, 0), glm::vec3(1, 0.9f, 0.8f) * 20.0f, glm::vec3(0, -1, 0),
+        glm::radians(30.0f), glm::radians(15.0f));
     }
   }
 
@@ -248,6 +271,10 @@ void MainGameScene::ProcessInput(GLFWwindow* window)
   // プレイヤーが死んでいたら
   if (!isGameOver) {
     if (playerActor->state == Actor::State::dead) {
+      if (flashLight) {
+        lightManager->RemoveLight(flashLight);
+        flashLight.reset();
+      }
       // アニメーションが終了していたらゲームオーバーにする.
       if (playerActor->animationNo >= playerActor->animation->list.size() - 1) {
         Audio::Instance().Stop(4);
@@ -418,6 +445,12 @@ void MainGameScene::Update(GLFWwindow* window, float deltaTime)
   UpdateSpriteList(sprites, deltaTime);
   spriteRenderer.Update(sprites, matView);
 
+  if (flashLight) {
+    flashLight->position = playerActor->position + glm::vec3(0, 1.2f, 0);
+    flashLight->direction = glm::rotate(glm::mat4(1),
+      playerActor->rotation.y, glm::vec3(0, 1, 0)) * glm::vec4(1, -0.1f, 0, 1);
+    flashLight->direction = glm::normalize(flashLight->direction);
+  }
   lightManager->Update(matView, frustum);
 }
 
@@ -448,12 +481,12 @@ void MainGameScene::Render(GLFWwindow* window) const
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   // 環境光を設定する.
-  pipeline->SetAmbientLight(glm::vec3(0.1f, 0.125f, 0.15f));
+  pipeline->SetAmbientLight(glm::vec3(0.1f, 0.125f, 0.15f) * 0.25f);
 
   // 平行光源を設定する
   const Shader::DirectionalLight directionalLight{
     glm::normalize(glm::vec4(3,-2,-2, 0)),
-    glm::vec4(1, 0.9f, 0.8f, 1)
+    glm::vec4(glm::vec3(1, 0.9f, 0.8f) * 0.5f, 1)
   };
   pipeline->SetLight(directionalLight);
 
