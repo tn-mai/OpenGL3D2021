@@ -160,8 +160,8 @@ struct Segment
 */
 struct Sphere
 {
-  glm::vec3 center;
-  float radius;
+  glm::vec3 center; // ‹…‚Ì’†SÀ•W.
+  float radius;     // ‹…‚Ì”¼Œa.
 };
 
 /**
@@ -169,10 +169,10 @@ struct Sphere
 */
 struct Cone
 {
-  glm::vec3 tip;
-  float height;
-  glm::vec3 direction;
-  float radius;
+  glm::vec3 tip; // ‰~‚Ì’¸“_À•W.
+  float height;  // ‰~‚Ì‚‚³.
+  glm::vec3 direction; // ‰~‚ÌŒü‚«.
+  float radius;  // ‰~‚Ì’ê–Ê‚Ì”¼Œa.
 };
 
 /**

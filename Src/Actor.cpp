@@ -757,10 +757,19 @@ bool ConeInsidePlane(const Cone& cone, const Plane& plane)
   if (glm::dot(plane.normal, cone.tip - plane.point) >= 0) {
     return true;
   }
-  const glm::vec3 m = glm::cross(
-    glm::cross(plane.normal, cone.direction), cone.direction);
+  // 平面の法線と円錐の向きに垂直なベクトルaを求める.
+  // これは平面に平行なベクトルになる.
+  const glm::vec3 a = glm::cross(plane.normal, cone.direction);
+
+  // 円錐の向きとベクトルaに垂直なベクトルを求める.
+  // これは底面の中心から平面への最短の向きベクトルになる.
+  const glm::vec3 b = glm::normalize(glm::cross(cone.direction, a));
+
+  // ベクトルbの方向の底面の端の座標を求める.
   const glm::vec3 q = cone.tip +
-    cone.direction * cone.height - m * cone.radius;
+    cone.direction * cone.height + b * cone.radius;
+
+  // ベクトルcの平面の法線方向に射影した長さが0以上ならqは表側にある.
   return glm::dot(plane.normal, q - plane.point) >= 0;
 }
 
