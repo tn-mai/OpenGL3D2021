@@ -26,9 +26,7 @@ ShaderStorageBufferObject::~ShaderStorageBufferObject()
 {
   glUnmapNamedBuffer(id);
   glDeleteBuffers(1, &id);
-#ifdef AVOID_AMD_DRIVER_BUG_FOR_PERSISTENT_MAP
   glDeleteSync(sync);
-#endif
 }
 
 /**
@@ -47,20 +45,13 @@ void ShaderStorageBufferObject::CopyData(
       ",offset=" << offset << "/" << this->size << ").\n";
     return;
   }
-#ifdef AVOID_AMD_DRIVER_BUG_FOR_PERSISTENT_MAP
+  // 書き込んだデータを使った描画の完了を待つ.
   if (sync) {
     glClientWaitSync(sync, 0, 1000ULL*1000ULL);
     glDeleteSync(sync);
+    sync = nullptr;
   }
-#endif
-
   memcpy(static_cast<char*>(p) + offset, data, size);
-
-#ifdef AVOID_AMD_DRIVER_BUG_FOR_PERSISTENT_MAP
-  sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-#else
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-#endif
 }
 
 /**
@@ -81,5 +72,9 @@ void ShaderStorageBufferObject::Bind(GLuint location) const
 void ShaderStorageBufferObject::Unbind(GLuint location) const
 {
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, location, 0);
+  // この時点でsyncが有効な場合、描画ループ中で2回以上Unbindが実行されている.
+  // 最後のUnbind時点のフェンスだけが重要なので、以前のsyncを破棄してから取得する.
+  glDeleteSync(sync);
+  sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 }
 

@@ -5,8 +5,6 @@
 #define SHADERSTORAGEBUFFEROBJECT_H_INLCUDED
 #include "glad/glad.h"
 
-#define AVOID_AMD_DRIVER_BUG_FOR_PERSISTENT_MAP
-
 /**
 * シェーダー・ストレージ・バッファ・オブジェクト(SSBO).
 */
@@ -26,9 +24,7 @@ private:
   GLuint id = 0;     // オブジェクトID
   size_t size = 0;   // バッファの大きさ(単位=バイト).
   void* p = nullptr; // データの転送先を指すポインタ.
-#ifdef AVOID_AMD_DRIVER_BUG_FOR_PERSISTENT_MAP
   mutable GLsync sync = nullptr;
-#endif
 };
 
 #endif // SHADERSTORAGEBUFFEROBJECT_H_INLCUDED
