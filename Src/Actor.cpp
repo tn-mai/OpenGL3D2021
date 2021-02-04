@@ -191,8 +191,7 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP,
   if (texNormal) {
     texNormal->Bind(1);
   } else {
-    GLuint id = 0;
-    glBindTextures(1, 1, &id);
+    Texture::UnbindTexture(1);
   }
 
   // プリミティブを描画.
