@@ -14,9 +14,6 @@ layout(binding=0) uniform sampler2D texColor;
 layout(binding=1) uniform sampler2D texHatching;
 layout(binding=2) uniform sampler2D texDepth;
 
-// しきい値.
-const float threshold = 0.25;
-
 float GetZ(vec2 offset)
 {
   float w = texture(texDepth, inTexcoord + offset).r;
@@ -45,8 +42,8 @@ void main()
   // YUVなどの輝度計算では青がほぼ死んでしまうため、影の判定には向いていない.
   float brightness = max(fragColor.r, max(fragColor.g, fragColor.b));
 
-  // 明るさ0.5未満を「暗い領域」として、0.3までなめらかに合成比率を変化させる.
-  float ratio = smoothstep(0.2, 0.4, brightness); // 合成比率.
+  // 明るさ0.3未満を「暗い領域」として、0.1までなめらかに合成比率を変化させる.
+  float ratio = smoothstep(0.1, 0.3, brightness); // 合成比率.
 
   // 暗い領域は斜線テクスチャの色、明るい領域は白色になるように合成.
   pencil = mix(pencil, vec3(1), ratio);
