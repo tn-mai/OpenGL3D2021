@@ -47,8 +47,10 @@ struct Frustum
 */
 struct LightForShader
 {
-  glm::vec4 position;
+  glm::vec4 positionAndType;
   glm::vec4 colorAndRange;
+  glm::vec4 direction;
+  glm::vec4 coneAndFalloffAngle;
 };
 
 /**
@@ -249,6 +251,31 @@ LightPtr LightManager::CreateLight(const glm::vec3& position, const glm::vec3& c
 }
 
 /**
+* スポットライトを作成する.
+*
+* @param position     ライトの座標.
+* @param color        ライトの明るさ.
+* @param direction    ライトの方向.
+* @param coneAngle    スポットライトが照らす角度(単位=ラジアン).
+* @param falloffAngle スポットライトの減衰開始角度(単位=ラジアン).
+*
+* @return 作成したライトへのポインタ.
+*/
+LightPtr LightManager::CreateSpotLight(const glm::vec3& position, const glm::vec3& color,
+  const glm::vec3& direction, float coneAngle, float falloffAngle)
+{
+  LightPtr p = std::make_shared<Light>();
+  p->type = Light::Type::SpotLight;
+  p->position = position;
+  p->color = color;
+  p->direction = direction;
+  p->coneAngle = coneAngle;
+  p->falloffAngle = falloffAngle;
+  lights.push_back(p);
+  return p;
+}
+
+/**
 * ライトを削除する.
 *
 * @param light 削除するライトへのポインタ.
@@ -296,19 +323,94 @@ size_t LightManager::LightCount() const
 void LightManager::Update(const glm::mat4& matView, const FrustumPtr& frustum)
 {
   std::shared_ptr<LightData> tileData = std::make_unique<LightData>();
-  std::vector<glm::vec3> posView;
-  posView.reserve(lights.size());
+
+  // 計算過程で使う中間データ.
+  struct IntermediateData
+  {
+    enum class Shape {
+      sphere,
+      cone,
+    };
+    Shape shape;
+    Sphere sphere;
+    Cone cone;
+  };
+  std::vector<IntermediateData> dataView;
+  dataView.reserve(lights.size());
+
+  // ライトの向きをビュー座標系に変換するための回転行列を作る.
+  const glm::mat3 matViewRot = glm::transpose(glm::inverse(glm::mat3(matView)));
 
   // メインフラスタムと交差しているライトだけをライトリストに登録.
   for (glm::uint i = 0; i < lights.size(); ++i) {
     const LightPtr& e = lights[i];
+
+    // ライトの座標をビュー座標系に変換.
     const glm::vec3 pos = matView * glm::vec4(e->position, 1);
-    const float range = sqrt(glm::max(e->color.r, glm::max(e->color.g, e->color.b))) * 3;
-    if (SphereInsideFrustum(Sphere{ pos, range }, *frustum)) {
-      tileData->lights[posView.size()] = LightForShader{
-        glm::vec4(e->position, 1), glm::vec4(e->color, range) };
-      posView.push_back(pos);
-      if (posView.size() >= maxLightCount) {
+
+    // ライトの影響範囲を計算.
+    const float range = sqrt(
+      glm::max(e->color.r, glm::max(e->color.g, e->color.b))) * 3;
+
+    // ライトの影響範囲とメインフラスタムの交差判定を行う.
+    if (e->type == Light::Type::PointLight) {
+      // ポイントライトの判定.
+      const Sphere sphere = { pos, range };
+      if (SphereInsideFrustum(sphere, *frustum)) {
+        // 交差しているのでライトを登録.
+        tileData->lights[dataView.size()] = LightForShader{
+          glm::vec4(e->position, static_cast<float>(Light::Type::PointLight)),
+          glm::vec4(e->color, range) };
+
+        // 中間データを登録.
+        IntermediateData intermediate;
+        intermediate.shape = IntermediateData::Shape::sphere;
+        intermediate.sphere = sphere;
+        dataView.push_back(intermediate);
+        if (dataView.size() >= maxLightCount) {
+          break;
+        }
+      }
+    } else if (e->type == Light::Type::SpotLight) {
+      // スポットライトの判定.
+      // 60度より大きい場合は球で代用.
+      bool hasIntersect = false;
+      if (e->coneAngle > glm::radians(60.0f)) {
+        const Sphere sphere = { pos, range };
+        if (SphereInsideFrustum(sphere, *frustum)) {
+          // 交差しているのでライトを登録.
+          tileData->lights[dataView.size()] = LightForShader{
+            glm::vec4(e->position, static_cast<float>(Light::Type::SpotLight)),
+            glm::vec4(e->color, range),
+            glm::vec4(e->direction, 1),
+            glm::vec4(std::cos(e->coneAngle), std::cos(e->falloffAngle), 0, 1) };
+
+          // 中間データを登録.
+          IntermediateData intermediate;
+          intermediate.shape = IntermediateData::Shape::sphere;
+          intermediate.sphere = sphere;
+          dataView.push_back(intermediate);
+        }
+      } else {
+        const glm::vec3 dir = matViewRot * e->direction;
+        const float radius = std::sin(e->coneAngle) * range / std::cos(e->coneAngle);
+        const Cone cone = { pos, range, dir, radius };
+        if (ConeInsideFrustum(cone, *frustum)) {
+          // 交差しているのでライトを登録.
+          tileData->lights[dataView.size()] = LightForShader{
+            glm::vec4(e->position, static_cast<float>(Light::Type::SpotLight)),
+            glm::vec4(e->color, range),
+            glm::vec4(e->direction, 1),
+            glm::vec4(std::cos(e->coneAngle), std::cos(e->falloffAngle), 0, 1) };
+
+          // 中間データを登録.
+          IntermediateData intermediate;
+          intermediate.shape = IntermediateData::Shape::cone;
+          intermediate.cone = cone;
+          dataView.push_back(intermediate);
+        }
+      }
+      if (dataView.size() >= maxLightCount) {
         break;
       }
     }
@@ -319,15 +421,27 @@ void LightManager::Update(const glm::mat4& matView, const FrustumPtr& frustum)
     for (int x = 0; x < tileCountX; ++x) {
       const SubFrustum& f = frustum->tiles[y][x];
       glm::uint count = 0;
-      for (glm::uint i = 0; i < posView.size(); ++i) {
-        if (SphereInsideSubFrustum(Sphere{ posView[i],
-          tileData->lights[i].colorAndRange.a }, f)) {
-          tileData->lightIndices[y][x][count] = i;
-          ++count;
-          if (count >= maxLightCountInTile) {
-            std::cerr << "[情報]" << __func__ <<
-              "サイズオーバー[" << y << "][" << x << "]\n";
-            break;
+      for (glm::uint i = 0; i < dataView.size(); ++i) {
+        const IntermediateData::Shape shape = dataView[i].shape;
+        if (shape == IntermediateData::Shape::sphere) {
+          if (SphereInsideSubFrustum(dataView[i].sphere, f)) {
+            tileData->lightIndices[y][x][count] = i;
+            ++count;
+            if (count >= maxLightCountInTile) {
+              std::cerr << "[情報]" << __func__ <<
+                "サイズオーバー(ポイントライト)[" << y << "][" << x << "]\n";
+              break;
+            }
+          }
+        } else if (shape == IntermediateData::Shape::cone) {
+          if (ConeInsideSubFrustum(dataView[i].cone, f)) {
+            tileData->lightIndices[y][x][count] = i;
+            ++count;
+            if (count >= maxLightCountInTile) {
+              std::cerr << "[情報]" << __func__ <<
+                "サイズオーバー(スポットライト)[" << y << "][" << x << "]\n";
+              break;
+            }
           }
         }
       }
@@ -338,9 +452,9 @@ void LightManager::Update(const glm::mat4& matView, const FrustumPtr& frustum)
   // LightDataをGPUメモリに転送.
   auto targetSsbo = ssbo[writingSsboNo];
   const size_t size = sizeof(LightData::lightCounts) +
-    sizeof(LightData::lightIndices) + sizeof(LightForShader) * posView.size();
+    sizeof(LightData::lightIndices) + sizeof(LightForShader) * dataView.size();
   targetSsbo->CopyData(tileData.get(), size, 0);
-  writingSsboNo ^= 1;
+  writingSsboNo = !writingSsboNo;
 }
 
 /**
@@ -350,7 +464,7 @@ void LightManager::Update(const glm::mat4& matView, const FrustumPtr& frustum)
 */
 void LightManager::Bind(GLuint location) const
 {
-  ssbo[writingSsboNo ^ 1]->Bind(location);
+  ssbo[!writingSsboNo]->Bind(location);
 }
 
 /**
@@ -360,7 +474,7 @@ void LightManager::Bind(GLuint location) const
 */
 void LightManager::Unbind(GLuint location) const
 {
-  ssbo[writingSsboNo ^ 1]->Unbind(location);
+  ssbo[!writingSsboNo]->Unbind(location);
 }
 
 } // namespace Light

@@ -38,12 +38,18 @@ const vec2 tileSize =
 const uint maxLightCountInTile = 64; // 区画に含まれるライトの最大数.
 const uint maxLightCount = 1024; // シーン全体で使えるライトの最大数.
 
+// ライトの種類.
+const float Type_PointLight = 0;
+const float Type_SpotLight = 1;
+
 /**
 * ライト.
 */
 struct Light {
-  vec4 position; // ライトの座標.
-  vec4 colorAndRange; // ライトの色(明るさ)と、光の届く範囲.
+  vec4 positionAndType;     // ライトの座標と種類.
+  vec4 colorAndRange;       // ライトの色(明るさ)と、光の届く範囲.
+  vec4 direction;           // ライトが照らす方向.
+  vec4 coneAndFalloffAngle; // スポットライトが照らす角度と減衰開始角度.
 };
 
 /**
@@ -124,7 +130,7 @@ void main()
     }
 
     // フラグメントからライトへ向かうベクトルを計算.
-    vec3 lightVector = lights[lightIndex].position.xyz - inPosition;
+    vec3 lightVector = lights[lightIndex].positionAndType.xyz - inPosition;
 
     // 距離による明るさの変化量を計算.
     float lengthSq = dot(lightVector, lightVector);
@@ -136,9 +142,29 @@ void main()
     const float fallOff = 0.75; // 減衰を開始する距離(比率).
     float rangeSq = lights[lightIndex].colorAndRange.a;
     rangeSq *= rangeSq;
-    float attenuation = 1 - smoothstep(
-      rangeSq * (fallOff * fallOff), rangeSq, lengthSq);
+    float attenuation = smoothstep(rangeSq,
+      rangeSq * (fallOff * fallOff), lengthSq);
+    if (attenuation <= 0) {
+      continue;
+    }
     intensity *= attenuation;
+
+    // スポットライトの場合、円錐外周部の減衰を計算する.
+    if (lights[lightIndex].positionAndType.w == Type_SpotLight) {
+      vec3 direction = lights[lightIndex].direction.xyz;
+      float coneAngle = lights[lightIndex].coneAndFalloffAngle.x;
+      // ライトからフラグメントへ向かうベクトルと、スポットライトのベクトルのなす角が
+      // ライトが照らす角度以上なら範囲外.
+      // cosθで比較しているため、不等号が逆になることに注意.
+      float angle = dot(direction, normalize(-lightVector));
+      if (angle <= coneAngle) {
+        continue;
+      }
+      // 減衰開始角度と外周角度の間で補間.
+      float falloffAngle = lights[lightIndex].coneAndFalloffAngle.y;
+      float falloff = smoothstep(coneAngle, falloffAngle, angle);
+      intensity *= falloff;
+    }
 
     // 面の傾きによる明るさの変化量を計算.
     float theta = 1;

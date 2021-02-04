@@ -25,13 +25,17 @@ struct Light
 {
   // ライトの種類.
   enum class Type {
-    PointLight,       // 点光源.
+    PointLight, // 点光源.
+    SpotLight,  // スポット光源.
   };
 
   std::string name;   // ライトの名前.
   Type type = Type::PointLight; // ライトの種類.
   glm::vec3 position; // 光を放つ位置.
   glm::vec3 color;    // ライトの色.
+  glm::vec3 direction;// 光を放つ方向.
+  float coneAngle;    // スポットライトが照らす角度.
+  float falloffAngle; // スポットライトの減衰開始角度.
 };
 using LightPtr = std::shared_ptr<Light>;
 
@@ -47,6 +51,8 @@ public:
   LightManager& operator=(const LightManager&) = delete;
 
   LightPtr CreateLight(const glm::vec3& position, const glm::vec3& color);
+  LightPtr CreateSpotLight(const glm::vec3& position, const glm::vec3& color,
+    const glm::vec3& direction, float coneAngle, float falloffAngle);
   void RemoveLight(const LightPtr& light);
   LightPtr GetLight(size_t n) const;
   size_t LightCount() const;
