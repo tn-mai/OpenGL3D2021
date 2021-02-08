@@ -311,21 +311,19 @@ GLuint CreateSampler()
 * @param data    画像データへのポインタ.
 * @param pixelFormat  画像のピクセル形式(GL_BGRAなど).
 * @param type    画像データの型.
+* @param internalFormat メモリに格納するときのピクセル形式.
 *
 * @retval 0以外  作成したテクスチャ・オブジェクトのID.
 * @retval 0      テクスチャの作成に失敗.
 */
-GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data, GLenum pixelFormat, GLenum type)
+GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data,
+  GLenum pixelFormat, GLenum type, GLenum internalFormat)
 {
   GLuint id;
 
   // テクスチャ・オブジェクトを作成し、GPUメモリを確保する.
   glCreateTextures(GL_TEXTURE_2D, 1, &id);
-  if (type == GL_UNSIGNED_INT_24_8) {
-    glTextureStorage2D(id, 1, GL_DEPTH24_STENCIL8, width, height);
-  } else {
-    glTextureStorage2D(id, 1, GL_RGBA8, width, height);
-  }
+  glTextureStorage2D(id, 1, internalFormat, width, height);
   //glTextureStorage2D(id, 1, GL_SRGB8_ALPHA8, width, height);
 
   // GPUメモリにデータを転送する.
@@ -359,11 +357,12 @@ GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data, GLenum pix
 * ファイルから2Dテクスチャを読み込む.
 *
 * @param filename 2Dテクスチャとして読み込むファイル名.
+* @param internalFormat メモリに格納するときのピクセル形式.
 *
 * @retval 0以外  作成したテクスチャ・オブジェクトのID.
 * @retval 0      テクスチャの作成に失敗.
 */
-GLuint CreateImage2D(const char* filename)
+GLuint CreateImage2D(const char* filename, GLenum internalFormat)
 {
   std::ifstream ifs;
 
@@ -426,7 +425,7 @@ GLuint CreateImage2D(const char* filename)
   }
 
   // 読み込んだ画像データからテクスチャを作成する.
-  return CreateImage2D(width, height, buf.data(), pixelFormat, type);
+  return CreateImage2D(width, height, buf.data(), pixelFormat, type, internalFormat);
 }
 
 } // namespace GLContext

@@ -205,7 +205,7 @@ void PlayerActor::ProcessInput()
       // Õ“ËŒ`ó‚ðÝ’è.
       builderActor->SetBoxCollision(glm::vec3(-1, 0, -0.1f), glm::vec3(1, 2, 0.1f));
       builderActor->collision.blockOtherActors = false;
-      builderActor->hasShadow = false;
+      builderActor->isShadowCaster = false;
       builderActor->health = 10;
       builderActor->OnHit = [](Actor& a, Actor& b) {
         a.baseColor = glm::vec4(1, 0.2f, 0.2f, 0.5f);
@@ -241,7 +241,7 @@ void PlayerActor::ProcessInput()
       if (builderActor->baseColor.r < 1) {
         builderActor->baseColor = glm::vec4(1);
         builderActor->collision.blockOtherActors = true;
-        builderActor->hasShadow = true;
+        builderActor->isShadowCaster = true;
         builderActor->OnHit = [](Actor& a, Actor& b) {
           if (b.name == "zombie_attack") {
             a.health -= 1;

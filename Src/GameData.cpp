@@ -295,8 +295,8 @@ bool GameData::Initialize(GLFWwindow* window)
   texBlood = std::make_shared<Texture::Image2D>("Res/blood.tga");
   texHatching = std::make_shared<Texture::Image2D>("Res/Hatching.tga");
 
-  texGroundNormal = std::make_shared<Texture::Image2D>("Res/Ground_normal.tga");
-  texZombieNormal = std::make_shared<Texture::Image2D>("Res/zombie_male/zombie_male_normal.tga");
+  texGroundNormal = std::make_shared<Texture::Image2D>("Res/Ground_normal.tga", false);
+  texZombieNormal = std::make_shared<Texture::Image2D>("Res/zombie_male/zombie_male_normal.tga", false);
 
   std::cout << "[情報] ゲームデータの初期化を完了.\n";
   return true;

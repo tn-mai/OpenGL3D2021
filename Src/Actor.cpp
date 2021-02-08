@@ -151,6 +151,11 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP,
     return;
   }
 
+  // 影描画の時、影を作らないアクターは何もせず終了.
+  if (drawType == DrawType::shadow && !isShadowCaster) {
+    return;
+  }
+
   // 平行移動させる行列を作る.
   const glm::mat4 matTranslate = glm::translate(glm::mat4(1), position);
   // X軸回転させる行列を作る.
@@ -186,12 +191,26 @@ void Actor::Draw(const Shader::Pipeline& pipeline, const glm::mat4& matVP,
     pipeline.SetMorphWeight(glm::vec3(0));
   }
 
+  const GameData& gamedata = GameData::Get();
+  for (size_t i = 0; i < std::size(samplers); ++i) {
+    if (samplers[i]) {
+      samplers[i]->Bind(i);
+    } else {
+      gamedata.sampler.Bind(i);
+    }
+  }
+
   // テクスチャイメージスロット0番にテクスチャを割り当てる.
   texture->Bind(0);
   if (texNormal) {
     texNormal->Bind(1);
   } else {
     Texture::UnbindTexture(1);
+  }
+  if (texMetallicSmoothness) {
+    texMetallicSmoothness->Bind(2);
+  } else {
+    Texture::UnbindTexture(2);
   }
 
   // プリミティブを描画.

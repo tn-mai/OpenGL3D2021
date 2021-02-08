@@ -10,7 +10,9 @@
 */
 FramebufferObject::FramebufferObject(int w, int h, FboType type)
 {
-  texColor = std::make_shared<Texture::Image2D>("FBO(Color)", w, h, nullptr, GL_RGBA, GL_UNSIGNED_BYTE);
+  texColor = std::make_shared<Texture::Image2D>("FBO(Color)", w, h, nullptr,
+//    GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
+    GL_RGBA, GL_UNSIGNED_BYTE, GL_SRGB8_ALPHA8);
   if (!texColor || !texColor->GetId()) {
     std::cerr << "[エラー]" << __func__ << ":オフスクリーンバッファ用テクスチャの作成に失敗.\n";
     texColor.reset();
@@ -25,7 +27,8 @@ FramebufferObject::FramebufferObject(int w, int h, FboType type)
     glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, texColor->GetId(), 0);
     glNamedFramebufferRenderbuffer(fbo, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencil);
   } else {
-    texDepthStencil = std::make_shared<Texture::Image2D>("FBO(DepthStencil)", w, h, nullptr, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8);
+    texDepthStencil = std::make_shared<Texture::Image2D>("FBO(DepthStencil)", w, h, nullptr,
+      GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8);
     if (!texDepthStencil || !texDepthStencil->GetId()) {
       std::cerr << "[エラー]" << __func__ << ":オフスクリーンバッファ用テクスチャの作成に失敗.\n";
       texColor.reset();

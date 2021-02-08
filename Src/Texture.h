@@ -15,8 +15,9 @@ class Image2D
 {
 public:
   Image2D() = default;
-  explicit Image2D(const char* filename);
-  Image2D(const char* name, GLsizei width, GLsizei height, const void* data, GLenum format, GLenum type);
+  explicit Image2D(const char* filename, bool isSRGB = true);
+  Image2D(const char* name, GLsizei width, GLsizei height, const void* data,
+    GLenum format, GLenum type, GLenum internalFormat = GL_SRGB8_ALPHA8);
   ~Image2D();
   Image2D(const Image2D&) = delete;
   Image2D& operator=(const Image2D&) = delete;

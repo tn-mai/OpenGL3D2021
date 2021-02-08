@@ -108,6 +108,8 @@ public:
   float morphTransitionTimer = 0;
   std::shared_ptr<Texture::Image2D> texture;
   std::shared_ptr<Texture::Image2D> texNormal;
+  std::shared_ptr<Texture::Image2D> texMetallicSmoothness;
+  std::shared_ptr<Texture::Sampler> samplers[3];
 
   glm::vec3 position = glm::vec3(0); // アクターの表示位置.
   glm::vec3 rotation = glm::vec3(0); // アクターの向き.
@@ -134,7 +136,7 @@ public:
   float drag = 0;         // 発生した摩擦力.
 
   bool isDead = false; // 死亡フラグ.
-  bool hasShadow = true;
+  bool isShadowCaster = true;
 };
 
 using ActorPtr = std::shared_ptr<Actor>; // アクターポインタ型.

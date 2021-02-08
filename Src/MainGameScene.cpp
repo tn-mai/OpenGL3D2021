@@ -126,8 +126,16 @@ bool MainGameScene::Initialize()
   // 地面を表示.
   {
     std::shared_ptr<Actor> actor = std::make_shared<Actor>(
-      "ground", nullptr, nullptr, glm::vec3(0, 0, 0));
+      "ground", &global.primitiveBuffer.Get(GameData::PrimNo::ground), texGround, glm::vec3(0, 0, 0));
+    actor->samplers[0] = std::make_shared<Texture::Sampler>();
+    actor->samplers[0]->SetFilter(GL_LINEAR);
+    actor->samplers[0]->SetWrapMode(GL_REPEAT);
+    actor->samplers[1] = actor->samplers[0];
+    actor->samplers[2] = actor->samplers[0];
+    actor->texNormal = std::make_shared<Texture::Image2D>("Res/Ground_normal.tga", false);
+    actor->texMetallicSmoothness = std::make_shared<Texture::Image2D>("Res/Ground_spec.tga", false);
     actor->SetBoxCollision(glm::vec3(-20, -10, -20), glm::vec3(20, 0, 20));
+    actor->isShadowCaster = false;
     actors.push_back(actor);
   }
 
@@ -141,7 +149,12 @@ bool MainGameScene::Initialize()
   {
     std::shared_ptr<Actor> actor = std::make_shared<Actor>(
       "house", &global.primitiveBuffer.Get(GameData::PrimNo::house), texHouse, glm::vec3(0));
-    actor->texNormal = std::make_shared<Texture::Image2D>("Res/house_normal.tga");
+    actor->samplers[0] = std::make_shared<Texture::Sampler>();
+    actor->samplers[0]->SetFilter(GL_NEAREST);
+    actor->samplers[0]->SetWrapMode(GL_CLAMP_TO_EDGE);
+    actor->samplers[2] = actor->samplers[0];
+    //actor->texNormal = std::make_shared<Texture::Image2D>("Res/house_normal.tga");
+    //actor->texMetallicSmoothness = std::make_shared<Texture::Image2D>("Res/House_spec.tga", false);
     actor->SetBoxCollision(glm::vec3(-3, 0, -3), glm::vec3(3, 5, 3));
     actors.push_back(actor);
   }
@@ -198,11 +211,11 @@ bool MainGameScene::Initialize()
       const int c = std::uniform_int_distribution<>(1, 7)(gamedata.random);
       const float range = std::uniform_real_distribution<float>(0.5f, 1.5f)(gamedata.random);
 
-      const glm::vec3 color = glm::vec3(c & 1, (c >> 1) & 1, (c >> 2) & 1) * range * range;
-      lightManager->CreateLight(glm::vec3(x, 0.25f, z), color);
+      const glm::vec3 color = glm::vec3(c & 1, (c >> 1) & 1, (c >> 2) & 1) * range * range * 3.14f;
+      lightManager->CreateLight(glm::vec3(x, 1.0f, z), color);
     }
     flashLight = lightManager->CreateSpotLight(playerActor->position + glm::vec3(0, 1, 0),
-      glm::vec3(1, 0.9f, 0.8f) * 10.0f, glm::vec3(1, 0, 0),
+      glm::vec3(1, 0.9f, 0.8f) * 30.0f, glm::vec3(1, 0, 0),
       glm::radians(20.0f), glm::radians(5.0f));
   }
 
@@ -218,7 +231,7 @@ bool MainGameScene::Initialize()
       actor->SetBoxCollision(glm::vec3(-0.2f, 0, -0.2f), glm::vec3(0.2f, 4, 0.2f));
       //actor->rotation.y = glm::radians(180.0f);
       actors.push_back(actor);
-      lightManager->CreateSpotLight(e + glm::vec3(1, 4, 0), glm::vec3(1, 0.9f, 0.8f) * 20.0f, glm::vec3(0, -1, 0),
+      lightManager->CreateSpotLight(e + glm::vec3(1, 4, 0), glm::vec3(1, 0.9f, 0.8f) * 100.0f, glm::vec3(0, -1, 0),
         glm::radians(30.0f), glm::radians(15.0f));
     }
   }
@@ -476,17 +489,21 @@ void MainGameScene::Render(GLFWwindow* window) const
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
-  //glEnable(GL_FRAMEBUFFER_SRGB);
+  glEnable(GL_FRAMEBUFFER_SRGB);
   glClearColor(0.1f, 0.3f, 0.5f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   // 環境光を設定する.
-  pipeline->SetAmbientLight(glm::vec3(0.1f, 0.125f, 0.15f) * 0.25f);
+  //pipeline->SetAmbientLight(glm::vec3(0.1f, 0.125f, 0.15f)); // 昼
+  //pipeline->SetAmbientLight(glm::vec3(0.09f, 0.05f, 0.1f)); // 夕方 
+  pipeline->SetAmbientLight(glm::vec3(0.02f, 0.01f, 0.03f)); // 夜
 
   // 平行光源を設定する
   const Shader::DirectionalLight directionalLight{
     glm::normalize(glm::vec4(3,-2,-2, 0)),
-    glm::vec4(glm::vec3(1, 0.9f, 0.8f) * 0.5f, 1)
+    //glm::vec4(glm::vec3(1, 0.9f, 0.8f) * 4.0f, 1) // 昼
+    //glm::vec4(glm::vec3(1, 0.5f, 0.2f) * 2.0f, 1) // 夕方
+    glm::vec4(glm::vec3(1, 0.9f, 0.8f) * 0.5f, 1) // 夜
   };
   pipeline->SetLight(directionalLight);
 
@@ -500,26 +517,14 @@ void MainGameScene::Render(GLFWwindow* window) const
   global.sampler.Bind(1);
   global.samplerClampToEdge.Bind(2);
 
-
-  // 地面を描画.
-  {
-    const glm::mat4 matModel = glm::mat4(1);
-    const glm::mat4 matMVP = matProj * matView * matModel;
-    pipeline->SetMVP(matMVP);
-    pipeline->SetModelMatrix(matModel);
-    pipeline->SetObjectColor(glm::vec4(1));
-    pipeline->SetMorphWeight(glm::vec3(0));
-    texGround->Bind(0);
-    GameData::Get().texGroundNormal->Bind(1);
-    primitiveBuffer.Get(GameData::PrimNo::ground).Draw();
-  }
-
   // アクターリストを描画.
   pipeline->SetViewPosition(playerActor->position + glm::vec3(0, 7, 7));
   const glm::mat4 matVP = matProj * matView;
   for (size_t i = 0; i < actors.size(); ++i) {
     actors[i]->Draw(*pipeline, matVP, Actor::DrawType::color);
   }
+
+  global.samplerClampToEdge.Bind(2);
 
   if (0) {
     // Y軸回転.
@@ -613,6 +618,7 @@ void MainGameScene::Render(GLFWwindow* window) const
 
   // 描画先をデフォルトのフレームバッファに戻す.
   fboMain->Unbind();
+  //glDisable(GL_FRAMEBUFFER_SRGB);
 
   // 2D表示.
   {

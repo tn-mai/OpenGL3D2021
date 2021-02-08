@@ -23,6 +23,9 @@ ZombieActor::ZombieActor(const glm::vec3& pos, float rotY,
     pos),
   pMainGameScene(pScene)
 {
+  texMetallicSmoothness =
+    std::make_shared<Texture::Image2D>("Res/zombie_male/zombie_male_spec.tga", false);
+
   // d—Í‚Ì‰e‹¿—¦‚ğİ’è.
   gravityScale = 1;
 
