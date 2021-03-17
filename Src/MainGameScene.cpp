@@ -104,7 +104,7 @@ bool MainGameScene::Initialize()
   texTree   = std::make_shared<Texture::Image2D>("Res/Tree.tga");
   texHouse  = std::make_shared<Texture::Image2D>("Res/House.tga");
   texCube   = std::make_shared<Texture::Image2D>("Res/Rock.tga");
-  if (!texGround ||!texTree || !texHouse || !texCube) {
+  if (!texGround || !texTree || !texHouse || !texCube) {
     return false;
   }
 
