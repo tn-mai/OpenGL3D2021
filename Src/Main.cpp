@@ -3,6 +3,8 @@
 */
 #include <glad/glad.h>
 #include "GLContext.h"
+#include "Primitive.h"
+#include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
@@ -10,6 +12,35 @@
 
 /// 座標データ.
 const Position positions[] = {
+  // 地面
+  {-20, 0, 20},
+  { 20, 0, 20},
+  { 20, 0,-20},
+  {-20, 0,-20},
+
+  // 木
+  { 0.00f, 5.0f, 0.00f},
+  { 0.00f, 1.5f,-1.00f},
+  {-1.00f, 1.5f, 0.00f},
+  { 0.00f, 1.5f, 1.00f},
+  { 1.00f, 1.5f, 0.00f},
+  { 0.00f, 4.0f, 0.00f},
+  { 0.00f, 0.0f,-0.36f},
+  {-0.31f, 0.0f, 0.18f},
+  { 0.31f, 0.0f, 0.18f},
+
+  {-0.3f, -0.3f, 0.1f},
+  { 0.2f, -0.3f, 0.1f},
+  { 0.2f,  0.5f, 0.1f},
+  {-0.3f,  0.5f, 0.1f},
+
+  {-0.2f, -0.5f, 0.5f},
+  { 0.3f, -0.5f, 0.5f},
+  { 0.3f,  0.3f, 0.5f},
+  { 0.3f,  0.3f, 0.5f},
+  {-0.2f,  0.3f, 0.5f},
+  {-0.2f, -0.5f, 0.5f},
+
   {-0.33f, 0.5f, 0.5f },
   { 0.33f, 0.5f, 0.5f },
   { 0.0f,  -0.5f, 0.5f },
@@ -17,10 +48,56 @@ const Position positions[] = {
 
 /// 色データ.
 const Color colors[] = {
+  // 地面
+  {0.8f, 0.7f, 0.5f, 1.0f},
+  {0.8f, 0.7f, 0.5f, 1.0f},
+  {0.8f, 0.7f, 0.5f, 1.0f},
+  {0.8f, 0.7f, 0.5f, 1.0f},
+
+  // 木
+  {0.5f, 0.8f, 0.3f, 1.0f},
+  {0.1f, 0.3f, 0.0f, 1.0f},
+  {0.1f, 0.3f, 0.0f, 1.0f},
+  {0.1f, 0.3f, 0.0f, 1.0f},
+  {0.1f, 0.3f, 0.0f, 1.0f},
+  {0.2f, 0.1f, 0.0f, 1.0f},
+  {0.5f, 0.3f, 0.2f, 1.0f},
+  {0.5f, 0.3f, 0.2f, 1.0f},
+  {0.5f, 0.3f, 0.2f, 1.0f},
+
+  {0.0f, 1.0f, 0.0f, 1.0f},
+  {0.0f, 0.0f, 1.0f, 1.0f},
+  {1.0f, 0.0f, 0.0f, 1.0f},
+  {0.0f, 0.0f, 1.0f, 1.0f},
+
+  {1.0f, 0.0f, 0.0f, 1.0f},
+  {1.0f, 1.0f, 0.0f, 1.0f},
+  {1.0f, 0.0f, 0.0f, 1.0f},
+  {0.0f, 0.0f, 1.0f, 1.0f},
+  {0.0f, 1.0f, 1.0f, 1.0f},
+  {0.0f, 0.0f, 1.0f, 1.0f},
+
   { 0.0f, 1.0f, 1.0f, 1.0f }, // 水色
   { 1.0f, 1.0f, 0.0f, 1.0f }, // 黄色
   { 1.0f, 0.0f, 1.0f, 1.0f }, // 紫色
 };
+
+// インデックスデータ.
+const GLushort indices[] = {
+  // 地面
+  0, 1, 2, 2, 3, 0,
+
+  // 木
+  0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1, 1, 4, 3, 3, 2, 1,
+  5, 6, 7, 5, 7, 8, 5, 8, 6,
+
+  0, 1, 2, 2, 3, 0,
+  4, 5, 6, 7, 8, 9,
+};
+
+// 描画データ.
+const Primitive primGround(GL_TRIANGLES, 6, 0, 0); // 地面
+const Primitive primTree(GL_TRIANGLES, 27, 6 * sizeof(GLushort), 4); // 木
 
 /// 頂点シェーダー.
 static const char* vsCode =
@@ -31,9 +108,10 @@ static const char* vsCode =
   "out gl_PerVertex { \n"
   "  vec4 gl_Position; \n"
   "}; \n"
+  "layout(location=0) uniform mat4 matMVP; \n"
   "void main() { \n"
   "  outColor = vColor; \n"
-  "  gl_Position = vec4(vPosition, 1.0); \n"
+  "  gl_Position = matMVP * vec4(vPosition, 1.0); \n"
   "} \n";
 
 /// フラグメントシェーダー.
@@ -101,7 +179,8 @@ int main()
   // VAOを作成する.
   const GLuint vboPosition = GLContext::CreateBuffer(sizeof(positions), positions);
   const GLuint vboColor = GLContext::CreateBuffer(sizeof(colors), colors);
-  const GLuint vao = GLContext::CreateVertexArray(vboPosition, vboColor);
+  const GLuint ibo = GLContext::CreateBuffer(sizeof(indices), indices);
+  const GLuint vao = GLContext::CreateVertexArray(vboPosition, vboColor, ibo);
   if (!vao) {
     return 1;
   }
@@ -114,15 +193,63 @@ int main()
     return 1;
   }
 
+  // uniform変数の位置.
+  const GLint locMatMVP = 0;
+
   // メインループ.
   while (!glfwWindowShouldClose(window)) {
+    glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f, 0.3f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glBindVertexArray(vao);
     glBindProgramPipeline(pipeline);
 
-    glDrawArrays(GL_TRIANGLES, 0, sizeof(positions)/sizeof(positions[0]));
+    // 座標変換行列を作成してシェーダーに転送する.
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+    const float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+    const glm::mat4 matProj =
+      glm::perspective(glm::radians(45.0f),  aspectRatio, 0.1f, 200.0f);
+    const glm::mat4 matView =
+      glm::lookAt(glm::vec3(0, 20, 20), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+
+    // 地面を描画.
+    {
+      const glm::mat4 matModel = glm::mat4(1);
+      const glm::mat4 matMVP = matProj * matView * matModel;
+      glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+      primGround.Draw();
+    }
+
+    // 木を描画.
+    for (float i = 0; i < 18; ++i) {
+      const glm::vec3 position(-17, 0, -17 + i * 2);
+      const glm::mat4 matModel =
+        glm::translate(glm::mat4(1), position);
+      const glm::mat4 matMVP = matProj * matView * matModel;
+      glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+ 
+      primTree.Draw();
+    }
+    for (float i = 0; i < 18; ++i) {
+      const glm::vec3 position(17, 0, -17 + i * 2);
+      const glm::mat4 matModel =
+        glm::translate(glm::mat4(1), position);
+      const glm::mat4 matMVP = matProj * matView * matModel;
+      glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+ 
+      primTree.Draw();
+    }
+    for (float i = 0; i < 16; ++i) {
+      const glm::vec3 position(-15 + i * 2, 0, -17);
+      const glm::mat4 matModel =
+        glm::translate(glm::mat4(1), position);
+      const glm::mat4 matMVP = matProj * matView * matModel;
+      glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+ 
+      primTree.Draw();
+    }
 
     glBindProgramPipeline(0);
     glBindVertexArray(0);
@@ -136,6 +263,7 @@ int main()
   glDeleteProgram(fp);
   glDeleteProgram(vp);
   glDeleteVertexArrays(1, &vao);
+  glDeleteBuffers(1, &ibo);
   glDeleteBuffers(1, &vboColor);
   glDeleteBuffers(1, &vboPosition);
 

@@ -31,10 +31,11 @@ GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data)
 *
 * @param vboPosition VAOに関連付けられる座標データ.
 * @param vboColor    VAOに関連付けられるカラーデータ.
+* @param ibo         VAOに関連付けられるインデックスデータ.
 *
 * @return 作成したVAO.
 */
-GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor)
+GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor, GLuint ibo)
 {
   if (!vboPosition || !vboColor) {
     std::cerr << "[エラー]" << __func__ << ":バッファオブジェクトが0です。\n";
@@ -58,6 +59,8 @@ GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor)
   glVertexArrayAttribFormat(id, colorIndex, 4, GL_FLOAT, GL_FALSE, 0);
   glVertexArrayAttribBinding(id, colorIndex, colorBindingIndex);
   glVertexArrayVertexBuffer(id, colorBindingIndex, vboColor, 0, sizeof(Color));
+
+  glVertexArrayElementBuffer(id, ibo);
 
   return id;
 }
