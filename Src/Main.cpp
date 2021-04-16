@@ -77,9 +77,29 @@ const Color colors[] = {
   {0.0f, 1.0f, 1.0f, 1.0f},
   {0.0f, 0.0f, 1.0f, 1.0f},
 
-  { 0.0f, 1.0f, 1.0f, 1.0f }, // 水色
-  { 1.0f, 1.0f, 0.0f, 1.0f }, // 黄色
-  { 1.0f, 0.0f, 1.0f, 1.0f }, // 紫色
+  {0.0f, 1.0f, 1.0f, 1.0f}, // 水色
+  {1.0f, 1.0f, 0.0f, 1.0f}, // 黄色
+  {1.0f, 0.0f, 1.0f, 1.0f}, // 紫色
+};
+
+/// テクスチャ座標データ.
+const glm::vec2 texcoords[] = {
+  // 地面
+  {-4.0f,-4.0f},
+  { 4.0f,-4.0f},
+  { 4.0f, 4.0f},
+  {-4.0f, 4.0f},
+
+  // 木
+  { 0.0f, 1.0f},
+  { 0.0f, 0.0f},
+  { 0.3f, 0.0f},
+  { 0.7f, 0.0f},
+  { 1.0f, 0.0f},
+  { 0.0f, 1.0f},
+  { 0.0f, 0.0f},
+  { 0.5f, 0.0f},
+  { 1.0f, 0.0f},
 };
 
 // インデックスデータ.
@@ -98,19 +118,49 @@ const GLushort indices[] = {
 // 描画データ.
 const Primitive primGround(GL_TRIANGLES, 6, 0, 0); // 地面
 const Primitive primTree(GL_TRIANGLES, 27, 6 * sizeof(GLushort), 4); // 木
+ 
+ // 画像データ.
+const int imageWidth = 8; // 画像の幅.
+const int imageHeight = 8; // 画像の高さ.
+const GLuint X = 0xff'18'18'18; // 黒.
+const GLuint W = 0xff'ff'ff'ff; // 白.
+const GLuint R = 0xff'10'10'e0; // 赤.
+const GLuint B = 0xff'e0'10'10; // 青.
+const GLuint imageGround[imageWidth * imageHeight] = {
+  X, B, B, B, X, W, W, W,
+  X, B, B, B, X, W, W, W,
+  X, B, B, B, X, W, W, W,
+  X, X, X, X, X, X, X, X,
+  W, W, X, R, R, R, X, W,
+  W, W, X, R, R, R, X, W,
+  W, W, X, R, R, R, X, W,
+  X, X, X, X, X, X, X, X,
+};
+
+const GLuint G = 0xff'10'c0'10;
+const GLuint imageTree[5 * 5] = {
+  G, G, G, G, G,
+  G, G, G, G, G,
+  G, G, G, G, G,
+  G, G, G, G, G,
+  G, G, G, G, G,
+};
 
 /// 頂点シェーダー.
 static const char* vsCode =
   "#version 450 \n"
   "layout(location=0) in vec3 vPosition; \n"
   "layout(location=1) in vec4 vColor; \n"
+  "layout(location=2) in vec2 vTexcoord; \n"
   "layout(location=0) out vec4 outColor; \n"
+  "layout(location=1) out vec2 outTexcoord; \n"
   "out gl_PerVertex { \n"
   "  vec4 gl_Position; \n"
   "}; \n"
   "layout(location=0) uniform mat4 matMVP; \n"
   "void main() { \n"
   "  outColor = vColor; \n"
+  "  outTexcoord = vTexcoord; \n"
   "  gl_Position = matMVP * vec4(vPosition, 1.0); \n"
   "} \n";
 
@@ -118,9 +168,11 @@ static const char* vsCode =
 static const GLchar* fsCode =
   "#version 450 \n"
   "layout(location=0) in vec4 inColor; \n"
+  "layout(location=1) in vec2 inTexcoord; \n"
   "out vec4 fragColor; \n"
+  "layout(binding=0) uniform sampler2D texColor; \n"
   "void main() { \n"
-  "  fragColor = inColor; \n"
+  "  fragColor = inColor * texture(texColor, inTexcoord); \n"
   "} \n";
 
 /**
@@ -179,8 +231,10 @@ int main()
   // VAOを作成する.
   const GLuint vboPosition = GLContext::CreateBuffer(sizeof(positions), positions);
   const GLuint vboColor = GLContext::CreateBuffer(sizeof(colors), colors);
+  const GLuint vboTexcoord = GLContext::CreateBuffer(sizeof(texcoords), texcoords);
   const GLuint ibo = GLContext::CreateBuffer(sizeof(indices), indices);
-  const GLuint vao = GLContext::CreateVertexArray(vboPosition, vboColor, ibo);
+  const GLuint vao = GLContext::CreateVertexArray(vboPosition, vboColor,
+    vboTexcoord, ibo);
   if (!vao) {
     return 1;
   }
@@ -196,6 +250,20 @@ int main()
   // uniform変数の位置.
   const GLint locMatMVP = 0;
 
+  // サンプラ・オブジェクトを作成する.
+  const GLuint sampler = GLContext::CreateSampler(GL_CLAMP_TO_EDGE);
+  if (!sampler) {
+    return 1;
+  }
+
+  const GLuint texGround =
+    GLContext::CreateImage2D(imageWidth, imageHeight, imageGround);
+  const GLuint texTree =
+    GLContext::CreateImage2D(5, 5, imageTree);
+  if (!texGround || !texTree) {
+    return 1;
+  }
+
   // メインループ.
   while (!glfwWindowShouldClose(window)) {
     glEnable(GL_DEPTH_TEST);
@@ -204,6 +272,7 @@ int main()
 
     glBindVertexArray(vao);
     glBindProgramPipeline(pipeline);
+    glBindSampler(0, sampler);
 
     // 座標変換行列を作成してシェーダーに転送する.
     int w, h;
@@ -219,8 +288,14 @@ int main()
       const glm::mat4 matModel = glm::mat4(1);
       const glm::mat4 matMVP = matProj * matView * matModel;
       glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+      glBindTextureUnit(0, texGround);
       primGround.Draw();
     }
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glBindTextureUnit(0, texTree);
 
     // 木を描画.
     for (float i = 0; i < 18; ++i) {
@@ -251,6 +326,7 @@ int main()
       primTree.Draw();
     }
 
+    glBindSampler(0, 0);
     glBindProgramPipeline(0);
     glBindVertexArray(0);
 
@@ -259,6 +335,9 @@ int main()
   }
 
   // 後始末.
+  glDeleteTextures(1, &texTree);
+  glDeleteTextures(1, &texGround);
+  glDeleteSamplers(1, &sampler);
   glDeleteProgramPipelines(1, &pipeline);
   glDeleteProgram(fp);
   glDeleteProgram(vp);
@@ -266,6 +345,7 @@ int main()
   glDeleteBuffers(1, &ibo);
   glDeleteBuffers(1, &vboColor);
   glDeleteBuffers(1, &vboPosition);
+  glDeleteBuffers(1, &vboTexcoord);
 
   // GLFWの終了.
   glfwTerminate();
