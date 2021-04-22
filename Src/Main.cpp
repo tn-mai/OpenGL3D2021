@@ -29,6 +29,20 @@ const Position positions[] = {
   {-0.31f, 0.0f, 0.18f},
   { 0.31f, 0.0f, 0.18f},
 
+  // 建物
+  {-2.0f, 0.0f, 3.0f },
+  { 2.0f, 0.0f, 3.0f },
+  { 2.0f, 0.0f,-3.0f },
+  {-2.0f, 0.0f,-3.0f },
+  {-2.0f, 0.0f, 3.0f },
+  {-2.0f, 2.0f, 3.0f },
+  { 2.0f, 2.0f, 3.0f },
+  { 2.0f, 2.0f,-3.0f },
+  {-2.0f, 2.0f,-3.0f },
+  {-2.0f, 2.0f, 3.0f },
+  { 2.0f, 2.0f,-3.0f },
+  {-2.0f, 2.0f,-3.0f },
+
   {-0.3f, -0.3f, 0.1f},
   { 0.2f, -0.3f, 0.1f},
   { 0.2f,  0.5f, 0.1f},
@@ -49,10 +63,10 @@ const Position positions[] = {
 /// 色データ.
 const Color colors[] = {
   // 地面
-  {0.8f, 0.7f, 0.5f, 1.0f},
-  {0.8f, 0.7f, 0.5f, 1.0f},
-  {0.8f, 0.7f, 0.5f, 1.0f},
-  {0.8f, 0.7f, 0.5f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
 
   // 木
   {0.5f, 0.8f, 0.3f, 1.0f},
@@ -64,6 +78,20 @@ const Color colors[] = {
   {0.5f, 0.3f, 0.2f, 1.0f},
   {0.5f, 0.3f, 0.2f, 1.0f},
   {0.5f, 0.3f, 0.2f, 1.0f},
+
+  // 建物
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
+  {1.0f, 1.0f, 1.0f, 1.0f},
 
   {0.0f, 1.0f, 0.0f, 1.0f},
   {0.0f, 0.0f, 1.0f, 1.0f},
@@ -100,6 +128,20 @@ const glm::vec2 texcoords[] = {
   { 0.0f, 0.0f},
   { 0.5f, 0.0f},
   { 1.0f, 0.0f},
+
+  // 建物
+  { 0.00f, 0.0f },
+  { 0.25f, 0.0f },
+  { 0.50f, 0.0f },
+  { 0.75f, 0.0f },
+  { 1.00f, 0.0f },
+  { 0.00f, 0.5f },
+  { 0.25f, 0.5f },
+  { 0.50f, 0.5f },
+  { 0.75f, 0.5f },
+  { 1.00f, 0.5f },
+  { 0.25f, 1.0f },
+  { 0.00f, 1.0f },
 };
 
 // インデックスデータ.
@@ -111,6 +153,13 @@ const GLushort indices[] = {
   0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1, 1, 4, 3, 3, 2, 1,
   5, 6, 7, 5, 7, 8, 5, 8, 6,
 
+  // 建物
+  0, 1, 6, 6, 5, 0,
+  1, 2, 7, 7, 6, 1,
+  2, 3, 8, 8, 7, 2,
+  3, 4, 9, 9, 8, 3,
+  5, 6,10,10,11, 5,
+
   0, 1, 2, 2, 3, 0,
   4, 5, 6, 7, 8, 9,
 };
@@ -118,6 +167,7 @@ const GLushort indices[] = {
 // 描画データ.
 const Primitive primGround(GL_TRIANGLES, 6, 0, 0); // 地面
 const Primitive primTree(GL_TRIANGLES, 27, 6 * sizeof(GLushort), 4); // 木
+const Primitive primBuilding(GL_TRIANGLES, 30, 33 * sizeof(GLushort), 13); // 建物
  
  // 画像データ.
 const int imageWidth = 8; // 画像の幅.
@@ -251,15 +301,16 @@ int main()
   const GLint locMatMVP = 0;
 
   // サンプラ・オブジェクトを作成する.
-  const GLuint sampler = GLContext::CreateSampler(GL_CLAMP_TO_EDGE);
+  const GLuint sampler = GLContext::CreateSampler(GL_REPEAT);
   if (!sampler) {
     return 1;
   }
 
-  const GLuint texGround =
-    GLContext::CreateImage2D(imageWidth, imageHeight, imageGround);
+  const GLuint texBuilding= GLContext::CreateImage2D("Res/Building.tga");
+  const GLuint texGround = GLContext::CreateImage2D("Res/Ground.tga");
   const GLuint texTree =
-    GLContext::CreateImage2D(5, 5, imageTree);
+    GLContext::CreateImage2D(5, 5, imageTree, GL_RGBA,
+    GL_UNSIGNED_BYTE);
   if (!texGround || !texTree) {
     return 1;
   }
@@ -267,6 +318,7 @@ int main()
   // メインループ.
   while (!glfwWindowShouldClose(window)) {
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
     glClearColor(0.1f, 0.3f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -290,6 +342,15 @@ int main()
       glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
       glBindTextureUnit(0, texGround);
       primGround.Draw();
+    }
+
+    // 建物を描画.
+    {
+      const glm::mat4 matModel = glm::translate(glm::mat4(1), glm::vec3(-0, 0, 0));
+      const glm::mat4 matMVP = matProj * matView * matModel;
+      glProgramUniformMatrix4fv(vp, locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
+      glBindTextureUnit(0, texBuilding);
+      primBuilding.Draw();
     }
 
     glActiveTexture(GL_TEXTURE0);

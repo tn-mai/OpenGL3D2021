@@ -3,6 +3,8 @@
 */
 #include "GLContext.h"
 #include <glm/glm.hpp>
+#include <cstdint>
+#include <fstream>
 #include <vector>
 #include <iostream>
 
@@ -193,11 +195,14 @@ GLuint CreateSampler(GLenum wrapMode)
 * @param width   画像の幅(ピクセル数).
 * @param height  画像の高さ(ピクセル数).
 * @param data    画像データのアドレス.
+* @param pixelFormat  画像データ形式(GL_BGRAなど).
+* @param type    画像データの型.
 *
 * @retval 0以外  作成したテクスチャ・オブジェクトのID.
 * @retval 0      テクスチャの作成に失敗.
 */
-GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data)
+GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data,
+  GLenum pixelFormat, GLenum type)
 {
   GLuint id;
 
@@ -206,7 +211,11 @@ GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data)
   glTextureStorage2D(id, 1, GL_RGBA8, width, height);
 
   // GPUメモリにデータを転送する.
-  glTextureSubImage2D(id, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+  GLint alignment;
+  glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glTextureSubImage2D(id, 0, 0, 0, width, height, pixelFormat, type, data);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
   const GLenum result = glGetError();
   if (result != GL_NO_ERROR) {
     std::cerr << "[エラー]" << __func__ << "テクスチャの作成に失敗\n";
@@ -214,7 +223,93 @@ GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data)
     return 0;
   }
 
+  // 白黒画像の場合、(R,R,R,1)として読み取られるように設定する.
+  if (pixelFormat == GL_RED) {
+    glTextureParameteri(id, GL_TEXTURE_SWIZZLE_G, GL_RED);
+    glTextureParameteri(id, GL_TEXTURE_SWIZZLE_B, GL_RED);
+  }
+
   return id;
+}
+
+/**
+* ファイルから2Dテクスチャを読み込む.
+*
+* @param filename 2Dテクスチャとして読み込むファイル名.
+*
+* @retval 0以外 作成したテクスチャ・オブジェクトのID.
+*         0     テクスチャの作成に失敗.
+*/
+GLuint CreateImage2D(const char* filename)
+{
+  // ファイルを開く.
+  std::ifstream ifs;
+  ifs.open(filename, std::ios_base::binary);
+  if (!ifs) {
+    std::cerr << "[エラー]" << __func__ << ":`" << filename << "`を開けません.\n";
+    return 0;
+  }
+
+  // TGAヘッダを読み込む.
+  uint8_t tgaHeader[18];
+  ifs.read(reinterpret_cast<char*>(tgaHeader), 18);
+
+  // イメージIDを読み飛ばす.
+  ifs.ignore(tgaHeader[0]);
+
+  // カラーマップを読み飛ばす.
+  if (tgaHeader[1]) {
+    const int colorMapLength = tgaHeader[5] + tgaHeader[6] * 0x100;
+    const int colorMapEntrySize = tgaHeader[7];
+    // エントリーサイズはビット数なので、8で割ってバイト数に変換する.
+    const int colorMapSize = (colorMapLength * colorMapEntrySize + 7) / 8;
+    ifs.ignore(colorMapSize);
+  }
+
+  // 画像データを読み込む.
+  const int width = tgaHeader[12] + tgaHeader[13] * 0x100;
+  const int height = tgaHeader[14] + tgaHeader[15] * 0x100;
+  const int pixelDepth = tgaHeader[16];
+  const int imageSize = width * height * pixelDepth / 8;
+  std::vector<uint8_t> buf(imageSize);
+  ifs.read(reinterpret_cast<char*>(buf.data()), imageSize);
+
+  // TGAヘッダ18バイト目の第5ビットは、画像データの格納方向を表す.
+  //   0の場合: 下から上
+  //   1の場合: 上から下
+  // OpenGLは画像データを「下から上」に格納するルールになっているので、
+  // TGAが「上から下」に格納されている場合は画像を上下反転する.
+  if (tgaHeader[17] & 0x20) {
+    const size_t lineSize = width * pixelDepth / 8;
+    std::vector<uint8_t> tmp(imageSize);
+    std::vector<uint8_t>::iterator source = buf.begin();
+    std::vector<uint8_t>::iterator destination = tmp.end();
+    for (size_t i = 0; i < height; ++i) {
+      destination -= lineSize;
+      std::copy(source, source + lineSize, destination);
+      source += lineSize;
+    }
+    buf.swap(tmp);
+  }
+
+  // データの型を選ぶ.
+  GLenum type = GL_UNSIGNED_BYTE;
+  if (tgaHeader[16] == 16) {
+    type = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+  }
+
+  // ピクセル形式を選ぶ.
+  GLenum pixelFormat = GL_BGRA;
+  if (tgaHeader[2] == 3) { // 圧縮なし、白黒画像.
+    pixelFormat = GL_RED;
+  }
+  if (tgaHeader[16] == 24) {
+    pixelFormat = GL_BGR;
+  }
+
+  // 読み込んだ画像データからテクスチャを作成する.
+  return CreateImage2D(width, height, buf.data(),
+    pixelFormat, type);
 }
 
 } // namespace GLContext
