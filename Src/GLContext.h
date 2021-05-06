@@ -26,6 +26,9 @@ GLuint CreateProgram(GLenum type, const GLchar* code);
 GLuint CreatePipeline(GLuint vp, GLuint fp);
 GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data,
   GLenum pixelFormat, GLenum type);
+inline GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data) {
+  return CreateImage2D(width, height, data, GL_RGBA, GL_UNSIGNED_BYTE);
+}
 GLuint CreateImage2D(const char* path);
 GLuint CreateSampler(GLenum wrapMode);
 
