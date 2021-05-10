@@ -54,6 +54,11 @@ const Position positions[] = {
   { 0.0f, 0.0f, 0.5f},
   { 0.5f, 0.0f, 0.0f},
   { 0.0f, 0.0f,-0.5f},
+
+  // 建物
+  {-2, 0,-2}, {-2, 0, 2}, { 2, 0, 2}, { 2, 0,-2}, {-2, 0,-2},
+  {-2, 2,-2}, {-2, 2, 2}, { 2, 2, 2}, { 2, 2,-2}, {-2, 2,-2},
+  { 2, 2, 2}, { 2, 2,-2},
 };
 
 /// 色データ.
@@ -103,6 +108,11 @@ const Color colors[] = {
   { 1, 1, 1, 1},
   { 1, 1, 1, 1},
   { 1, 1, 1, 1},
+
+  // 建物
+  { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, 
+  { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, 
+  { 1, 1, 1, 1 }, { 1, 1, 1, 1 },
 };
 
 /// テクスチャ座標データ.
@@ -120,6 +130,7 @@ const glm::vec2 texcoords[] = {
   { 0.0f, 0.0f}, { 1.0f, 0.0f}, { 0.5f, 1.0f},
   { 0.0f, 0.0f}, { 1.0f, 0.0f}, { 0.5f, 1.0f},
 
+  // 立方体
   { 0.0f, 0.0f}, { 0.0f, 0.0f}, { 0.0f, 0.0f}, { 0.0f, 0.0f},
   { 0.0f, 0.0f}, { 0.0f, 0.0f}, { 0.0f, 0.0f}, { 0.0f, 0.0f},
 
@@ -138,6 +149,11 @@ const glm::vec2 texcoords[] = {
   { 0.5f, 0.0f},
   { 0.75f, 0.0f},
   { 1.0f, 0.0f},
+
+  // 建物
+  { 0.0f, 0.0f}, { 0.25f, 0.0f}, { 0.5f, 0.0f}, { 0.75f, 0.0f}, { 1.0f, 0.0f},
+  { 0.0f, 0.5f}, { 0.25f, 0.5f}, { 0.5f, 0.5f}, { 0.75f, 0.5f}, { 1.0f, 0.5f},
+  { 0.25f, 1.0f}, { 0.0f, 1.0f},
 };
 
 /// インデックスデータ.
@@ -153,14 +169,22 @@ const GLushort indices[] = {
 
  // 木
  0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 1, 4, 3, 3, 2, 1, // 葉
- 6, 7, 8, 6, 8, 9, 6, 9,10, 6,10,11, // 幹
+ 6, 7, 8, 6, 8, 9, 6, 9,10, 6,10,11, 7,10, 9, 9, 8, 7, // 幹
+
+ // 建物
+ 0, 1, 6, 6, 5, 0,
+ 1, 2, 7, 7, 6, 1,
+ 2, 3, 8, 8, 7, 2,
+ 3, 4, 9, 9, 8, 3,
+ 5, 6,10,10,11, 5,
 };
 
 // 描画データ.
 const Primitive primGround(GL_TRIANGLES, 6, 0, 0); // 四角形
 const Primitive primTriangles(GL_TRIANGLES, 9, 12 * sizeof(GLushort), 0); // 三角形
 const Primitive primCube(GL_TRIANGLES, 36, 21 * sizeof(GLushort), 19); // 立方体
-const Primitive primTree(GL_TRIANGLES, 30, 57 * sizeof(GLushort), 27); // 木
+const Primitive primTree(GL_TRIANGLES, 36, 57 * sizeof(GLushort), 27); // 木
+const Primitive primWarehouse(GL_TRIANGLES, 30, 93 * sizeof(GLushort), 39); // 建物
 
 // 画像データ.
 const int imageGroundWidth = 8; // 画像の幅.
@@ -246,17 +270,31 @@ static const GLchar* fsCode =
   "} \n";
 
 /// マップデータ.
-static const int mapData[10][10] = {
+int mapData[10][10] = {
   { 0, 0, 0, 1, 2, 2, 1, 0, 0, 0},
-  { 1, 1, 1, 1, 2, 2, 1, 0, 0, 0},
+  { 0, 0, 0, 1, 2, 2, 1, 0, 0, 0},
   { 2, 2, 2, 2, 2, 2, 1, 0, 0, 0},
-  { 1, 1, 1, 1, 2, 2, 1, 0, 0, 0},
   { 0, 0, 0, 1, 2, 2, 1, 0, 0, 0},
   { 0, 0, 0, 1, 2, 2, 1, 0, 0, 0},
-  { 0, 0, 0, 1, 2, 2, 1, 1, 1, 1},
+  { 0, 0, 0, 1, 2, 2, 1, 0, 0, 0},
+  { 0, 0, 0, 1, 2, 2, 1, 0, 0, 0},
   { 0, 0, 0, 1, 2, 2, 2, 2, 2, 2},
-  { 0, 0, 0, 1, 2, 2, 1, 1, 1, 1},
   { 0, 0, 0, 1, 2, 2, 1, 0, 0, 0},
+  { 0, 0, 0, 1, 2, 2, 1, 0, 0, 0},
+};
+
+/// オブジェクトマップデータ.
+int objectMapData[10][10] = {
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  { 1, 1, 1, 0, 0, 0, 0, 0, 0, 0},
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  { 1, 1, 1, 0, 0, 0, 0, 2, 0, 0},
+  { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0},
+  { 0, 0, 2, 0, 0, 0, 0, 2, 0, 0},
+  { 0, 0, 0, 0, 0, 0, 0, 1, 1, 1},
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  { 0, 0, 0, 0, 0, 0, 0, 1, 1, 1},
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
 
 /**
@@ -338,12 +376,14 @@ int main()
   float degree = 0;
 
   // テクスチャを作成.
-  const GLuint texGround = GLContext::CreateImage2D(
-    imageGroundWidth, imageGroundHeight, imageGround);
-  const GLuint texTriangle = GLContext::CreateImage2D(6, 6, imageTriangle);
-  const GLuint texGreen = GLContext::CreateImage2D(8, 8, imageGreen);
-  const GLuint texRoad = GLContext::CreateImage2D(8, 8, imageRoad);
-  if (!texGround || !texGreen || !texRoad) {
+  const GLuint texGround = GLContext::CreateImage2D("Res/RoadTiles.tga");
+  const GLuint texTriangle = GLContext::CreateImage2D(6, 6, imageTriangle,
+    GL_RGBA, GL_UNSIGNED_BYTE);
+  const GLuint texGreen = GLContext::CreateImage2D("Res/Green.tga");
+  const GLuint texRoad = GLContext::CreateImage2D("Res/Road.tga");
+  const GLuint texTree = GLContext::CreateImage2D("Res/Tree.tga");
+  const GLuint texWarehouse = GLContext::CreateImage2D("Res/Building.tga");
+  if (!texGround || !texTriangle || !texGreen || !texRoad) {
     return 1;
   }
 
@@ -401,7 +441,45 @@ int main()
     primTriangles.Draw();
     primCube.Draw();
 
+    // マップに配置する物体の表示データ.
+    struct ObjectData {
+      Primitive prim;
+      GLuint tex;
+    };
+
+    // 描画する物体のリスト.
+    const ObjectData objectList[] = {
+      { Primitive(), 0 },    // なし
+      { primTree, texTree }, // 木
+      { primWarehouse, texWarehouse }, // 建物
+    };
+    // 木を植える.
+    //glBindTextureUnit(0, texTree); // テクスチャを割り当てる.
+    //primTree.Draw();
 #if 1
+    for (int y = 0; y < 10; ++y) {
+      for (int x = 0; x < 10; ++x) {
+        const int objectNo = objectMapData[y][x];
+        if (objectNo <= 0 || objectNo >= std::size(objectList)) {
+          continue;
+        }
+        auto p = objectList[objectNo];
+
+        // 四角形が4x4mなので、xとyを4倍した位置に表示する.
+        const glm::vec3 position(x * 4 - 20, 0, y * 4 - 20);
+
+        // 行列をシェーダに転送する 
+        const glm::mat4 matModel = glm::translate(glm::mat4(1), position);
+        const glm::mat4 matMVP = matProj * matView * matModel;
+        glProgramUniformMatrix4fv(vp, locMatTRS, 1, GL_FALSE, &matMVP[0][0]);
+
+        glBindTextureUnit(0, p.tex); // テクスチャを割り当てる.
+        p.prim.Draw();
+      }
+    }
+#endif
+
+
     // マップを(-20,-20)-(20,20)の範囲に描画.
     const GLuint mapTexList[] = { texGreen, texGround, texRoad };
     for (int y = 0; y < 10; ++y) {
@@ -419,23 +497,6 @@ int main()
         primGround.Draw();
       }
     }
-#endif
-
-#if 0
-    glBindTextureUnit(0, texTree); // テクスチャを割り当てる.
-    // 木の配置データ.
-    const glm::vec3 treePosList[] = {
-      {-18, 0, -18}, {-14, 0, -18}, {-10, 0, -18}, { -6, 0, -18}, { -2, 0, -18},
-      //{ 18, 0, -18}, { 14, 0, -18}, { 10, 0, -18}, {  6, 0, -18}, {  2, 0, -18},
-    };
-    for (auto pos : treePosList) {
-      const glm::mat4 matModel = glm::translate(glm::mat4(1), pos);
-      const glm::mat4 matMVP = matProj * matView * matModel;
-      glProgramUniformMatrix4fv(vp, locMatTRS, 1, GL_FALSE, &matMVP[0][0]);
-
-      primTree.Draw();
-    }
-#endif
 
     // テクスチャの割り当てを解除.
     glActiveTexture(GL_TEXTURE0);
