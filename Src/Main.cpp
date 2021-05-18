@@ -10,35 +10,37 @@
 #include <iostream>
 #pragma comment(lib, "opengl32.lib")
 
-/// 座標データ.
-const Position positions[] = {
-  // 地面
-  {-2.0f, 0.0f, 2.0f},
-  { 2.0f, 0.0f, 2.0f},
-  { 2.0f, 0.0f,-2.0f},
-  {-2.0f, 0.0f,-2.0f},
-
+/// 座標データ:四角形
+const glm::vec3 posRectangle[] = {
   {-0.2f, -0.5f, 0.1f},
   { 0.3f, -0.5f, 0.1f},
   { 0.3f,  0.3f, 0.1f},
   { 0.3f,  0.3f, 0.1f},
   {-0.2f,  0.3f, 0.1f},
   {-0.2f, -0.5f, 0.1f},
+};
 
-  {(-0.33f/2.0f) * 10.0f,( 0.5f/2.0f) * 10.0f, 0.6f },
-  {( 0.33f/2.0f) * 10.0f,( 0.5f/2.0f) * 10.0f, 0.6f },
-  {( 0.00f/2.0f) * 10.0f,(-0.5f/2.0f) * 10.0f, 0.6f },
-  {(-0.33f/2.0f-0.165f) * 10.0f,( 0.5f/2.0f+0.5f) * 10.0f, 0.6f },
-  {( 0.33f/2.0f-0.165f) * 10.0f,( 0.5f/2.0f+0.5f) * 10.0f, 0.6f },
-  {( 0.00f/2.0f-0.165f) * 10.0f,(-0.5f/2.0f+0.5f) * 10.0f, 0.6f },
-  {(-0.33f/2.0f+0.165f) * 10.0f,( 0.5f/2.0f+0.5f) * 10.0f, 0.6f },
-  {( 0.33f/2.0f+0.165f) * 10.0f,( 0.5f/2.0f+0.5f) * 10.0f, 0.6f },
-  {( 0.00f/2.0f+0.165f) * 10.0f,(-0.5f/2.0f+0.5f) * 10.0f, 0.6f },
+/// 座標データ:三角形
+const glm::vec3 posTriangle[] = {
+  {(-0.33f/2.0f)        * 10.0f, ( 0.5f/2.0f)      * 10.0f, 0.6f },
+  {( 0.33f/2.0f)        * 10.0f, ( 0.5f/2.0f)      * 10.0f, 0.6f },
+  {( 0.00f/2.0f)        * 10.0f, (-0.5f/2.0f)      * 10.0f, 0.6f },
+  {(-0.33f/2.0f-0.165f) * 10.0f, ( 0.5f/2.0f+0.5f) * 10.0f, 0.6f },
+  {( 0.33f/2.0f-0.165f) * 10.0f, ( 0.5f/2.0f+0.5f) * 10.0f, 0.6f },
+  {( 0.00f/2.0f-0.165f) * 10.0f, (-0.5f/2.0f+0.5f) * 10.0f, 0.6f },
+  {(-0.33f/2.0f+0.165f) * 10.0f, ( 0.5f/2.0f+0.5f) * 10.0f, 0.6f },
+  {( 0.33f/2.0f+0.165f) * 10.0f, ( 0.5f/2.0f+0.5f) * 10.0f, 0.6f },
+  {( 0.00f/2.0f+0.165f) * 10.0f, (-0.5f/2.0f+0.5f) * 10.0f, 0.6f },
+};
 
-  // 立方体
+/// 座標データ:立方体
+const glm::vec3 posCube[] = {
   { 0, 0, 0}, { 1, 0, 0}, { 1, 0, 1}, { 0, 0, 1},
   { 0, 1, 0}, { 1, 1, 0}, { 1, 1, 1}, { 0, 1, 1},
+};
 
+/// 座標データ:
+const glm::vec3 posTree[] = {
   // 木(葉)
   { 0.0f, 3.0f, 0.0f},
   { 0.0f, 1.0f,-1.0f},
@@ -54,31 +56,35 @@ const Position positions[] = {
   { 0.0f, 0.0f, 0.5f},
   { 0.5f, 0.0f, 0.0f},
   { 0.0f, 0.0f,-0.5f},
+};
 
-  // 建物
+/// 座標データ:建物
+const glm::vec3 posWarehouse[] = {
   {-2, 0,-2}, {-2, 0, 2}, { 2, 0, 2}, { 2, 0,-2}, {-2, 0,-2},
   {-2, 2,-2}, {-2, 2, 2}, { 2, 2, 2}, { 2, 2,-2}, {-2, 2,-2},
   { 2, 2, 2}, { 2, 2,-2},
 };
 
-/// 色データ.
-const Color colors[] = {
-//  {0.0f, 1.0f, 0.0f, 1.0f},
-//  {0.0f, 0.0f, 1.0f, 1.0f},
-//  {1.0f, 0.0f, 0.0f, 1.0f},
-//  {0.0f, 0.0f, 1.0f, 1.0f},
+/// 色データ:地面
+const glm::vec4 colGround[] = {
   {1.0f, 1.0f, 1.0f, 1.0f},
   {1.0f, 1.0f, 1.0f, 1.0f},
   {1.0f, 1.0f, 1.0f, 1.0f},
   {1.0f, 1.0f, 1.0f, 1.0f},
+};
 
+/// 色データ:四角形
+const glm::vec4 colRectangle[] = {
   {1.0f, 0.0f, 0.0f, 1.0f},
   {1.0f, 1.0f, 0.0f, 1.0f},
   {1.0f, 0.0f, 0.0f, 1.0f},
   {0.0f, 0.0f, 1.0f, 1.0f},
   {0.0f, 1.0f, 1.0f, 1.0f},
   {0.0f, 0.0f, 1.0f, 1.0f},
+};
 
+/// 色データ:三角形
+const glm::vec4 colTriangle[] = {
   { 0.0f, 1.0f, 1.0f, 1.0f }, // 水色
   { 1.0f, 1.0f, 0.0f, 1.0f }, // 黄色
   { 1.0f, 0.0f, 1.0f, 1.0f }, // 紫色
@@ -88,11 +94,16 @@ const Color colors[] = {
   { 0.0f, 1.0f, 1.0f, 1.0f }, // 水色
   { 1.0f, 1.0f, 0.0f, 1.0f }, // 黄色
   { 1.0f, 0.0f, 1.0f, 1.0f }, // 紫色
+};
 
-  // 立方体
+/// 色データ:立方体
+const glm::vec4 colCube[] = {
   { 1, 1, 1, 1}, { 1, 1, 1, 1}, { 1, 1, 1, 1}, { 1, 1, 1, 1},
   { 1, 1, 1, 1}, { 1, 1, 1, 1}, { 1, 1, 1, 1}, { 1, 1, 1, 1},
+};
 
+/// 色データ:木
+const glm::vec4 colTree[] = {
   // 木(葉)
   { 1, 1, 1, 1},
   { 1, 1, 1, 1},
@@ -108,32 +119,36 @@ const Color colors[] = {
   { 1, 1, 1, 1},
   { 1, 1, 1, 1},
   { 1, 1, 1, 1},
+};
 
-  // 建物
+/// 色データ:建物
+const glm::vec4 colWarehouse[] = {
   { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, 
   { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, { 1, 1, 1, 1 }, 
   { 1, 1, 1, 1 }, { 1, 1, 1, 1 },
 };
 
-/// テクスチャ座標データ.
-const glm::vec2 texcoords[] = {
-  // 地面
-  {-0.0f,-0.0f },
-  { 1.0f,-0.0f },
-  { 1.0f, 1.0f },
-  {-0.0f, 1.0f },
-
+/// テクスチャ座標データ:四角形
+const glm::vec2 tcRectangle[] = {
   { 0.0f, 0.0f}, { 1.0f, 0.0f}, { 1.0f, 1.0f},
   { 1.0f, 1.0f}, { 0.0f, 1.0f}, { 0.0f, 0.0f},
+};
 
+/// テクスチャ座標データ:三角形
+const glm::vec2 tcTriangle[] = {
   { 0.0f, 0.0f}, { 1.0f, 0.0f}, { 0.5f, 1.0f},
   { 0.0f, 0.0f}, { 1.0f, 0.0f}, { 0.5f, 1.0f},
   { 0.0f, 0.0f}, { 1.0f, 0.0f}, { 0.5f, 1.0f},
+};
 
-  // 立方体
+/// テクスチャ座標データ:立方体
+const glm::vec2 tcCube[] = {
   { 0.0f, 0.0f}, { 0.0f, 0.0f}, { 0.0f, 0.0f}, { 0.0f, 0.0f},
   { 0.0f, 0.0f}, { 0.0f, 0.0f}, { 0.0f, 0.0f}, { 0.0f, 0.0f},
+};
 
+/// テクスチャ座標データ:木
+const glm::vec2 tcTree[] = {
   // 木(葉)
   { 0.5f, 1.0f},
   { 0.0f, 0.5f},
@@ -149,42 +164,46 @@ const glm::vec2 texcoords[] = {
   { 0.5f, 0.0f},
   { 0.75f, 0.0f},
   { 1.0f, 0.0f},
+};
 
-  // 建物
+/// テクスチャ座標データ:建物
+const glm::vec2 tcWarehouse[] = {
   { 0.0f, 0.0f}, { 0.25f, 0.0f}, { 0.5f, 0.0f}, { 0.75f, 0.0f}, { 1.0f, 0.0f},
   { 0.0f, 0.5f}, { 0.25f, 0.5f}, { 0.5f, 0.5f}, { 0.75f, 0.5f}, { 1.0f, 0.5f},
   { 0.25f, 1.0f}, { 0.0f, 1.0f},
 };
 
-/// インデックスデータ.
-const GLushort indices[] = {
-  0, 1, 2, 2, 3, 0,
-  4, 5, 6, 7, 8, 9,
- 12,11,10,15,14,13,18,17,16,
+/// インデックスデータ:四角形
+const GLushort indexRectangle[] = {
+  0, 1, 2, 3, 4, 5,
+};
 
- // 立方体
+/// インデックスデータ:三角形
+const GLushort indexTriangle[] = {
+  2, 1, 0, 5, 4, 3, 8, 7, 6,
+};
+
+/// インデックスデータ:立方体
+const GLushort indexCube[] = {
  0, 1, 2, 2, 3, 0, 4, 5, 1, 1, 0, 4,
  5, 6, 2, 2, 1, 5, 6, 7, 3, 3, 2, 6,
  7, 4, 0, 0, 3, 7, 7, 6, 5, 5, 4, 7,
+};
 
- // 木
+/// インデックスデータ:木
+const GLushort indexTree[] = {
  0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 1, 4, 3, 3, 2, 1, // 葉
  6, 7, 8, 6, 8, 9, 6, 9,10, 6,10,11, 7,10, 9, 9, 8, 7, // 幹
+};
 
- // 建物
+/// インデックスデータ:建物
+const GLushort indexWarehouse[] = {
  0, 1, 6, 6, 5, 0,
  1, 2, 7, 7, 6, 1,
  2, 3, 8, 8, 7, 2,
  3, 4, 9, 9, 8, 3,
  5, 6,10,10,11, 5,
 };
-
-// 描画データ.
-const Primitive primGround(GL_TRIANGLES, 6, 0, 0); // 四角形
-const Primitive primTriangles(GL_TRIANGLES, 9, 12 * sizeof(GLushort), 0); // 三角形
-const Primitive primCube(GL_TRIANGLES, 36, 21 * sizeof(GLushort), 19); // 立方体
-const Primitive primTree(GL_TRIANGLES, 36, 57 * sizeof(GLushort), 27); // 木
-const Primitive primWarehouse(GL_TRIANGLES, 30, 93 * sizeof(GLushort), 39); // 建物
 
 // 画像データ.
 const int imageGroundWidth = 8; // 画像の幅.
@@ -351,15 +370,15 @@ int main()
   glDebugMessageCallback(DebugCallback, nullptr);
 
   // VAOを作成する.
-  const GLuint vboPosition = GLContext::CreateBuffer(sizeof(positions), positions);
-  const GLuint vboColor = GLContext::CreateBuffer(sizeof(colors), colors);
-  const GLuint vboTexcoord = GLContext::CreateBuffer(sizeof(texcoords), texcoords);
-  const GLuint ibo = GLContext::CreateBuffer(sizeof(indices), indices);
-  const GLuint vao = GLContext::CreateVertexArray(
-    vboPosition, vboColor, vboTexcoord, ibo);
-  if (!vao) {
-    return 1;
-  }
+  PrimitiveBuffer primitiveBuffer(100'000, 300'000);
+
+  // 描画データを追加する.
+  primitiveBuffer.AddFromObjFile("Res/Ground.obj");
+  primitiveBuffer.AddFromObjFile("Res/Rectangle.obj");
+  primitiveBuffer.AddFromObjFile("Res/Triangle.obj");
+  primitiveBuffer.AddFromObjFile("Res/Cube.obj");
+  primitiveBuffer.AddFromObjFile("Res/Tree.obj");
+  primitiveBuffer.AddFromObjFile("Res/Warehouse.obj");
 
   // パイプライン・オブジェクトを作成する.
   const GLuint vp = GLContext::CreateProgram(GL_VERTEX_SHADER, vsCode);
@@ -400,7 +419,7 @@ int main()
     glClearColor(0.5f, 0.5f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glBindVertexArray(vao);
+    primitiveBuffer.BindVertexArray();
     glBindProgramPipeline(pipeline);
     glBindSampler(0, sampler);
 
@@ -434,12 +453,12 @@ int main()
     const glm::mat4 matMVP = matProj * matView * matModel;
     glProgramUniformMatrix4fv(vp, locMatTRS, 1, GL_FALSE, &matMVP[0][0]);
 
-//    glBindTextureUnit(0, texGround);
-//    primGround.Draw();
+    //glBindTextureUnit(0, texGround);
+    //primitiveBuffer.Get(1).Draw();
 
     glBindTextureUnit(0, texTriangle); // テクスチャを割り当てる.
-    primTriangles.Draw();
-    primCube.Draw();
+    primitiveBuffer.Get(2).Draw();
+    primitiveBuffer.Get(3).Draw();
 
     // マップに配置する物体の表示データ.
     struct ObjectData {
@@ -450,8 +469,8 @@ int main()
     // 描画する物体のリスト.
     const ObjectData objectList[] = {
       { Primitive(), 0 },    // なし
-      { primTree, texTree }, // 木
-      { primWarehouse, texWarehouse }, // 建物
+      { primitiveBuffer.Get(4), texTree }, // 木
+      { primitiveBuffer.Get(5), texWarehouse }, // 建物
     };
     // 木を植える.
     //glBindTextureUnit(0, texTree); // テクスチャを割り当てる.
@@ -494,7 +513,7 @@ int main()
 
         const int textureNo = mapData[y][x];
         glBindTextureUnit(0, mapTexList[textureNo]); // テクスチャを割り当てる.
-        primGround.Draw();
+        primitiveBuffer.Get(0).Draw();
       }
     }
 
@@ -504,7 +523,7 @@ int main()
 
     glBindSampler(0, 0);
     glBindProgramPipeline(0);
-    glBindVertexArray(0);
+    primitiveBuffer.UnbindVertexArray();
 
     glfwPollEvents();
     glfwSwapBuffers(window);
@@ -517,11 +536,6 @@ int main()
   glDeleteProgramPipelines(1, &pipeline);
   glDeleteProgram(fp);
   glDeleteProgram(vp);
-  glDeleteVertexArrays(1, &vao);
-  glDeleteBuffers(1, &ibo);
-  glDeleteBuffers(1, &vboTexcoord);
-  glDeleteBuffers(1, &vboColor);
-  glDeleteBuffers(1, &vboPosition);
 
   // GLFWの終了.
   glfwTerminate();

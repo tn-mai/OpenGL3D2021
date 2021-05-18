@@ -56,4 +56,24 @@
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Res\Ground.obj">
+      <Filter>リソース ファイル</Filter>
+    </Text>
+    <Text Include="Res\Warehouse.obj">
+      <Filter>リソース ファイル</Filter>
+    </Text>
+    <Text Include="Res\Triangle.obj">
+      <Filter>リソース ファイル</Filter>
+    </Text>
+    <Text Include="Res\Tree.obj">
+      <Filter>リソース ファイル</Filter>
+    </Text>
+    <Text Include="Res\Rectangle.obj">
+      <Filter>リソース ファイル</Filter>
+    </Text>
+    <Text Include="Res\Cube.obj">
+      <Filter>リソース ファイル</Filter>
+    </Text>
+  </ItemGroup>
 </Project>
