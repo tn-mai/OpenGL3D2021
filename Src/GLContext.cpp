@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <cstdint>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <iostream>
 
@@ -35,14 +36,15 @@ GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data)
 * @param vboPosition VAOに関連付けられる座標データ.
 * @param vboColor    VAOに関連付けられるカラーデータ.
 * @param vboTexcoord VAOに関連付けられるテクスチャ座標データ.
+* @param vboNormal   VAOに関連付けられる法線データ.
 * @param ibo         VAOに関連付けられるインデックスデータ.
 *
 * @return 作成したVAO.
 */
 GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor,
-  GLuint vboTexcoord, GLuint ibo)
+  GLuint vboTexcoord, GLuint vboNormal, GLuint ibo)
 {
-  if (!vboPosition || !vboColor || !vboTexcoord || !ibo) {
+  if (!vboPosition || !vboColor || !vboTexcoord || !vboNormal || !ibo) {
     std::cerr << "[エラー]" << __func__ << ":バッファオブジェクトが0です。\n";
     return 0;
   }
@@ -72,6 +74,14 @@ GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor,
   glVertexArrayAttribBinding(id,texcoordIndex, texcoordBindingIndex);
   glVertexArrayVertexBuffer(
     id, texcoordBindingIndex, vboTexcoord, 0, sizeof(glm::vec2));
+
+  const GLuint normalIndex = 3;
+  const GLuint normalBindingIndex = 3;
+  glEnableVertexArrayAttrib(id, normalIndex);
+  glVertexArrayAttribFormat(id, normalIndex, 3, GL_FLOAT, GL_FALSE, 0);
+  glVertexArrayAttribBinding(id,normalIndex, normalBindingIndex);
+  glVertexArrayVertexBuffer(
+    id, normalBindingIndex, vboNormal, 0, sizeof(glm::vec3));
 
   glVertexArrayElementBuffer(id, ibo);
 
@@ -109,6 +119,28 @@ GLuint CreateProgram(GLenum type, const GLchar* code)
     return 0;
   }
   return program;
+}
+
+/**
+* ファイルからシェーダ・プログラムを作成する.
+*
+* @param type     シェーダの種類.
+* @param filename シェーダファイル名.
+*
+* @retval 0より大きい 作成したプログラム・オブジェクト.
+* @retval 0           プログラム・オブジェクトの作成に失敗.
+*/
+GLuint CreateProgramFromFile(GLenum type, const char* filename)
+{
+  std::ifstream ifs(filename);
+  if (!ifs) {
+    std::cerr << "[エラー]" << __func__ << ":" << filename <<
+      "を開けません.\n";
+    return 0;
+  }
+  std::stringstream ss;
+  ss << ifs.rdbuf();
+  return GLContext::CreateProgram(type, ss.str().c_str());
 }
 
 /**

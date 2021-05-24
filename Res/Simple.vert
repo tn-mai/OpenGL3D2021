@@ -1,4 +1,4 @@
-#version 450 core
+#version 450
 
 // 入力変数
 layout(location=0) in vec3 vPosition;
@@ -13,13 +13,11 @@ out gl_PerVertex {
 };
 
 // ユニフォーム変数
-layout(location=0) uniform mat4 matMVP;
-layout(location=8) uniform vec4 objectColor;
+layout(location=0) uniform mat4 matTRS;
 
-// 頂点シェーダプログラム
-void main()
-{
-  outColor = vColor * objectColor;
+// 頂点シェーダープログラム
+void main() {
+  outColor = vColor;
   outTexcoord = vTexcoord;
-  gl_Position = matMVP * vec4(vPosition, 1.0);
+  gl_Position = matTRS * vec4(vPosition, 1.0);
 }

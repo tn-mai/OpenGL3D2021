@@ -1,4 +1,4 @@
-#version 450 core
+#version 450
 
 // 入力変数
 layout(location=0) in vec3 vPosition;
@@ -14,60 +14,73 @@ out gl_PerVertex {
 };
 
 // ユニフォーム変数
-layout(location=0) uniform mat4 matMVP;
+layout(location=0) uniform mat4 matTRS;
 layout(location=1) uniform mat4 matModel;
 
 // 平行光源
 struct DirectionalLight {
-  vec4 direction;
-  vec4 color;
+  vec3 direction; // ライトの向き
+  vec3 color;     // ライトの色(明るさ)
 };
-layout(location=2) uniform DirectionalLight directionalLight;
 
-// 点光源
-struct PointLight {
-  vec4 position;
-  vec4 color;
+#define MORNING 0
+#define NOON    1
+#define SUNSET  2
+#define NIGHT   3
+
+#define SKY_SCENE NOON
+
+#if SKY_SCENE == MORNING
+DirectionalLight light = {
+  {-0.70,-0.59,-0.41},
+  { 1.94, 1.65, 1.24},
 };
-layout(location=4) uniform PointLight pointLight;
+vec3 ambientLight = { 0.15, 0.10, 0.20 };
+#endif
 
-// 頂点シェーダプログラム
-void main()
-{
-  vec3 worldPosition = vec3(matModel * vec4(vPosition, 1));
+#if SKY_SCENE == NOON
+DirectionalLight light = {
+  { 0.08,-0.82,-0.57},
+  { 2.00, 1.88, 1.82},
+};
+vec3 ambientLight = { 0.10, 0.15, 0.20 };
+#endif
+
+#if SKY_SCENE == SUNSET
+DirectionalLight light = {
+  { 0.65,-0.63,-0.43},
+  { 1.81, 1.16, 0.32},
+};
+vec3 ambientLight = { 0.15, 0.10, 0.20 };
+#endif
+
+#if SKY_SCENE == NIGHT
+DirectionalLight light = {
+  {-0.22,-0.80,-0.56},
+  { 0.33, 0.55, 0.69},
+};
+vec3 ambientLight = { 0.20, 0.10, 0.15 };
+#endif
+
+// 頂点シェーダープログラム
+void main() {
+  // 回転行列を取り出す.
   mat3 matNormal = transpose(inverse(mat3(matModel)));
+
+  // ワールド座標系の法線を計算.
   vec3 worldNormal = matNormal * vNormal;
 
-  vec3 totalLightColor = vec3(0);
+  // 環境光を設定.
+  vec3 lightColor = ambientLight;
 
-  // 平行光源
-  {
-    float theta = max(dot(worldNormal, directionalLight.direction.xyz), 0);
-    totalLightColor += directionalLight.color.rgb * theta;
-  }
+  // ランバート反射による明るさを計算.
+  float cosTheta = max(dot(worldNormal, -light.direction), 0);
+  lightColor += light.color * cosTheta;
+  outColor.rgb = vColor.rgb;// * lightColor;
 
-  // 点光源
-  {
-    // フラグメントからライトへ向かうベクトルを計算.
-    vec3 lightVector = pointLight.position.xyz - worldPosition;
-
-    // 距離による明るさの変化量を計算.
-    float lengthSq = dot(lightVector, lightVector);
-    float intensity = 1.0 / (1.0 + lengthSq);
-
-    // 面の傾きによる明るさの変化量を計算.
-    float theta = 1;
-    if (lengthSq > 0) {
-      vec3 direction = normalize(lightVector);
-      theta = max(dot(worldNormal, direction), 0);
-    }
-
-    // 変化量をかけ合わせて明るさを求め、ライトの明るさ変数に加算.
-    totalLightColor += pointLight.color.rgb * theta * intensity;
-  }
-
-  outColor = vec4(vColor.rgb * totalLightColor, vColor.a);
+  // 不透明度は物体の値をそのまま使う.
+  outColor.a = vColor.a;
 
   outTexcoord = vTexcoord;
-  gl_Position = matMVP * vec4(vPosition, 1.0);
+  gl_Position = matTRS * vec4(vPosition, 1.0);
 }
