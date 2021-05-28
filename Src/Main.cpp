@@ -503,7 +503,11 @@ int main()
 
   // å„énññ.
   glDeleteSamplers(1, &sampler);
+  glDeleteTextures(1, &texWarehouse);
+  glDeleteTextures(1, &texTree);
+  glDeleteTextures(1, &texRoad);
   glDeleteTextures(1, &texGreen);
+  glDeleteTextures(1, &texTriangle);
   glDeleteTextures(1, &texGround);
 
   // GLFWÇÃèIóπ.
