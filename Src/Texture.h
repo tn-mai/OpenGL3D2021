@@ -6,7 +6,6 @@
 #include <glad/glad.h>
 #include "GLContext.h"
 #include <string>
-#include <memory>
 
 /**
 * テクスチャを管理するクラス.
@@ -28,20 +27,5 @@ private:
   std::string name; // 画像ファイル名.
   GLuint id = 0;    // オブジェクトID.
 };
-
-/// Textureポインタ型.
-using TexturePtr = std::shared_ptr<Texture>;
-
-/**
-* 2Dテクスチャを作成する.
-*
-* @param filename 画像ファイル名.
-*
-* @return 作成したテクスチャ.
-*/
-inline TexturePtr CreateTexture2D(const char* filename)
-{
-  return std::make_shared<Texture>(filename);
-}
 
 #endif // TEXTURE_H_INCLUDED
