@@ -4,8 +4,10 @@
 #ifndef PRIMITIVE_H_INCLUDED
 #define PRIMITIVE_H_INCLUDED
 #include <glad/glad.h>
+#include "Texture.h"
 #include <glm/glm.hpp>
 #include <vector>
+#include <memory>
 
 /**
 * プリミティブデータ.
@@ -29,6 +31,22 @@ private:
 };
 
 /**
+* プリミティブ描画データ.
+*/
+class Model
+{
+public:
+  Model() = default;
+  ~Model() = default;
+
+  void Draw() const;
+
+  std::string name;
+  std::vector<Primitive> primitives;
+  std::vector<std::shared_ptr<Texture>> textures;
+};
+
+/**
 * 複数のプリミティブを管理するクラス.
 */
 class PrimitiveBuffer
@@ -46,12 +64,16 @@ public:
   // プリミティブの取得.
   const Primitive& Get(size_t n) const;
 
+  // モデルの取得.
+  const Model& GetModel(const char* name) const;
+
   // VAOバインド管理.
   void BindVertexArray() const;
   void UnbindVertexArray() const;
 
 private:
   std::vector<Primitive> primitives;
+  std::vector<Model> models;
 
   // バッファID.
   GLuint vboPosition = 0;

@@ -51,6 +51,19 @@ void Primitive::Draw() const
 }
 
 /**
+* モデルを描画する.
+*/
+void Model::Draw() const
+{
+  for (size_t i = 0; i < primitives.size(); ++i) {
+    if (textures[i]) {
+      textures[i]->Bind(0);
+    }
+    primitives[i].Draw();
+  }
+}
+
+/**
 * プリミティブ用のメモリを確保する.
 *
 * @param maxVertexCount  格納可能な最大頂点数.
@@ -162,6 +175,174 @@ bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
 }
 
 /**
+* OBJファイルのマテリアルデータ
+*/
+struct Material
+{
+  std::string name;                 // マテリアル名
+  glm::vec4   color = glm::vec4(1); // ディフューズ色
+  std::string textureName;          // テクスチャ名
+};
+
+/**
+* OBJファイルのインデックス分割要素.
+*/
+struct Group
+{
+  std::string type;
+  std::string name;
+  int materialNo = -1;
+  GLsizei indexCount = 0;
+};
+
+/**
+* MTLファイルからマテリアルを読み込む.
+*
+* @param  
+* @return 
+*/
+std::vector<Material> LoadMaterial(const char* filename)
+{
+  std::vector<Material> materials;
+
+  std::ifstream ifs(filename);
+  if (!ifs) {
+    return materials;
+  }
+
+  // ファイルからマテリアルのデータを読み込む.
+  Material m;        // データ読み取り用変数.
+  size_t lineNo = 0; // 読み込んだ行数
+  while (!ifs.eof()) {
+    std::string line;
+    std::getline(ifs, line); // ファイルから1行読み込む
+    ++lineNo;
+
+    // 行の先頭にある空白を読み飛ばす.
+    const size_t posData = line.find_first_not_of(" \t");
+    if (posData != std::string::npos) {
+      line = line.substr(posData);
+    }
+
+    // 空行またはコメント行なら無視して次の行へ進む.
+    if (line.empty() || line[0] == '#') {
+      continue;
+    }
+
+    // データの種類を取得.
+    const size_t endOfType = line.find(' ');
+    const std::string type = line.substr(0, endOfType);
+    const char* p = line.c_str() + endOfType; // 数値部分を指すポインタ
+
+    // タイプ別のデータ読み込み処理.
+    if (type == "newmtl") { // マテリアル名
+      // 読み取ったマテリアルを配列に追加.
+      if (!m.name.empty()) {
+        materials.push_back(m);
+        m = Material(); // マテリアルデータを初期化.
+      }
+      for (; *p == ' ' || *p == '\t'; ++p) {} // 先頭の空白を除去
+      m.name = std::string(p);
+    }
+    else if (type == "Kd") { // ディフューズカラー
+      if (sscanf(p, "%f %f %f", &m.color.x, &m.color.y, &m.color.z) != 3) {
+        std::cerr << "[警告]" << __func__ << ":ディフューズカラーの読み取りに失敗.\n" <<
+          "  " << filename << "(" << lineNo << "行目): " << line << "\n";
+      }
+    }
+    else if (type == "d") { // アルファ値
+      if (sscanf(p, "%f", &m.color.w) != 1) {
+        std::cerr << "[警告]" << __func__ << ":アルファ値の読み取りに失敗.\n" <<
+          "  " << filename << "(" << lineNo << "行目): " << line << "\n";
+      }
+    }
+    else if (type == "map_Kd") { // ディフューズテクスチャ
+      for (; *p == ' ' || *p == '\t'; ++p) {} // 先頭の空白を除去
+      m.textureName = std::string(p);
+    }
+  }
+
+  // 読み取ったマテリアルを配列に追加.
+  if (!m.name.empty()) {
+    materials.push_back(m);
+  }
+  return materials;
+}
+
+// インデックス用
+struct Index {
+  int v = 0;
+  int vt = 0;
+  int vn = 0;
+};
+
+/**
+* ear-clipping algorithm.
+*/
+std::vector<Index> EarClipping(const std::vector<glm::vec3>& positions, std::vector<Index> f)
+{
+  std::vector<Index> result;
+  result.reserve((f.size() - 2) * 3);
+
+  // 最初に法線作成に適した3頂点を探して法線を作成し、その後ear-clippingする.
+  // のだが、現在の実装では法線作成に適した3頂点の見つけ方がまずくて、意図した三角形にならない可能性がある.
+  glm::vec3 normal;
+  bool hasNormal = false;
+  for (int i = 0; f.size() > 3; i = (i + 1) % static_cast<int>(f.size())) {
+    const int size = static_cast<int>(f.size());
+    const glm::vec3 a = positions[f[i + 0].v - 1];
+    const glm::vec3 b = positions[f[(i + 1) % size].v - 1];
+    const glm::vec3 c = positions[f[(i + 2) % size].v - 1];
+    const glm::vec3 ab = b - a;
+    const glm::vec3 bc = c - b;
+    const glm::vec3 ca = a - c;
+    if (hasNormal) {
+      // 内角が180度より大きければEarではない.
+      const glm::vec3 nba = a - b;
+      const glm::vec3 s = glm::cross(bc, nba);
+      if (glm::dot(normal, s) < 0) {
+        continue;
+      }
+    }
+
+    const glm::vec3 v = glm::cross(ab, bc); // 面法線(仮)
+    bool isContain = false;
+    for (int j = (i + 3) % size; j != i; j = (j + 1) % size) {
+      const glm::vec3 p = positions[f[j].v - 1];
+      const glm::vec3 ap = p - a;
+      const glm::vec3 bp = p - b;
+      const glm::vec3 cp = p - c;
+      const float v0 = glm::dot(v, glm::cross(ab, bp));
+      const float v1 = glm::dot(v, glm::cross(bc, cp));
+      const float v2 = glm::dot(v, glm::cross(ca, ap));
+      isContain |= (v0 > 0 && v1 > 0 && v2 > 0) || (v0 < 0 && v1 < 0 && v2 < 0);
+      if (isContain) {
+        break;
+      }
+    }
+    // 内部に他の頂点を含まないならEarである.
+    if (!isContain) {
+      if (hasNormal) {
+        result.push_back(f[i + 0]);
+        result.push_back(f[(i + 1) % size]);
+        result.push_back(f[(i + 2) % size]);
+        f.erase(f.begin() + (i + 1) % size);
+        --i;
+      } else {
+        hasNormal = true;
+        normal = v;
+        i = -1;
+      }
+    }
+  }
+  result.push_back(f[0]);
+  result.push_back(f[1]);
+  result.push_back(f[2]);
+
+  return result;
+}
+
+/**
 * OBJファイルからプリミティブを追加する.
 *
 * @param filename ロードするOBJファイル名.
@@ -178,17 +359,25 @@ bool PrimitiveBuffer::AddFromObjFile(const char* filename)
     return false;
   }
 
+  // フォルダ名を取り出す
+  std::string foldername(filename);
+  const size_t lastSlashPos = foldername.find_last_of('/');
+  if (lastSlashPos == std::string::npos) {
+    foldername.clear();
+  } else {
+    foldername.resize(lastSlashPos + 1);
+  }
+
   // データ読み取り用の変数を準備
   std::vector<glm::vec3> objPositions; // OBJファイルの頂点座標用
   std::vector<glm::vec2> objTexcoords; // OBJファイルのテクスチャ座標用
   std::vector<glm::vec3> objNormals;   // OBJファイルの法線
-  // インデックス用
-  struct Index {
-    int v = 0;
-    int vt = 0;
-    int vn = 0;
-  };
   std::vector<Index> objIndices; // OBJファイルのインデックス
+
+  std::vector<Material> materials; // MTLファイルのデータ
+
+  std::vector<Group> groups; // グループ分け用のデータ
+  groups.push_back(Group()); // デフォルトグループを追加.
 
   // 容量を予約.
   objPositions.reserve(10'000);
@@ -245,29 +434,81 @@ bool PrimitiveBuffer::AddFromObjFile(const char* filename)
       objNormals.push_back(vn);
 
     } else if (type == "f") { // 面
-      Index f[3];
-      bool isSuccess = false;
-      if (sscanf(p, "%d/%d %d/%d %d/%d",
-        &f[0].v, &f[0].vt,
-        &f[1].v, &f[1].vt,
-        &f[2].v, &f[2].vt) == 6) {
-        isSuccess = true;
-      } else if(sscanf(p, "%d/%d/%d %d/%d/%d %d/%d/%d",
-        &f[0].v, &f[0].vt, &f[0].vn,
-        &f[1].v, &f[1].vt, &f[0].vn,
-        &f[2].v, &f[2].vt, &f[0].vn) == 9) {
-        isSuccess = true;
+      std::vector<Index> f;
+      for (size_t i = 0; ; ++i) {
+        int readBytes = 0;
+        Index tmp;
+        if (sscanf(p, " %d/%d/%d %n", &tmp.v, &tmp.vt, &tmp.vn, &readBytes) == 3) {
+          f.push_back(tmp);
+          p += readBytes;
+        } else if (sscanf(p, " %d//%d %n", &tmp.v, &tmp.vn, &readBytes) == 2) {
+          f.push_back(tmp);
+          p += readBytes;
+        } else if (sscanf(p, " %d/%d %n", &tmp.v, &tmp.vt, &readBytes) == 2) {
+          f.push_back(tmp);
+          p += readBytes;
+        } else if (sscanf(p, " %d %n", &tmp.v, &readBytes) == 1) {
+          f.push_back(tmp);
+          p += readBytes;
+        } else {
+          break;
+        }
       }
 
-      if (isSuccess) {
-        for (int i = 0; i < 3; ++i) {
-          objIndices.push_back(f[i]);
+      if (f.size() >= 3) {
+        if (false && f.size() > 3) {
+          std::vector<Index> tmp = EarClipping(objPositions, f);
+          objIndices.insert(objIndices.end(), tmp.begin(), tmp.end());
+          if (groups.size()) {
+            groups.back().indexCount += static_cast<GLsizei>(tmp.size());
+          }
+        } else {
+          for (size_t i = 2; i < f.size(); ++i) {
+            objIndices.push_back(f[0]);
+            objIndices.push_back(f[i - 1]);
+            objIndices.push_back(f[i]);
+            if (groups.size()) {
+              groups.back().indexCount += 3;
+            }
+          }
         }
       } else {
         std::cerr << "[警告]" << __func__ << ":面データの読み取りに失敗.\n"
           "  " << filename << "(" << lineNo << "行目): " << line << "\n";
       }
+    } else if (type == "mtllib") {
+      for (; *p == ' '; ++p) {} // 先頭の空白を除去
+      const std::string mtlname = foldername + std::string(p);
+      std::vector<Material> m = LoadMaterial(mtlname.c_str());
+      materials.insert(materials.end(), m.begin(), m.end());
 
+    // g, o, 有効なusemtlの場合は新しいグループを作成する必要がありうる.
+    // indexCountが0なら作成の必要はない.
+    // グループ名は上書きしない.
+    } else if (type == "usemtl") {
+      for (; *p == ' '; ++p) {} // 先頭の空白を除去
+      for (int i = 0; i < materials.size(); ++i) {
+        if (materials[i].name == p) {
+          if (groups.back().indexCount > 0) {
+            Group g = groups.back();
+            g.type = type;
+            g.name = p;
+            g.indexCount = 0;
+            groups.push_back(g);
+          }
+          groups.back().materialNo = i;
+          break;
+        }
+      }
+    } else if (type == "o") {
+      for (; *p == ' '; ++p) {} // 先頭の空白を除去
+      if (groups.back().indexCount > 0) {
+        Group g = groups.back();
+        g.type = type;
+        g.indexCount = 0;
+        groups.push_back(g);
+      }
+      groups.back().name = p;
     } else {
       std::cerr << "[警告]" << __func__ << ":未対応の形式です.\n" <<
         "  " << filename << "(" << lineNo << "行目): " << line << "\n";
@@ -305,14 +546,18 @@ bool PrimitiveBuffer::AddFromObjFile(const char* filename)
     }
 
     // テクスチャ座標を変換.
-    const int vt = objIndices[i].vt - 1;
-    if (vt < static_cast<int>(objTexcoords.size())) {
-      texcoords.push_back(objTexcoords[vt]);
-    } else {
-      std::cerr << "[警告]" << __func__ << ":テクスチャ座標インデックス" << vt <<
-        "は範囲[0, " << objTexcoords.size() << ")の外を指しています.\n" <<
-        "  " << filename << "\n";
+    if (objIndices[i].vt == 0) {
       texcoords.push_back(glm::vec2(0));
+    } else {
+      const int vt = objIndices[i].vt - 1;
+      if (vt < static_cast<int>(objTexcoords.size())) {
+        texcoords.push_back(objTexcoords[vt]);
+      } else {
+        std::cerr << "[警告]" << __func__ << ":テクスチャ座標インデックス" << vt <<
+          "は範囲[0, " << objTexcoords.size() << ")の外を指しています.\n" <<
+          "  " << filename << "\n";
+        texcoords.push_back(glm::vec2(0));
+      }
     }
 
     // 法線データがない場合、面の頂点座標から法線を計算する.
@@ -358,7 +603,51 @@ bool PrimitiveBuffer::AddFromObjFile(const char* filename)
   // 色データを設定.
   colors.resize(positions.size(), glm::vec4(1));
 
-  // プリミティブを追加する.
+  // テクスチャを読み込む
+  std::vector<std::shared_ptr<Texture>> textures;
+  for (size_t i = 0; i < materials.size(); ++i) {
+    if (materials[i].textureName.empty()) {
+      textures.push_back(nullptr);
+    } else {
+      const std::string textureName = foldername + materials[i].textureName;
+      std::shared_ptr<Texture> p(new Texture(textureName.c_str()));
+      textures.push_back(p);
+    }
+  }
+
+  // モデルを追加する
+  Model model;
+  model.name = filename;
+  GLsizei indexOffset = curIndexCount;
+  for (size_t i = 0; i < groups.size(); ++i) {
+    // 色データを更新.
+    if (groups[i].materialNo < materials.size()) {
+      const glm::vec4 color = materials[groups[i].materialNo].color;
+      for (int c = 0; c < groups[i].indexCount; ++c) {
+        const int ii = indexOffset - curIndexCount + c;
+        const int ic = indices[ii];
+        colors[ic] = color;
+      }
+    }
+
+    // 描画データを作成
+    const Primitive prim(GL_TRIANGLES, groups[i].indexCount,
+      sizeof(GLushort) * indexOffset, curVertexCount);
+    // 描画データを配列に追加
+    model.primitives.push_back(prim);
+
+    if (groups[i].materialNo < textures.size()) {
+      model.textures.push_back(textures[groups[i].materialNo]);
+    } else {
+      model.textures.push_back(nullptr);
+    }
+
+    // インデックスを進める
+    indexOffset += groups[i].indexCount;
+  }
+  models.push_back(model);
+
+  // 頂点データとインデックスデータをGPUメモリにコピーする.
   const bool result = Add(positions.size(), positions.data(), colors.data(),
     texcoords.data(), normals.data(), indices.size(), indices.data());
   if (result) {
@@ -387,6 +676,20 @@ const Primitive& PrimitiveBuffer::Get(size_t n) const
     return dummy;
   }
   return primitives[n];
+}
+
+/**
+*
+*/
+const Model& PrimitiveBuffer::GetModel(const char* name) const
+{
+  for (size_t i = 0; i < models.size(); ++i) {
+    if (models[i].name == name) {
+      return models[i];
+    }
+  }
+  static const Model dummy;
+  return dummy;
 }
 
 /**

@@ -6,10 +6,13 @@
 #include "Primitive.h"
 #include "ProgramPipeline.h"
 #include "Texture.h"
+#include "Sampler.h"
+#include "Actor.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
+#include <memory>
 #pragma comment(lib, "opengl32.lib")
 
 /// 座標データ:四角形
@@ -341,7 +344,7 @@ int main()
   glDebugMessageCallback(DebugCallback, nullptr);
 
   // VAOを作成する.
-  PrimitiveBuffer primitiveBuffer(100'000, 300'000);
+  PrimitiveBuffer primitiveBuffer(200'000, 800'000);
 
   // 描画データを追加する.
   primitiveBuffer.AddFromObjFile("Res/Ground.obj");
@@ -350,9 +353,12 @@ int main()
   primitiveBuffer.AddFromObjFile("Res/Cube.obj");
   primitiveBuffer.AddFromObjFile("Res/Tree.obj");
   primitiveBuffer.AddFromObjFile("Res/Warehouse.obj");
+  primitiveBuffer.AddFromObjFile("Res/tank/Tiger_I.obj");
+  primitiveBuffer.AddFromObjFile("Res/tank/T34.obj");
+  primitiveBuffer.AddFromObjFile("Res/house/HouseRender.obj");
 
   // パイプライン・オブジェクトを作成する.
-  ProgramPipeline pipeline("Res/VertexLighting.vert", "Res/Simple.frag");
+  ProgramPipeline pipeline("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
   if (!pipeline.IsValid()) {
     return 1;
   }
@@ -365,29 +371,87 @@ int main()
   float degree = 0;
 
   // テクスチャを作成.
-  Texture texGround = Texture("Res/RoadTiles.tga");
-  Texture texTriangle = Texture("Res/Triangle.tga");
-  Texture texGreen = Texture("Res/Green.tga");
-  Texture texRoad = Texture("Res/Road.tga");
-  Texture texTree = Texture("Res/Tree.tga");
-  Texture texWarehouse = Texture("Res/Building.tga");
+  std::shared_ptr<Texture> texGround(new Texture("Res/RoadTiles.tga"));
+  std::shared_ptr<Texture> texTriangle(new Texture("Res/Triangle.tga"));
+  std::shared_ptr<Texture> texGreen(new Texture("Res/Green.tga"));
+  std::shared_ptr<Texture> texRoad(new Texture("Res/Road.tga"));
+  std::shared_ptr<Texture> texTree(new Texture("Res/Tree.tga"));
+  std::shared_ptr<Texture> texWarehouse(new Texture("Res/Building.tga"));
+  std::shared_ptr<Texture> texTank(new Texture("Res/tank/PzVl_Tiger_I.tga"));
+  std::shared_ptr<Texture> texTankT34(new Texture("Res/tank/T-34.tga"));
+  std::shared_ptr<Texture> texBrickHouse(new Texture("Res/house/House38UVTexture.tga"));
 
   // サンプラを作成.
-  const GLuint sampler = GLContext::CreateSampler(GL_REPEAT);
-  if (!sampler) {
-    return 1;
-  }
+  std::shared_ptr<Sampler> sampler(new Sampler(GL_REPEAT));
+
+  // 戦車のパラメータ
+  Actor tank = { primitiveBuffer.Get(6), texTank,
+    glm::vec3(0), glm::vec3(1), 0.0f, glm::vec3(0) };
+
+  // T-34戦車のパラメータ
+  Actor tankT34 = { primitiveBuffer.Get(7), texTankT34,
+    glm::vec3(-5, 0, 0), glm::vec3(1), 0.0f, glm::vec3(0) };
+
+  // 建物のパラメータ
+  Actor brickHouse = { primitiveBuffer.Get(8), texBrickHouse,
+    glm::vec3(-8, 0, 0), glm::vec3(2, 2, 2), 0.0f, glm::vec3(-2.6f, 2.0f, 0.8f) };
 
   // メインループ.
+  double loopTime = glfwGetTime(); // 1/60秒間隔でループ処理するための時刻
+  double diffLoopTime = 0;         // 時刻の差分
   while (!glfwWindowShouldClose(window)) {
+    // 現在時刻を取得
+    const double curLoopTime = glfwGetTime();
+    // 現在時刻と前回時刻の差を、時刻の差分に加算
+    diffLoopTime += curLoopTime - loopTime;
+    // 時刻を現在時刻に更新
+    loopTime = curLoopTime;
+    // 時刻の差分が1/60秒未満なら、ループの先頭に戻る
+    if (diffLoopTime < 1.0 / 60.0) {
+      continue;
+    }
+
+    //
+    // ゲーム状態を更新する
+    //
+
+    for (; diffLoopTime >= 1.0 / 60.0; diffLoopTime -= 1.0 / 60.0) {
+      // 戦車を移動させる
+      if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        tank.rotation += glm::radians(90.0f) / 60.0f;
+      } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        tank.rotation -= glm::radians(90.0f) / 60.0f;
+      }
+
+      // tank.rotationが0のときの戦車の向きベクトル
+      glm::vec3 tankFront(0, 0, 1);
+      // tank.rotationラジアンだけ回転させる回転行列を作る
+      const glm::mat4 matRot = glm::rotate(glm::mat4(1), tank.rotation, glm::vec3(0, 1, 0));
+      // 向きベクトルをtank.rotationだけ回転させる
+      tankFront = matRot * glm::vec4(tankFront, 1);
+
+      if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        tank.position += tankFront * 4.0f / 60.0f;
+      } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        tank.position -= tankFront * 4.0f / 60.0f;
+      }
+    }
+
+    //
+    // ゲーム状態を描画する
+    //
+
     glEnable(GL_DEPTH_TEST); // 深度バッファを有効にする.
-    glEnable(GL_CULL_FACE);
+    //glEnable(GL_CULL_FACE);
     glClearColor(0.5f, 0.5f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     primitiveBuffer.BindVertexArray();
     pipeline.Bind();
-    glBindSampler(0, sampler);
+    sampler->Bind(0);
 
     float s = sin(glm::radians(degree));
     float c = cos(glm::radians(degree));
@@ -414,30 +478,38 @@ int main()
     const glm::mat4 matView =
       glm::lookAt(glm::vec3(0, 20, 20), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 
-    // 行列をシェーダに転送する 
-    const glm::mat4 matModel = glm::mat4(1);
-    const glm::mat4 matMVP = matProj * matView * matModel;
-    pipeline.SetUniform(locMatTRS, matMVP);
-    pipeline.SetUniform(locMatModel, matModel);
+    // 三角形を描画する
+    Actor actTriangle = { primitiveBuffer.Get(2), texTriangle,
+      glm::vec3(0), glm::vec3(1), 0.0f, glm::vec3(0),
+    };
+    Draw(actTriangle, pipeline, matProj, matView);
 
-    //glBindTextureUnit(0, texGround);
-    //primitiveBuffer.Get(1).Draw();
+    // 立方体を描画する
+    Actor actCube = { primitiveBuffer.Get(3), texTriangle,
+      glm::vec3(0), glm::vec3(1), 0.0f, glm::vec3(0),
+    };
+    Draw(actCube, pipeline, matProj, matView);
 
-    texTriangle.Bind(0); // テクスチャを割り当てる.
-    primitiveBuffer.Get(2).Draw();
-    primitiveBuffer.Get(3).Draw();
+    // 建物を表示(課題12)
+    Draw(brickHouse, pipeline, matProj, matView);
+
+    // 戦車を表示
+    Draw(tank, pipeline, matProj, matView);
+
+    // T-34を表示(課題05)
+    Draw(tankT34, pipeline, matProj, matView);
 
     // マップに配置する物体の表示データ.
     struct ObjectData {
       Primitive prim;
-      const Texture* tex;
+      const std::shared_ptr<Texture> tex;
     };
 
     // 描画する物体のリスト.
     const ObjectData objectList[] = {
       { Primitive(), 0 },    // なし
-      { primitiveBuffer.Get(4), &texTree }, // 木
-      { primitiveBuffer.Get(5), &texWarehouse }, // 建物
+      { primitiveBuffer.Get(4), texTree }, // 木
+      { primitiveBuffer.Get(5), texWarehouse }, // 建物
     };
     // 木を植える.
     //glBindTextureUnit(0, texTree); // テクスチャを割り当てる.
@@ -467,7 +539,7 @@ int main()
 #endif
 
     // マップを(-20,-20)-(20,20)の範囲に描画.
-    const Texture* mapTexList[] = { &texGreen, &texGround, &texRoad };
+    const std::shared_ptr<Texture> mapTexList[] = { texGreen, texGround, texRoad };
     for (int y = 0; y < 10; ++y) {
       for (int x = 0; x < 10; ++x) {
         // 四角形が4x4mなので、xとyを4倍した位置に表示する.
@@ -496,9 +568,6 @@ int main()
     glfwPollEvents();
     glfwSwapBuffers(window);
   }
-
-  // 後始末.
-  glDeleteSamplers(1, &sampler);
 
   // GLFWの終了.
   glfwTerminate();

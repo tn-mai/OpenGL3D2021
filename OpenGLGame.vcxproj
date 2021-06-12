@@ -147,25 +147,31 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Src\Actor.cpp" />
     <ClCompile Include="Src\glad\src\glad.c" />
     <ClCompile Include="Src\GLContext.cpp" />
     <ClCompile Include="Src\Main.cpp" />
     <ClCompile Include="Src\Primitive.cpp" />
     <ClCompile Include="Src\ProgramPipeline.cpp" />
+    <ClCompile Include="Src\Sampler.cpp" />
     <ClCompile Include="Src\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Res\FragmentLighting.frag" />
+    <None Include="Res\FragmentLighting.vert" />
     <None Include="Res\Simple.frag" />
     <None Include="Res\Simple.vert" />
     <None Include="Res\VertexLighting.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Actor.h" />
     <ClInclude Include="Src\glad\include\glad\glad.h" />
     <ClInclude Include="Src\glad\include\KHR\khrplatform.h" />
     <ClInclude Include="Src\GLContext.h" />
     <ClInclude Include="Src\Primitive.h" />
     <ClInclude Include="Src\ProgramPipeline.h" />
+    <ClInclude Include="Src\Sampler.h" />
     <ClInclude Include="Src\Texture.h" />
   </ItemGroup>
   <ItemGroup>
