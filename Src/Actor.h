@@ -10,6 +10,20 @@
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
+#include <memory>
+
+/**
+* 第11回テキスト実装方針:
+* エンジンクラスへの統合はコストが高いため見送る.
+* 1. actors 配列を shared_ptr 配列化する.
+* 2. OnHit仮想関数を実装.
+* 3. EnemyActorクラスを作成し、OnHitをオーバーライド.
+* 4. BulletActorクラスを作成し、OnHitをオーバーライド.
+* 5. Tick仮想関数を実装.
+* 7. ElevetorActorクラスを作成し、Tickをオーバーライド.
+* 8. EnemyActorクラスのTickをオーバーライド.
+* 9. PlayerActorクラスを作成し、Tickをオーバーライド.
+*/
 
 /**
 * 直方体.
@@ -23,8 +37,22 @@ struct Box
 /**
 * 物体を制御するパラメータ.
 */
-struct Actor
+class Actor
 {
+public:
+  Actor(
+    const std::string& name,
+    const Primitive& prim,
+    std::shared_ptr<Texture> tex,
+    const glm::vec3& position,
+    const glm::vec3& scale,
+    float rotation,
+    const glm::vec3& adjustment);
+
+  virtual ~Actor() = default;
+  virtual void OnUpdate(float deltaTime);
+  virtual void OnCollision(const struct Contact& contact);
+
   std::string name;                // アクターの名前
   Primitive prim;                  // 描画するプリミティブ
   std::shared_ptr<Texture> tex;    // 描画に使うテクスチャ
@@ -55,7 +83,7 @@ void Draw(
   glm::mat4 matProj,               // 描画に使うプロジェクション行列
   glm::mat4 matView);              // 描画に使うビュー行列  
 
-Actor* Find(std::vector<Actor>& actors, const char* name);
+Actor* Find(std::vector<std::shared_ptr<Actor>>& actors, const char* name);
 
 /**
 * 衝突情報

@@ -3,17 +3,22 @@
 */
 #include <glad/glad.h>
 #include "GLContext.h"
+#include "GameEngine.h"
 #include "Primitive.h"
 #include "ProgramPipeline.h"
 #include "Texture.h"
 #include "Sampler.h"
 #include "Actor.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include "Actor/T34TankActor.h"
+#include "Actor/RandomMovingEnemyActor.h"
+#include "Actor/ElevatorActor.h"
 #include <GLFW/glfw3.h>
+#include <glm/gtc/matrix_transform.hpp>
 #include <string>
 #include <iostream>
 #include <memory>
 #include <algorithm>
+#include <unordered_map>
 #pragma comment(lib, "opengl32.lib")
 
 /// 座標データ:四角形
@@ -293,18 +298,18 @@ int objectMapData[16][16] = {
   { 0, 0, 0, 0, 0, 0, 2, 3, 1, 3, 1, 4, 0, 0, 0, 0},
   { 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 4, 1, 0, 0, 1, 4},
   { 0, 0, 1, 3, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1},
-  { 0, 0, 0, 0, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  { 0, 0, 0, 0, 1, 4, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0},
-  { 1, 1, 0, 0, 0, 0, 1, 1, 1, 3, 1, 1, 1, 1, 0, 0},
-  { 4, 1, 0, 0, 0, 0, 3, 1, 4, 1, 1, 3, 1, 4, 0, 0},
+  { 0, 0, 0, 0, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  { 0, 0, 0, 0, 1, 4, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+  { 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0},
+  { 4, 1, 0, 0, 0, 0, 3, 1, 3, 1, 1, 3, 1, 4, 0, 0},
   { 0, 0, 3, 1, 1, 4, 0, 0, 0, 0, 4, 1, 0, 0, 0, 0},
   { 0, 0, 1, 1, 3, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0},
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3},
 };
 
-// アクター配列.
-std::vector<Actor> actors;
+//// アクターの配列.
+//std::vector<std::shared_ptr<Actor>> actors;
 
 /**
 * OpenGLからのメッセージを処理する.
@@ -358,9 +363,15 @@ int main()
   }
 
   glDebugMessageCallback(DebugCallback, nullptr);
+  
+  GameEngine::Initialize();
+  GameEngine& engine = GameEngine::Get();
+
+  // アクターの配列.
+  std::vector<std::shared_ptr<Actor>>& actors = engine.GetActors();
 
   // VAOを作成する.
-  PrimitiveBuffer primitiveBuffer(200'000, 800'000);
+  PrimitiveBuffer& primitiveBuffer = engine.GetPrimitiveBuffer();
 
   // 描画データを追加する.
   primitiveBuffer.AddFromObjFile("Res/Ground.obj");
@@ -415,28 +426,28 @@ int main()
   };
 
   // 画面端にコライダーを設定
-  actors.push_back(Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
-    glm::vec3(-36, 0, -34), glm::vec3(1, 2, 32), 0.0f, glm::vec3(0) });
-  actors.back().collider = Box{ glm::vec3(0, 0, 0), glm::vec3(1, 4, 64) };
-  actors.back().isStatic = true;
+  actors.push_back(std::shared_ptr<Actor>(new Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
+    glm::vec3(-36, 0, -34), glm::vec3(1, 2, 32), 0.0f, glm::vec3(0) }));
+  actors.back()->collider = Box{ glm::vec3(0, 0, 0), glm::vec3(1, 4, 64) };
+  actors.back()->isStatic = true;
 
-  actors.push_back(Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
-    glm::vec3(30, 0, -34), glm::vec3(1, 2, 32), 0.0f, glm::vec3(0) });
-  actors.back().collider = Box{ glm::vec3(0, 0, 0), glm::vec3(1, 4, 64) };
-  actors.back().isStatic = true;
+  actors.push_back(std::shared_ptr<Actor>(new Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
+    glm::vec3(30, 0, -34), glm::vec3(1, 2, 32), 0.0f, glm::vec3(0) }));
+  actors.back()->collider = Box{ glm::vec3(0, 0, 0), glm::vec3(1, 4, 64) };
+  actors.back()->isStatic = true;
 
-  actors.push_back(Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
-    glm::vec3(-34, 0, -36), glm::vec3(32, 2, 1), 0.0f, glm::vec3(0) });
-  actors.back().collider = Box{ glm::vec3(0, 0, 0), glm::vec3(64, 4, 1) };
-  actors.back().isStatic = true;
+  actors.push_back(std::shared_ptr<Actor>(new Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
+    glm::vec3(-34, 0, -36), glm::vec3(32, 2, 1), 0.0f, glm::vec3(0) }));
+  actors.back()->collider = Box{ glm::vec3(0, 0, 0), glm::vec3(64, 4, 1) };
+  actors.back()->isStatic = true;
 
-  actors.push_back(Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
-    glm::vec3(-34, 0, 30), glm::vec3(32, 2, 1), 0.0f, glm::vec3(0) });
-  actors.back().collider = Box{ glm::vec3(0, 0, 0), glm::vec3(64, 4, 1) };
-  actors.back().isStatic = true;
+  actors.push_back(std::shared_ptr<Actor>(new Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
+    glm::vec3(-34, 0, 30), glm::vec3(32, 2, 1), 0.0f, glm::vec3(0) }));
+  actors.back()->collider = Box{ glm::vec3(0, 0, 0), glm::vec3(64, 4, 1) };
+  actors.back()->isStatic = true;
 
   // 描画する物体のリスト.
-  const Box col1 = { glm::vec3(-2, 0, -2), glm::vec3(2, 2, 2) };
+  const Box col1 = { glm::vec3(-1.75f, 0, -1.75f), glm::vec3(1.75f, 2, 1.75f) };
   const ObjectData objectList[] = {
     { "", Primitive(), 0 },    // なし
     { "Tree", primitiveBuffer.Get(4), texTree }, // 木
@@ -459,10 +470,10 @@ int main()
       // 四角形が4x4mなので、xとyを4倍した位置に表示する.
       const glm::vec3 position(x * 4 - 32, 0, y * 4 - 32);
 
-      actors.push_back(Actor{ p.name, p.prim, p.tex,
-        position, glm::vec3(p.scale), 0.0f, p.ajustment });
-      actors.back().collider = p.collider;
-      actors.back().isStatic = true;
+      actors.push_back(std::shared_ptr<Actor>(new Actor{ p.name, p.prim, p.tex,
+        position, glm::vec3(p.scale), 0.0f, p.ajustment }));
+      actors.back()->collider = col1;// p.collider;
+      actors.back()->isStatic = true;
     }
   }
 
@@ -474,42 +485,58 @@ int main()
       const glm::vec3 position(x * 4 - 32, 0, y * 4 - 32);
 
       const int textureNo = mapData[y][x];
-      actors.push_back(Actor{ "Ground", primitiveBuffer.Get(0), mapTexList[textureNo],
-        position, glm::vec3(1), 0.0f, glm::vec3(0) });
-      actors.back().collider = Box{ glm::vec3(-2, -10, -2), glm::vec3(2, 0, 2) };
-      actors.back().isStatic = true;
+      actors.push_back(std::shared_ptr<Actor>(new Actor{ "Ground", primitiveBuffer.Get(0), mapTexList[textureNo],
+        position, glm::vec3(1), 0.0f, glm::vec3(0) }));
+      actors.back()->collider = Box{ glm::vec3(-2, -10, -2), glm::vec3(2, 0, 2) };
+      actors.back()->isStatic = true;
     }
   }
 
   // エレベーター
   {
     const glm::vec3 position(4 * 4 - 20, -1, 4 * 4 - 20);
-    actors.push_back(Actor{ "Elevator", primitiveBuffer.Get(0), mapTexList[0],
-      position, glm::vec3(1), 0.0f, glm::vec3(0) });
-    actors.back().velocity.y = 1;
-    actors.back().collider = Box{ glm::vec3(-2, -10, -2), glm::vec3(2, 0, 2) };
-    actors.back().isStatic = true;
+    actors.push_back(std::shared_ptr<Actor>(new ElevatorActor{
+      "Elevator", primitiveBuffer.Get(0), mapTexList[0],
+      position, glm::vec3(1), 0.0f, glm::vec3(0) }));
+    actors.back()->velocity.y = 1;
+    //actors.back()->collider = Box{ glm::vec3(-2, -10, -2), glm::vec3(2, 0, 2) };
+    actors.back()->isStatic = true;
   }
 
   // 三角形のパラメータ
-  actors.push_back({ "Triangle", primitiveBuffer.Get(2), texTriangle,
-    glm::vec3(0, 0, -5), glm::vec3(1), 0.0f, glm::vec3(0) });
+  actors.push_back(std::shared_ptr<Actor>(new Actor{ "Triangle", primitiveBuffer.Get(2), texTriangle,
+    glm::vec3(0, 0, -5), glm::vec3(1), 0.0f, glm::vec3(0) }));
   // 立方体のパラメータ
-  actors.push_back({ "Cube", primitiveBuffer.Get(3), texTriangle,
-    glm::vec3(0, 0, -4), glm::vec3(1), 0.0f, glm::vec3(0) });
+  actors.push_back(std::shared_ptr<Actor>(new Actor{ "Cube", primitiveBuffer.Get(3), texTriangle,
+    glm::vec3(0, 0, -4), glm::vec3(1), 0.0f, glm::vec3(0) }));
   // 戦車のパラメータ
-  const Box box = { glm::vec3(-1, 0, -1), glm::vec3(1, 2, 1) };
-  actors.push_back({ "Tiger-I", primitiveBuffer.Get(6), texTank,
+  std::shared_ptr<Actor> playerTank(new Actor{ "Tiger-I", primitiveBuffer.Get(6), texTank,
     glm::vec3(0), glm::vec3(1), 0.0f, glm::vec3(0) });
-  actors.back().collider = Box{ glm::vec3(-1.8f, 0, -1.8f), glm::vec3(1.8f, 2.8f, 1.8f) };
-  actors.back().mass = 57'000;
-  //actors.back().cor = 0.1f;
-  //actors.back().friction = 1.0f;
+  playerTank->collider = Box{ glm::vec3(-1.8f, 0, -1.8f), glm::vec3(1.8f, 2.8f, 1.8f) };
+  playerTank->mass = 57'000;
+  //playerTank->cor = 0.1f;
+  //playerTank->friction = 1.0f;
+  actors.push_back(playerTank);
+
+
+  std::shared_ptr<GameMap> gamemap(new GameMap(16, 16, -32, -32, 4, &objectMapData[0][0]));
+  std::vector<glm::ivec2> route = gamemap->FindRoute(glm::ivec2(7, 15), glm::ivec2(10, 0));
+
   // T-34戦車のパラメータ
-  actors.push_back({ "T-34", primitiveBuffer.Get(7), texTankT34,
-    glm::vec3(-5, 0, 0), glm::vec3(1), 0.0f, glm::vec3(0) });
-  actors.back().collider = Box{ glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2.5f, 1.5f) };
-  actors.back().mass = 36'000;
+  const glm::vec3 t34PosList[] = {
+    glm::vec3(-5, 0, 0),
+    glm::vec3(15, 0, 0),
+    glm::vec3(-10, 0, -5),
+  };
+  for (auto& pos : t34PosList) {
+    std::string name("T-34[");
+    name += '0' + static_cast<char>(&pos - t34PosList);
+    name += ']';
+    actors.push_back(std::shared_ptr<Actor>(new RandomMovingEnemyActor{ name.c_str(), primitiveBuffer.Get(7), texTankT34,
+      pos, glm::vec3(1), 0.0f, glm::vec3(-0.78f, 0, 1.0f), gamemap }));
+    actors.back()->collider = Box{ glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2.5f, 1.5f) };
+    actors.back()->mass = 36'000;
+  }
 
   // メインループ.
   double loopTime = glfwGetTime();     // 1/60秒間隔でループ処理するための時刻
@@ -518,7 +545,6 @@ int main()
   int oldShotButton = 0;               // 前回のショットボタンの状態
   glm::vec3 cameraPosition = glm::vec3(0, 20, 20); // カメラの座標
   glm::vec3 cameraTarget = glm::vec3(0, 0, 0);     // カメラの注視点の座標
-  int elevetorState = 0;
   while (!glfwWindowShouldClose(window)) {
     // 現在時刻を取得
     const double curLoopTime = glfwGetTime();
@@ -542,7 +568,7 @@ int main()
 
       // 以前の速度を更新
       for (int i = 0; i < actors.size(); ++i) {
-        actors[i].oldVelocity = actors[i].velocity;
+        actors[i]->oldVelocity = actors[i]->velocity;
       }
 
       // 戦車を移動させる
@@ -598,19 +624,20 @@ int main()
           glm::vec3 position = tank->position + tankFront * 6.0f;
           position.y += 2.0f;
 
-          Actor bullet = { "Bullet", primitiveBuffer.Get(9), texBullet,
-            position, glm::vec3(0.25f), tank->rotation, glm::vec3(0) };
+          std::shared_ptr<Actor> bullet(new Actor{
+            "Bullet", primitiveBuffer.Get(9), texBullet,
+            position, glm::vec3(0.25f), tank->rotation, glm::vec3(0) });
 
           // 1.5秒後に弾を消す
-          bullet.lifespan = 1.5f;
+          bullet->lifespan = 1.5f;
 
           // 戦車の向いている方向に、30m/sの速度で移動させる
-          bullet.velocity = tankFront * 30.0f;
+          bullet->velocity = tankFront * 30.0f;
 
-          // 弾に当たり判定を付ける
-          bullet.collider = Box{ glm::vec3(-0.25f), glm::vec3(0.25f) };
-          bullet.mass = 6.8f;
-          bullet.friction = 1.0f;
+          // 弾に衝突判定を付ける
+          bullet->collider = Box{ glm::vec3(-0.25f), glm::vec3(0.25f) };
+          bullet->mass = 6.8f;
+          bullet->friction = 1.0f;
 
           actors.push_back(bullet);
         }
@@ -622,103 +649,28 @@ int main()
       // アクターの状態を更新する
       for (int i = 0; i < actors.size(); ++i) {
         // アクターの寿命を減らす
-        if (actors[i].lifespan > 0) {
-          actors[i].lifespan -= deltaTime;
+        if (actors[i]->lifespan > 0) {
+          actors[i]->lifespan -= deltaTime;
 
           // 寿命の尽きたアクターを「削除待ち」状態にする
-          if (actors[i].lifespan <= 0) {
-            actors[i].isDead = true;
+          if (actors[i]->lifespan <= 0) {
+            actors[i]->isDead = true;
             continue; // 削除待ちアクターは更新をスキップ
           }
         }
 
-        if (actors[i].name == "Elevator") {
-          switch (elevetorState) {
-          case 0:
-            if (actors[i].position.y >= 4) {
-              actors[i].position.y = 4;
-              actors[i].velocity.y = 0;
-              actors[i].velocity.z = 1;
-              elevetorState = 1;
-            }
-            break;
-          case 1:
-            if (actors[i].position.z >= 0) {
-              actors[i].position.z = 0;
-              actors[i].velocity.z = -1;
-              elevetorState = 2;
-            }
-            break;
-          case 2:
-            if (actors[i].position.z <= -4) {
-              actors[i].position.z = -4;
-              actors[i].velocity.y = -1;
-              actors[i].velocity.z = 0;
-              elevetorState = 3;
-            }
-            break;
-          case 3:
-            if (actors[i].position.y <= -1) {
-              actors[i].position.y = -1;
-              actors[i].velocity.y = 1;
-              elevetorState = 0;
-            }
-            break;
-          }
-        }         else if (actors[i].name == "T-34") {
-          // 追跡対象アクターを検索
-          Actor* target = Find(actors, "Tiger-I");
-          if (actors[i].isOnActor && target) {
-            // T-34戦車の正面方向のベクトルを計算
-            glm::mat4 matR = glm::rotate(glm::mat4(1), actors[i].rotation, glm::vec3(0, 1, 0));
-            glm::vec3 t34Front = matR * glm::vec4(0, 0, 1, 1);
-
-            // T-34戦車からタイガーI戦車へのベクトルdを計算
-            glm::vec3 d = target->position - actors[i].position;
-
-            // T-34戦車からタイガーI戦車への距離を計算
-            float length = glm::length(d);
-
-            // ベクトルdを正規化
-            d = glm::normalize(d);
-
-            // T-34戦車の正面ベクトルと、タイガーI戦車へのベクトルの内積を計算
-            float r = std::acos(glm::dot(t34Front, d));
-
-            // T-34戦車の正面とタイガーI戦車のいる方向の角度が10度未満の場合...
-            if (r < glm::radians(10.0f)) {
-              // タイガーI戦車までの距離が10mより遠い場合は前に加速
-              if (length > 10.0f) {
-                actors[i].velocity += t34Front * 0.3f;
-              } else {
-                // ベロシティのt34Front方向の長さを計算
-                float v = glm::dot(t34Front, actors[i].velocity);
-                // 長さが0.2以上なら0.2を減速、それ以下なら長さ分を減速する
-                actors[i].velocity -= t34Front * glm::clamp(v, -0.2f, 0.2f);
-              }
-            }
-            // 角度が10度以上の場合...
-            else {
-              // T-34戦車の正面ベクトルと、タイガーI戦車へのベクトルの外積を計算
-              glm::vec3 n = glm::cross(t34Front, d);
-              // yが0以上なら反時計回り、0未満なら時計回りに回転するほうが近い
-              if (n.y >= 0) {
-                actors[i].rotation += glm::radians(90.0f) * deltaTime;
-              } else {
-                actors[i].rotation -= glm::radians(90.0f) * deltaTime;
-              }
-            }
-          }
-        }
+        actors[i]->OnUpdate(deltaTime);
 
         // 速度に重力加速度を加える
-        if (!actors[i].isStatic) {
-          actors[i].velocity.y += -9.8f * deltaTime;
+        if (!actors[i]->isStatic) {
+          actors[i]->velocity.y += -9.8f * deltaTime;
         }
 
         // アクターの位置を更新する
-        actors[i].position += actors[i].velocity * deltaTime;
+        actors[i]->position += actors[i]->velocity * deltaTime;
       }
+
+      GameEngine::Get().UpdateActors();
 
       // アクターの衝突判定を行う
 #if 0
@@ -727,7 +679,7 @@ int main()
       dynamicActors.reserve(actors.size());
       staticActors.reserve(actors.size());
       for (int i = 0; i < actors.size(); ++i) {
-        if (actors[i].isStatic) {
+        if (actors[i]->isStatic) {
           staticActors.push_back(&actors[i]);
         } else {
           dynamicActors.push_back(&actors[i]);
@@ -736,28 +688,23 @@ int main()
 #endif
 
       for (int i = 0; i < actors.size(); ++i) {
-        actors[i].isOnActor = false;
+        actors[i]->isOnActor = false;
       }
 
       std::vector<Contact> contacts;
       contacts.reserve(actors.size());
       for (int a = 0; a < actors.size(); ++a) {
-        //Actor* actorA = &actors[a];
         for (int b = a + 1; b < actors.size(); ++b) {
-          //Actor* actorB = &actors[b];
-          //if (actorA == actorB) {
-          //  continue;
-          //}
 
           // 削除待ちアクターは衝突しない
-          if (actors[a].isDead) {
+          if (actors[a]->isDead) {
             break;
-          } else if (actors[b].isDead) {
+          } else if (actors[b]->isDead) {
             continue;
           }
 
           Contact contact;
-          if (DetectCollision(actors[a], actors[b], contact)) {
+          if (DetectCollision(*actors[a], *actors[b], contact)) {
 #if 1
             // 配列の中に、作成したコンタクト構造体と似ているものがあるか調べる
             auto itr = std::find_if(contacts.begin(), contacts.end(),
@@ -775,35 +722,48 @@ int main()
 #else
             contacts.push_back(contact);
 #endif
-            // T-34戦車と弾の衝突を処理する
-            if (actors[a].name == "T-34" && actors[b].name == "Bullet") {
-              // T-34戦車の耐久値を減らす
-              actors[a].health -= 1;
-              if (actors[a].health <= 0) {
-                actors[a].isDead = true; // T-34戦車を消去する
-              }
-              actors[b].isDead = true; // 弾を消去する
-            }
           }
         }
       }
 
       // 重なりを解決する
-      for (auto& c : contacts) {
-        SolveContact(c);
+      for (int i = 0; i < contacts.size(); ++i) {
+        Contact& c = contacts[i];
+
+        // 衝突処理関数を呼び出す
+        c.a->OnCollision(c);
+        Contact contactBtoA;
+        contactBtoA.a = c.b;
+        contactBtoA.b = c.a;
+        contactBtoA.velocityA = c.velocityB;
+        contactBtoA.velocityB = c.velocityA;
+        contactBtoA.accelA = c.accelB;
+        contactBtoA.accelB = c.accelA;
+        contactBtoA.penetration = -c.penetration;
+        contactBtoA.normal = -c.normal;
+        contactBtoA.position = c.position;
+        contactBtoA.penLength = c.penLength;
+        c.b->OnCollision(contactBtoA);
+
+        // 重なりを解決する
+        SolveContact(contacts[i]);
       }
 
       // 削除待ちのアクターを削除する
       actors.erase(
-        std::remove_if(actors.begin(), actors.end(), [](Actor& a) { return a.isDead; }),
+        std::remove_if(actors.begin(), actors.end(),
+          [](std::shared_ptr<Actor>& a) { return a->isDead; }),
         actors.end());
 
       // カメラデータを更新する
-      if (tank) {
-        const glm::mat4 matRot = glm::rotate(glm::mat4(1), tank->rotation, glm::vec3(0, 1, 0));
-        const glm::vec3 tankFront = matRot * glm::vec4(0, 0, 1, 1);
-        cameraPosition = tank->position + glm::vec3(0, 20, 20);
-        cameraTarget = tank->position;
+      {
+        Actor* target = Find(actors, "Tiger-I");
+        if (target) {
+          const glm::mat4 matRot = glm::rotate(glm::mat4(1), target->rotation, glm::vec3(0, 1, 0));
+          const glm::vec3 tankFront = matRot * glm::vec4(0, 0, 1, 1);
+          cameraPosition = target->position + glm::vec3(0, 20, 20);
+          cameraTarget = target->position;
+        }
       }
     }
 
@@ -850,7 +810,7 @@ int main()
 
     // アクターを描画する
     for (int i = 0; i < actors.size(); ++i) {
-      Draw(actors[i], pipeline, matProj, matView);
+      Draw(*actors[i], pipeline, matProj, matView);
     }
 
     // テクスチャの割り当てを解除.
@@ -864,6 +824,8 @@ int main()
     glfwPollEvents();
     glfwSwapBuffers(window);
   }
+
+  GameEngine::Finalize();
 
   // GLFWの終了.
   glfwTerminate();

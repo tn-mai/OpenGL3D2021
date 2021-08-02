@@ -4,6 +4,48 @@
 #include "Actor.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <algorithm>
+
+/**
+* コンストラクタ
+*/
+Actor::Actor(
+  const std::string& name,
+  const Primitive& prim,
+  std::shared_ptr<Texture> tex,
+  const glm::vec3& position,
+  const glm::vec3& scale,
+  float rotation,
+  const glm::vec3& adjustment) :
+  name(name),
+  prim(prim),
+  tex(tex),
+  position(position),
+  scale(scale),
+  rotation(rotation),
+  adjustment(adjustment)
+{
+}
+
+/**
+* アクターの状態を更新する
+*
+* @param deltaTime 前回の更新からの経過時間(秒)
+*/
+void Actor::OnUpdate(float deltaTime)
+{
+  // 何もしない
+}
+
+/**
+* 衝突を処理する
+*
+* @param contact 衝突情報
+*/
+void Actor::OnCollision(const struct Contact& contact)
+{
+  // 何もしない
+}
 
 /**
 * 物体を描画する.
@@ -30,7 +72,10 @@ void Draw(
   pipeline.SetUniform(locMatTRS, matMVP);
   pipeline.SetUniform(locMatModel, matModel);
 
-  actor.tex->Bind(0); // テクスチャを割り当てる
+  if (actor.tex) {
+    actor.tex->Bind(0); // テクスチャを割り当てる
+  } else {
+  }
   actor.prim.Draw();  // プリミティブを描画する
 }
 
@@ -43,11 +88,11 @@ void Draw(
 * @retval nullptr以外 最初にnameと名前の一致したアクター.
 * @retval nullptr     actorsの中に名前の一致するアクターがない.
 */
-Actor* Find(std::vector<Actor>& actors, const char* name)
+Actor* Find(std::vector<std::shared_ptr<Actor>>& actors, const char* name)
 {
   for (int i = 0; i < actors.size(); ++i) {
-    if (actors[i].name == name) {
-      return &actors[i];
+    if (actors[i]->name == name) {
+      return actors[i].get();
     }
   }
   return nullptr;
@@ -385,7 +430,7 @@ void SolveContact(Contact& contact)
     float va = ub + cor * (ub - ua);     // 衝突後の速度を計算
     actorA.velocity -= normal * ua;      // 衝突前の速度を0にする
     actorA.velocity += normal * va;      // 衝突後の速度を加算する
-    actorA.velocity += frictionVelocity; // 摩擦による速度を減算する
+    actorA.velocity += frictionVelocity; // 摩擦による速度を加算する
 
     // 重なりの解消: アクターBは動かないので、アクターAを動かす
     actorA.position -= penetration;
@@ -400,8 +445,9 @@ void SolveContact(Contact& contact)
   else {
     // 速度の更新: 運動エネルギーの分配量を計算
     float massAB = actorA.mass + actorB.mass;
-    float va = (actorA.mass * ua + actorB.mass * ub + actorB.mass * cor * (ub - ua)) / massAB;
-    float vb = (actorA.mass * ua + actorB.mass * ub + actorA.mass * cor * (ua - ub)) / massAB;
+    float c = actorA.mass * ua + actorB.mass * ub;
+    float va = (c + cor * actorB.mass * (ub - ua)) / massAB;
+    float vb = (c + cor * actorA.mass * (ua - ub)) / massAB;
 
     // 衝突前の速度を0にする
     actorA.velocity -= normal * ua;
