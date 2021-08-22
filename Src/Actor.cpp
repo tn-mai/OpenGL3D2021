@@ -70,7 +70,9 @@ void Draw(
   const GLint locMatTRS = 0;
   const GLint locMatModel = 1;
   pipeline.SetUniform(locMatTRS, matMVP);
-  pipeline.SetUniform(locMatModel, matModel);
+  if (actor.layer == Layer::Default) {
+    pipeline.SetUniform(locMatModel, matModel);
+  }
 
   if (actor.tex) {
     actor.tex->Bind(0); // テクスチャを割り当てる
@@ -88,11 +90,11 @@ void Draw(
 * @retval nullptr以外 最初にnameと名前の一致したアクター.
 * @retval nullptr     actorsの中に名前の一致するアクターがない.
 */
-Actor* Find(std::vector<std::shared_ptr<Actor>>& actors, const char* name)
+std::shared_ptr<Actor> Find(std::vector<std::shared_ptr<Actor>>& actors, const char* name)
 {
   for (int i = 0; i < actors.size(); ++i) {
     if (actors[i]->name == name) {
-      return actors[i].get();
+      return actors[i];
     }
   }
   return nullptr;

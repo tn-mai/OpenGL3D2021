@@ -2,10 +2,33 @@
 * @file GameEngine.cpp
 */
 #include "GameEngine.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
 
 namespace {
 
 GameEngine* engine = nullptr;
+
+/**
+* OpenGLからのメッセージを処理する.
+*
+* @param source    メッセージの発信者(OpenGL、Windows、シェーダーなど).
+* @param type      メッセージの種類(エラー、警告など).
+* @param id        メッセージを一位に識別する値.
+* @param severity  メッセージの重要度(高、中、低、最低).
+* @param length    メッセージの文字数. 負数ならメッセージは0終端されている.
+* @param message   メッセージ本体.
+* @param userParam コールバック設定時に指定したポインタ.
+*/
+void GLAPIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+  if (length < 0) {
+    std::cerr << message << "\n";
+  } else {
+    const std::string s(message, message + length);
+    std::cerr << s << "\n";
+  }
+}
 
 }
 
@@ -16,18 +39,56 @@ bool GameEngine::Initialize()
 {
   if (!engine) {
     engine = new GameEngine;
+    if (!engine) {
+      return false;
+    }
+
+    // GLFWの初期化.
+    if (glfwInit() != GLFW_TRUE) {
+      return false;
+    }
+
+    // 描画ウィンドウの作成.
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+    GLFWwindow* window =
+      glfwCreateWindow(1280, 720, "OpenGLGame", nullptr, nullptr);
+    if (!window) {
+      glfwTerminate();
+      return 1;
+    }
+    glfwMakeContextCurrent(window);
+
+    // OpenGL関数のアドレスを取得する.
+    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+      glfwTerminate();
+      return false;
+    }
+
+    glDebugMessageCallback(DebugCallback, nullptr);
+
+    engine->window = window;
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+    engine->windowSize = glm::vec2(w, h);
+
+    engine->pipelineUI.reset(new ProgramPipeline("Res/Simple.vert", "Res/Simple.frag"));
+    engine->samplerUI.reset(new Sampler(GL_CLAMP_TO_EDGE));
+
+    for (int layer = 0; layer < layerCount; ++layer) {
+      engine->actors[layer].reserve(1000);
+    }
+
+    engine->newActors.reserve(1000);
+    engine->primitiveBuffer.reset(new PrimitiveBuffer(1'000'000, 4'000'000));
+    engine->textureBuffer.reserve(1000);
+
+    std::random_device rd;
+    engine->rg.seed(rd());
   }
-
-  engine->actors.reserve(1000);
-  engine->newActors.reserve(1000);
-
-  engine->primitiveBuffer.reset(new PrimitiveBuffer(1'000'000, 4'000'000));
-
-  engine->textureBuffer.reserve(1000);
-
-  std::random_device rd;
-  engine->rg.seed(rd());
-
   return true;
 }
 
@@ -36,8 +97,13 @@ bool GameEngine::Initialize()
 */
 void GameEngine::Finalize()
 {
-  delete engine;
-  engine = nullptr;
+  if (engine) {
+    // GLFWの終了.
+    glfwTerminate();
+
+    delete engine;
+    engine = nullptr;
+  }
 }
 
 /**
@@ -49,17 +115,143 @@ GameEngine& GameEngine::Get()
 }
 
 /**
+*
+*/
+std::shared_ptr<Actor> GameEngine::FindActor(const char* name)
+{
+  for (int layer = 0; layer < layerCount; ++layer) {
+    std::shared_ptr<Actor> actor = Find(actors[layer], name);
+    if (actor) {
+      return actor;
+    }
+  }
+  return nullptr;
+}
+
+/**
 * ゲームエンジンを更新する
 */
-void GameEngine::UpdateActors()
+void GameEngine::UpdateActors(float deltaTime)
+{
+  for (int layer = 0; layer < layerCount; ++layer) {
+    ActorList& actors = this->actors[layer];
+    // 以前の速度を更新
+    for (int i = 0; i < actors.size(); ++i) {
+      actors[i]->oldVelocity = actors[i]->velocity;
+    }
+
+    // アクターの状態を更新する
+    for (int i = 0; i < actors.size(); ++i) {
+      // アクターの寿命を減らす
+      if (actors[i]->lifespan > 0) {
+        actors[i]->lifespan -= deltaTime;
+
+        // 寿命の尽きたアクターを「削除待ち」状態にする
+        if (actors[i]->lifespan <= 0) {
+          actors[i]->isDead = true;
+          continue; // 削除待ちアクターは更新をスキップ
+        }
+      }
+
+      actors[i]->OnUpdate(deltaTime);
+
+      // 速度に重力加速度を加える
+      if (!actors[i]->isStatic) {
+        actors[i]->velocity.y += -9.8f * deltaTime;
+      }
+
+      // アクターの位置を更新する
+      actors[i]->position += actors[i]->velocity * deltaTime;
+    }
+  }
+}
+
+/**
+* ゲームエンジンを更新する(後処理)
+*/
+void GameEngine::PostUpdateActors()
 {
   // 新規に作成されたアクターをアクター配列に追加する
   for (int i = 0; i < newActors.size(); ++i) {
-    actors.push_back(newActors[i]);
+    const int layer = static_cast<int>(newActors[i]->layer);
+    if (layer >= 0 && layer < layerCount) {
+      actors[layer].push_back(newActors[i]);
+    }
   }
 
   // 新規アクター配列を空にする
   newActors.clear();
+}
+
+/**
+* 削除待ちのアクターを削除する
+*/
+void GameEngine::RemoveDeadActors()
+{
+  for (int layer = 0; layer < layerCount; ++layer) {
+    ActorList& a = actors[layer];
+    a.erase(std::remove_if(a.begin(), a.end(),
+      [](std::shared_ptr<Actor>& a) { return a->isDead; }),
+      a.end());
+  }
+}
+
+/**
+* UIアクターを描画する
+*/
+void GameEngine::RenderUI()
+{
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  primitiveBuffer->BindVertexArray();
+  pipelineUI->Bind();
+  samplerUI->Bind(0);
+
+  // プロジェクション行列を作成.
+  const glm::vec2 halfSize = windowSize * 0.5f;
+  const glm::mat4 matProj =
+    glm::ortho(-halfSize.x, halfSize.x, -halfSize.y, halfSize.y, 1.0f, 200.0f);
+
+  // ビュー行列を作成.
+  const glm::mat4 matView =
+    glm::lookAt(glm::vec3(0, 0, 100), glm::vec3(0), glm::vec3(0, 1, 0));
+
+  // Z座標の降順で2Dアクターを描画する
+  ActorList a = actors[static_cast<int>(Layer::UI)];
+  std::sort(a.begin(), a.end(),
+    [](std::shared_ptr<Actor>& a, std::shared_ptr<Actor>& b) {
+      return a->position.z < b->position.z; });
+  for (int i = 0; i < a.size(); ++i) {
+    Draw(*a[i], *pipelineUI, matProj, matView);
+  }
+
+  pipelineUI->Unbind();
+  samplerUI->Unbind(0);
+  primitiveBuffer->UnbindVertexArray();
+}
+
+/**
+*
+*/
+bool GameEngine::LoadPrimitive(const char* filename)
+{
+  return primitiveBuffer->AddFromObjFile(filename);
+}
+
+/**
+* 名前の一致するプリミティブを取得する
+*
+* @param filename プリミティブ名
+*
+* @return filenameと名前が一致するプリミティブ
+*/
+const Primitive& GameEngine::GetPrimitive(const char* filename) const
+{
+  return primitiveBuffer->Find(filename);
 }
 
 /**
@@ -87,20 +279,10 @@ std::shared_ptr<Texture> GameEngine::GetTexture(const char* filename) const
 {
   TextureBuffer::const_iterator itr = textureBuffer.find(filename);
   if (itr == textureBuffer.end()) {
-    static std::shared_ptr<Texture> tex(new Texture(""));
+    static std::shared_ptr<Texture> tex(new Texture("[Dummy for GetTexture]"));
     return tex;
   }
   return itr->second;
-}
-
-bool GameEngine::LoadPrimitive(const char* filename)
-{
-  return primitiveBuffer->AddFromObjFile(filename);
-}
-
-const Primitive& GameEngine::GetPrimitive(const char* filename) const
-{
-  return primitiveBuffer->GetPrimitive(filename);
 }
 
 /**

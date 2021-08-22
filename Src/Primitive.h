@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 #include "Texture.h"
 #include <glm/glm.hpp>
+#include <string>
 #include <vector>
 #include <memory>
 
@@ -16,14 +17,17 @@ class Primitive
 {
 public:
   Primitive() = default;
-  Primitive(GLenum m, GLsizei c, size_t o, GLint b) :
+  Primitive(const char* name, GLenum m, GLsizei c, size_t o, GLint b) :
+    name(name),
     mode(m), count(c), indices(reinterpret_cast<GLvoid*>(o)), baseVertex(b)
   {}
   ~Primitive() = default;
 
   void Draw() const;
+  const std::string& GetName() const { return name; }
 
 private:
+  std::string name;
   GLenum mode = GL_TRIANGLES; ///< プリミティブの種類.
   GLsizei count = 0; ///< 描画するインデックス数.
   const GLvoid* indices = 0; ///< 描画開始インデックスのバイトオフセット.
@@ -58,11 +62,12 @@ public:
   // プリミティブの追加.
   bool Add(size_t vertexCount, const glm::vec3* pPosition, const glm::vec4* pColor,
     const glm::vec2* pTexcoord, const glm::vec3* pNormal,
-    size_t indexCount, const GLushort* pIndex);
+    size_t indexCount, const GLushort* pIndex, const char* name = nullptr);
   bool AddFromObjFile(const char* filename);
 
   // プリミティブの取得.
   const Primitive& Get(size_t n) const;
+  const Primitive& Find(const char* name) const;
 
   // モデルの取得.
   const Model& GetModel(const char* name) const;

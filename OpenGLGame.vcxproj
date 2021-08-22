@@ -152,9 +152,11 @@
     <ClCompile Include="Src\Actor.cpp" />
     <ClCompile Include="Src\Actor\BulletActor.cpp" />
     <ClCompile Include="Src\Actor\ElevatorActor.cpp" />
+    <ClCompile Include="Src\Actor\PlayerActor.cpp" />
     <ClCompile Include="Src\Actor\RandomMovingEnemyActor.cpp" />
     <ClCompile Include="Src\Actor\T34TankActor.cpp" />
     <ClCompile Include="Src\GameEngine.cpp" />
+    <ClCompile Include="Src\GameManager.cpp" />
     <ClCompile Include="Src\GameMap.cpp" />
     <ClCompile Include="Src\glad\src\glad.c" />
     <ClCompile Include="Src\GLContext.cpp" />
@@ -176,9 +178,11 @@
     <ClInclude Include="Src\Actor.h" />
     <ClInclude Include="Src\Actor\BulletActor.h" />
     <ClInclude Include="Src\Actor\ElevatorActor.h" />
+    <ClInclude Include="Src\Actor\PlayerActor.h" />
     <ClInclude Include="Src\Actor\RandomMovingEnemyActor.h" />
     <ClInclude Include="Src\Actor\T34TankActor.h" />
     <ClInclude Include="Src\GameEngine.h" />
+    <ClInclude Include="Src\GameManager.h" />
     <ClInclude Include="Src\GameMap.h" />
     <ClInclude Include="Src\glad\include\glad\glad.h" />
     <ClInclude Include="Src\glad\include\KHR\khrplatform.h" />
@@ -211,6 +215,11 @@
       <FileType>Document</FileType>
     </Text>
     <Text Include="Res\Warehouse.obj">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Res\Plane.obj">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>

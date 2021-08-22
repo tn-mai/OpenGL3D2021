@@ -116,7 +116,7 @@ PrimitiveBuffer::~PrimitiveBuffer()
 */
 bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
   const glm::vec4* pColor, const glm::vec2* pTexcoord, const glm::vec3* pNormal,
-  size_t indexCount, const GLushort* pIndex)
+  size_t indexCount, const GLushort* pIndex, const char* name)
 {
   // エラーチェック.
   if (!vao) {
@@ -161,7 +161,7 @@ bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
   }
 
   // 描画データを作成.
-  const Primitive prim(GL_TRIANGLES, static_cast<GLsizei>(indexCount),
+  const Primitive prim(name, GL_TRIANGLES, static_cast<GLsizei>(indexCount),
     sizeof(GLushort) * curIndexCount, curVertexCount);
 
   // 描画データを配列に追加.
@@ -631,7 +631,7 @@ bool PrimitiveBuffer::AddFromObjFile(const char* filename)
     }
 
     // 描画データを作成
-    const Primitive prim(GL_TRIANGLES, groups[i].indexCount,
+    const Primitive prim(groups[i].name.c_str(), GL_TRIANGLES, groups[i].indexCount,
       sizeof(GLushort) * indexOffset, curVertexCount);
     // 描画データを配列に追加
     model.primitives.push_back(prim);
@@ -649,7 +649,8 @@ bool PrimitiveBuffer::AddFromObjFile(const char* filename)
 
   // 頂点データとインデックスデータをGPUメモリにコピーする.
   const bool result = Add(positions.size(), positions.data(), colors.data(),
-    texcoords.data(), normals.data(), indices.size(), indices.data());
+    texcoords.data(), normals.data(), indices.size(), indices.data(),
+    filename);
   if (result) {
     std::cout << "[情報]" << __func__ << ":" << filename << "(頂点数=" <<
       positions.size() << " インデックス数=" << indices.size() << ")\n";
@@ -676,6 +677,27 @@ const Primitive& PrimitiveBuffer::Get(size_t n) const
     return dummy;
   }
   return primitives[n];
+}
+
+/**
+* プリミティブを取得する.
+*
+* @param name プリミティブの名前
+*
+* @return 名前がnameと一致するプリミティブ.
+*/
+const Primitive& PrimitiveBuffer::Find(const char* name) const
+{
+  for (int i = 0; i < primitives.size(); ++i) {
+    if (primitives[i].GetName() == name) {
+      // 名前が一致する描画データを見つけた(見つけた描画データを返す)
+      return primitives[i];
+    }
+  }
+
+  // 名前が一致する描画データは見つからなかった(仮の描画データを返す)
+  static const Primitive dummy;
+  return dummy;
 }
 
 /**

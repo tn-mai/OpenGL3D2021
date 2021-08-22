@@ -35,6 +35,16 @@ struct Box
 };
 
 /**
+* 表示レイヤー
+*/
+enum class Layer
+{
+  Default,
+  UI,
+};
+static const size_t layerCount = 2; // レイヤー数
+
+/**
 * 物体を制御するパラメータ.
 */
 class Actor
@@ -74,6 +84,8 @@ public:
   bool isStatic = false;           // false=動かせる物体 true=動かせない物体 
   bool isBlock = true;             // false=通過できる true=通過できない
 
+  Layer layer = Layer::Default;    // 表示レイヤー
+
   bool isOnActor = false;
 };
 
@@ -83,7 +95,7 @@ void Draw(
   glm::mat4 matProj,               // 描画に使うプロジェクション行列
   glm::mat4 matView);              // 描画に使うビュー行列  
 
-Actor* Find(std::vector<std::shared_ptr<Actor>>& actors, const char* name);
+std::shared_ptr<Actor> Find(std::vector<std::shared_ptr<Actor>>& actors, const char* name);
 
 /**
 * 衝突情報

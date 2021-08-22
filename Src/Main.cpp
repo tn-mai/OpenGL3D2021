@@ -9,10 +9,12 @@
 #include "Texture.h"
 #include "Sampler.h"
 #include "Actor.h"
+#include "GameEngine.h"
+#include "GameManager.h"
+#include "Actor/PlayerActor.h"
 #include "Actor/T34TankActor.h"
 #include "Actor/RandomMovingEnemyActor.h"
 #include "Actor/ElevatorActor.h"
-#include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
 #include <iostream>
@@ -312,58 +314,10 @@ int objectMapData[16][16] = {
 //std::vector<std::shared_ptr<Actor>> actors;
 
 /**
-* OpenGLからのメッセージを処理する.
-*
-* @param source    メッセージの発信者(OpenGL、Windows、シェーダーなど).
-* @param type      メッセージの種類(エラー、警告など).
-* @param id        メッセージを一位に識別する値.
-* @param severity  メッセージの重要度(高、中、低、最低).
-* @param length    メッセージの文字数. 負数ならメッセージは0終端されている.
-* @param message   メッセージ本体.
-* @param userParam コールバック設定時に指定したポインタ.
-*/
-void GLAPIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
-{
-  if (length < 0) {
-    std::cerr << message << "\n";
-  } else {
-    const std::string s(message, message + length);
-    std::cerr << s << "\n";
-  }
-}
-
-/**
 * エントリーポイント.
 */
 int main()
 {
-  // GLFWの初期化.
-  if (glfwInit() != GLFW_TRUE) {
-    return 1;
-  }
-
-  // 描画ウィンドウの作成.
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-  GLFWwindow* window =
-    glfwCreateWindow(1280, 720, "OpenGLGame", nullptr, nullptr);
-  if (!window) {
-    glfwTerminate();
-    return 1;
-  }
-  glfwMakeContextCurrent(window);
-
-  // OpenGL関数のアドレスを取得する.
-  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    glfwTerminate();
-    return 1;
-  }
-
-  glDebugMessageCallback(DebugCallback, nullptr);
-  
   GameEngine::Initialize();
   GameEngine& engine = GameEngine::Get();
 
@@ -385,6 +339,7 @@ int main()
   primitiveBuffer.AddFromObjFile("Res/house/HouseRender.obj");
   primitiveBuffer.AddFromObjFile("Res/Bullet.obj");
   primitiveBuffer.AddFromObjFile("Res/house/broken-house.obj");
+  primitiveBuffer.AddFromObjFile("Res/Plane.obj");
 
   // パイプライン・オブジェクトを作成する.
   ProgramPipeline pipeline("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
@@ -509,45 +464,23 @@ int main()
   // 立方体のパラメータ
   actors.push_back(std::shared_ptr<Actor>(new Actor{ "Cube", primitiveBuffer.Get(3), texTriangle,
     glm::vec3(0, 0, -4), glm::vec3(1), 0.0f, glm::vec3(0) }));
-  // 戦車のパラメータ
-  std::shared_ptr<Actor> playerTank(new Actor{ "Tiger-I", primitiveBuffer.Get(6), texTank,
-    glm::vec3(0), glm::vec3(1), 0.0f, glm::vec3(0) });
-  playerTank->collider = Box{ glm::vec3(-1.8f, 0, -1.8f), glm::vec3(1.8f, 2.8f, 1.8f) };
-  playerTank->mass = 57'000;
-  //playerTank->cor = 0.1f;
-  //playerTank->friction = 1.0f;
-  actors.push_back(playerTank);
-
 
   std::shared_ptr<GameMap> gamemap(new GameMap(16, 16, -32, -32, 4, &objectMapData[0][0]));
   std::vector<glm::ivec2> route = gamemap->FindRoute(glm::ivec2(7, 15), glm::ivec2(10, 0));
 
-  // T-34戦車のパラメータ
-  const glm::vec3 t34PosList[] = {
-    glm::vec3(-5, 0, 0),
-    glm::vec3(15, 0, 0),
-    glm::vec3(-10, 0, -5),
-  };
-  for (auto& pos : t34PosList) {
-    std::string name("T-34[");
-    name += '0' + static_cast<char>(&pos - t34PosList);
-    name += ']';
-    actors.push_back(std::shared_ptr<Actor>(new RandomMovingEnemyActor{ name.c_str(), primitiveBuffer.Get(7), texTankT34,
-      pos, glm::vec3(1), 0.0f, glm::vec3(-0.78f, 0, 1.0f), gamemap }));
-    actors.back()->collider = Box{ glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2.5f, 1.5f) };
-    actors.back()->mass = 36'000;
-  }
+  // ゲームマネージャを作成
+  GameManager::Initialize();
+  GameManager& manager = GameManager::Get();
 
   // メインループ.
-  double loopTime = glfwGetTime();     // 1/60秒間隔でループ処理するための時刻
+  double loopTime = engine.GetTime();     // 1/60秒間隔でループ処理するための時刻
   double diffLoopTime = 0;             // 時刻の差分
   const float deltaTime = 1.0f / 60.0f;// 時間間隔
-  int oldShotButton = 0;               // 前回のショットボタンの状態
   glm::vec3 cameraPosition = glm::vec3(0, 20, 20); // カメラの座標
   glm::vec3 cameraTarget = glm::vec3(0, 0, 0);     // カメラの注視点の座標
-  while (!glfwWindowShouldClose(window)) {
+  while (!engine.WindowShouldClose()) {
     // 現在時刻を取得
-    const double curLoopTime = glfwGetTime();
+    const double curLoopTime = engine.GetTime();
     // 現在時刻と前回時刻の差を、時刻の差分に加算
     diffLoopTime += curLoopTime - loopTime;
     // 時刻を現在時刻に更新
@@ -565,112 +498,9 @@ int main()
     //
 
     for (; diffLoopTime >= deltaTime; diffLoopTime -= deltaTime) {
-
-      // 以前の速度を更新
-      for (int i = 0; i < actors.size(); ++i) {
-        actors[i]->oldVelocity = actors[i]->velocity;
-      }
-
-      // 戦車を移動させる
-      Actor* tank = Find(actors, "Tiger-I");
-      if (tank) {
-        if (tank->isOnActor) {
-          if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            tank->rotation += glm::radians(90.0f) * deltaTime;
-          } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            tank->rotation -= glm::radians(90.0f) * deltaTime;
-          }
-        }
-
-        // tank.rotationが0のときの戦車の向きベクトル
-        glm::vec3 tankFront(0, 0, 1);
-        // tank.rotationラジアンだけ回転させる回転行列を作る
-        const glm::mat4 matRot = glm::rotate(glm::mat4(1), tank->rotation, glm::vec3(0, 1, 0));
-        // 向きベクトルをtank.rotationだけ回転させる
-        tankFront = matRot * glm::vec4(tankFront, 1);
-
-        if (tank->isOnActor) {
-          float speed2 = glm::dot(tank->velocity, tank->velocity);
-          //if (speed2 < 10.0f * 10.0f) {
-          float tankAccel = 0.2f; // 戦車の加速度
-          if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            tank->velocity += tankFront * tankAccel;
-          } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            tank->velocity -= tankFront * tankAccel;
-          } else {
-            float v = glm::dot(tankFront, tank->velocity);
-            tank->velocity -= tankFront * glm::clamp(v, -0.1f, 0.1f);
-          }
-          glm::vec3 tankRight = glm::normalize(glm::cross(tankFront, glm::vec3(0, 1, 0)));
-          float rightSpeed = glm::dot(tankRight, tank->velocity);
-          tank->velocity -= tankRight * glm::clamp(rightSpeed, -0.2f, 0.2f);
-          //}
-        }
-
-        // マウス左ボタンの状態を取得する
-        int shotButton = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-
-        // マウス左ボタンが押された瞬間に弾アクターを発射する
-        static int shotInterval = 5;
-        bool isShot = false;
-        if (shotButton != 0) {
-          if (oldShotButton == 0 || --shotInterval <= 0) {
-            isShot = true;
-            shotInterval = 5;
-          }
-        }
-        if (isShot) {
-          // 発射位置を砲の先端に設定
-          glm::vec3 position = tank->position + tankFront * 6.0f;
-          position.y += 2.0f;
-
-          std::shared_ptr<Actor> bullet(new Actor{
-            "Bullet", primitiveBuffer.Get(9), texBullet,
-            position, glm::vec3(0.25f), tank->rotation, glm::vec3(0) });
-
-          // 1.5秒後に弾を消す
-          bullet->lifespan = 1.5f;
-
-          // 戦車の向いている方向に、30m/sの速度で移動させる
-          bullet->velocity = tankFront * 30.0f;
-
-          // 弾に衝突判定を付ける
-          bullet->collider = Box{ glm::vec3(-0.25f), glm::vec3(0.25f) };
-          bullet->mass = 6.8f;
-          bullet->friction = 1.0f;
-
-          actors.push_back(bullet);
-        }
-
-        // 「前回のショットボタンの状態」を更新する
-        oldShotButton = shotButton;
-      }
-
-      // アクターの状態を更新する
-      for (int i = 0; i < actors.size(); ++i) {
-        // アクターの寿命を減らす
-        if (actors[i]->lifespan > 0) {
-          actors[i]->lifespan -= deltaTime;
-
-          // 寿命の尽きたアクターを「削除待ち」状態にする
-          if (actors[i]->lifespan <= 0) {
-            actors[i]->isDead = true;
-            continue; // 削除待ちアクターは更新をスキップ
-          }
-        }
-
-        actors[i]->OnUpdate(deltaTime);
-
-        // 速度に重力加速度を加える
-        if (!actors[i]->isStatic) {
-          actors[i]->velocity.y += -9.8f * deltaTime;
-        }
-
-        // アクターの位置を更新する
-        actors[i]->position += actors[i]->velocity * deltaTime;
-      }
-
-      GameEngine::Get().UpdateActors();
+      engine.UpdateActors(deltaTime);
+      manager.Update(deltaTime);
+      engine.PostUpdateActors();
 
       // アクターの衝突判定を行う
 #if 0
@@ -750,14 +580,11 @@ int main()
       }
 
       // 削除待ちのアクターを削除する
-      actors.erase(
-        std::remove_if(actors.begin(), actors.end(),
-          [](std::shared_ptr<Actor>& a) { return a->isDead; }),
-        actors.end());
+      engine.RemoveDeadActors();
 
       // カメラデータを更新する
       {
-        Actor* target = Find(actors, "Tiger-I");
+        std::shared_ptr<Actor> target = Find(actors, "Tiger-I");
         if (target) {
           const glm::mat4 matRot = glm::rotate(glm::mat4(1), target->rotation, glm::vec3(0, 1, 0));
           const glm::vec3 tankFront = matRot * glm::vec4(0, 0, 1, 1);
@@ -798,9 +625,8 @@ int main()
     matR[1][1] = c;
 
     // プロジェクション行列を作成.
-    int w, h;
-    glfwGetWindowSize(window, &w, &h);
-    const float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+    const glm::vec2 windowSize = engine.GetWindowSize();
+    const float aspectRatio = windowSize.x / windowSize.y;
     const glm::mat4 matProj =
       glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 200.0f);
 
@@ -812,6 +638,7 @@ int main()
     for (int i = 0; i < actors.size(); ++i) {
       Draw(*actors[i], pipeline, matProj, matView);
     }
+    engine.RenderUI();
 
     // テクスチャの割り当てを解除.
     glActiveTexture(GL_TEXTURE0);
@@ -821,14 +648,11 @@ int main()
     glBindProgramPipeline(0);
     primitiveBuffer.UnbindVertexArray();
 
-    glfwPollEvents();
-    glfwSwapBuffers(window);
+    engine.SwapBuffers();
   }
 
+  GameManager::Finalize();
   GameEngine::Finalize();
-
-  // GLFWの終了.
-  glfwTerminate();
 
   return 0;
 }
