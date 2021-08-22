@@ -84,7 +84,7 @@ void T34TankActor::OnUpdate(float deltaTime)
 
       GameEngine& engine = GameEngine::Get();
       std::shared_ptr<Actor> bullet(new BulletActor{
-        "EnemyBullet", engine.GetPrimitive(9), engine.GetTexture("Res/Bullet.tga"),
+        "EnemyBullet", engine.GetPrimitive(9), engine.LoadTexture("Res/Bullet.tga"),
         position, glm::vec3(0.25f), rotation, glm::vec3(0) });
 
       // 1.5ïbå„Ç…íeÇè¡Ç∑
