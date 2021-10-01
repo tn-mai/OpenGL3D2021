@@ -19,7 +19,8 @@ PlayerActor::PlayerActor(
     position, scale, rotation, glm::vec3(0))
 {
   health = 10;
-  collider = Box{ glm::vec3(-1.8f, 0, -1.8f), glm::vec3(1.8f, 2.8f, 1.8f) };
+  //collider = CreateBoxCollider(glm::vec3(-1.8f, 0, -1.8f), glm::vec3(1.8f, 2.8f, 1.8f));
+  collider = CreateCylinderShape(glm::vec3(0), 1.8f, 2.8f);
   mass = 57'000;
   //cor = 0.1f;
   //friction = 1.0f;
@@ -52,18 +53,18 @@ void PlayerActor::OnUpdate(float deltaTime)
   if (isOnActor) {
     float speed2 = glm::dot(velocity, velocity);
     //if (speed2 < 10.0f * 10.0f) {
-    float tankAccel = 0.2f; // íŽÔ‚Ì‰Á‘¬“x
-    if (engine.GetKey(GLFW_KEY_W)) {
-      velocity += tankFront * tankAccel;
-    } else if (engine.GetKey(GLFW_KEY_S)) {
-      velocity -= tankFront * tankAccel;
-    } else {
-      float v = glm::dot(tankFront, velocity);
-      velocity -= tankFront * glm::clamp(v, -0.1f, 0.1f);
-    }
-    glm::vec3 tankRight = glm::normalize(glm::cross(tankFront, glm::vec3(0, 1, 0)));
-    float rightSpeed = glm::dot(tankRight, velocity);
-    velocity -= tankRight * glm::clamp(rightSpeed, -0.2f, 0.2f);
+      float tankAccel = 0.2f; // íŽÔ‚Ì‰Á‘¬“x
+      if (engine.GetKey(GLFW_KEY_W)) {
+        velocity += tankFront * tankAccel;
+      } else if (engine.GetKey(GLFW_KEY_S)) {
+        velocity -= tankFront * tankAccel;
+      } else {
+        float v = glm::dot(tankFront, velocity);
+        velocity -= tankFront * glm::clamp(v, -0.1f, 0.1f);
+      }
+      glm::vec3 tankRight = glm::normalize(glm::cross(tankFront, glm::vec3(0, 1, 0)));
+      float rightSpeed = glm::dot(tankRight, velocity);
+      velocity -= tankRight * glm::clamp(rightSpeed, -0.2f, 0.2f);
     //}
   }
 
@@ -97,7 +98,7 @@ void PlayerActor::OnUpdate(float deltaTime)
     bullet->velocity = tankFront * 30.0f;
 
     // ’e‚ÉÕ“Ë”»’è‚ð•t‚¯‚é
-    bullet->collider = Box{ glm::vec3(-0.25f), glm::vec3(0.25f) };
+    bullet->collider = CreateBoxShape(glm::vec3(-0.25f), glm::vec3(0.25f));
     bullet->mass = 6.8f;
     bullet->friction = 1.0f;
 

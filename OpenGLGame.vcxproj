@@ -89,7 +89,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;$(ProjectDir)Src\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>UninitializedLocalUsageCheck</BasicRuntimeChecks>
     </ClCompile>
     <Link>
@@ -106,7 +106,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;$(ProjectDir)Src\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -122,7 +122,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;$(ProjectDir)Src\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>UninitializedLocalUsageCheck</BasicRuntimeChecks>
     </ClCompile>
     <Link>
@@ -139,7 +139,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Src\glad\include;$(ProjectDir)Src\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -155,11 +155,19 @@
     <ClCompile Include="Src\Actor\PlayerActor.cpp" />
     <ClCompile Include="Src\Actor\RandomMovingEnemyActor.cpp" />
     <ClCompile Include="Src\Actor\T34TankActor.cpp" />
+    <ClCompile Include="Src\Camera.cpp" />
     <ClCompile Include="Src\GameEngine.cpp" />
     <ClCompile Include="Src\GameManager.cpp" />
     <ClCompile Include="Src\GameMap.cpp" />
     <ClCompile Include="Src\glad\src\glad.c" />
     <ClCompile Include="Src\GLContext.cpp" />
+    <ClCompile Include="Src\imgui\imgui.cpp" />
+    <ClCompile Include="Src\imgui\imgui_demo.cpp" />
+    <ClCompile Include="Src\imgui\imgui_draw.cpp" />
+    <ClCompile Include="Src\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="Src\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="Src\imgui\imgui_tables.cpp" />
+    <ClCompile Include="Src\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Src\Main.cpp" />
     <ClCompile Include="Src\Primitive.cpp" />
     <ClCompile Include="Src\ProgramPipeline.cpp" />
@@ -181,12 +189,22 @@
     <ClInclude Include="Src\Actor\PlayerActor.h" />
     <ClInclude Include="Src\Actor\RandomMovingEnemyActor.h" />
     <ClInclude Include="Src\Actor\T34TankActor.h" />
+    <ClInclude Include="Src\Camera.h" />
     <ClInclude Include="Src\GameEngine.h" />
     <ClInclude Include="Src\GameManager.h" />
     <ClInclude Include="Src\GameMap.h" />
     <ClInclude Include="Src\glad\include\glad\glad.h" />
     <ClInclude Include="Src\glad\include\KHR\khrplatform.h" />
     <ClInclude Include="Src\GLContext.h" />
+    <ClInclude Include="Src\imgui\imconfig.h" />
+    <ClInclude Include="Src\imgui\imgui.h" />
+    <ClInclude Include="Src\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="Src\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="Src\imgui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="Src\imgui\imgui_internal.h" />
+    <ClInclude Include="Src\imgui\imstb_rectpack.h" />
+    <ClInclude Include="Src\imgui\imstb_textedit.h" />
+    <ClInclude Include="Src\imgui\imstb_truetype.h" />
     <ClInclude Include="Src\Primitive.h" />
     <ClInclude Include="Src\ProgramPipeline.h" />
     <ClInclude Include="Src\Sampler.h" />

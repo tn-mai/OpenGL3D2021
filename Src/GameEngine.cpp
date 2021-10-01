@@ -2,6 +2,9 @@
 * @file GameEngine.cpp
 */
 #include "GameEngine.h"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
@@ -75,7 +78,9 @@ bool GameEngine::Initialize()
     glfwGetWindowSize(window, &w, &h);
     engine->windowSize = glm::vec2(w, h);
 
+    engine->pipeline.reset(new ProgramPipeline("Res/FragmentLighting.vert", "Res/FragmentLighting.frag"));
     engine->pipelineUI.reset(new ProgramPipeline("Res/Simple.vert", "Res/Simple.frag"));
+    engine->sampler = std::shared_ptr<Sampler>(new Sampler(GL_REPEAT));
     engine->samplerUI.reset(new Sampler(GL_CLAMP_TO_EDGE));
 
     for (int layer = 0; layer < layerCount; ++layer) {
@@ -85,6 +90,36 @@ bool GameEngine::Initialize()
     engine->newActors.reserve(1000);
     engine->primitiveBuffer.reset(new PrimitiveBuffer(1'000'000, 4'000'000));
     engine->textureBuffer.reserve(1000);
+
+    // カメラのアスペクト比を設定
+    Camera& camera = engine->GetCamera();
+    camera.aspectRatio = engine->windowSize.x / engine->windowSize.y;
+
+    // ImGuiの初期化
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    const char glsl_version[] = "#version 450";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    // ウィンドウ状態のセーブ機能を無効化
+    io.IniFilename = nullptr;
+
+    // GUIの大きさを設定
+    const float guiScale = 1.5f;
+    ImGui::GetStyle().ScaleAllSizes(guiScale);
+
+    // デフォルトフォントを指定
+    const float defaultFontPixels = 13.0f;
+    const float fontPixels = 32.0f;
+    ImFont* font = io.Fonts->AddFontFromFileTTF(
+      "Res/font/Makinas-4-Flat.otf",
+      fontPixels, nullptr, io.Fonts->GetGlyphRangesJapanese());
+    if (font) {
+      io.FontDefault = font;
+      io.FontGlobalScale = defaultFontPixels / fontPixels * guiScale;
+    }
 
     std::random_device rd;
     engine->rg.seed(rd());
@@ -98,6 +133,11 @@ bool GameEngine::Initialize()
 void GameEngine::Finalize()
 {
   if (engine) {
+    // GUIの終了
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
     // GLFWの終了.
     glfwTerminate();
 
@@ -157,7 +197,7 @@ void GameEngine::UpdateActors(float deltaTime)
 
       // 速度に重力加速度を加える
       if (!actors[i]->isStatic) {
-        actors[i]->velocity.y += -9.8f * deltaTime;
+        actors[i]->velocity.y += -9.8f * deltaTime * actors[i]->gravityScale;
       }
 
       // アクターの位置を更新する
@@ -184,6 +224,117 @@ void GameEngine::PostUpdateActors()
 }
 
 /**
+* アクターの衝突判定を行う
+*/
+void GameEngine::UpdatePysics(float deltaTime)
+{
+  ActorList& actors = GetActors(Layer::Default);
+
+  // 接地していない状態にする
+  for (int i = 0; i < actors.size(); ++i) {
+    actors[i]->contactCount = 0;
+    actors[i]->isOnActor = false;
+  }
+
+#if 1
+  // 非スタティックなアクターをリストアップ
+  ActorList nonStaticActors;
+  nonStaticActors.reserve(actors.size());
+  for (std::shared_ptr<Actor>& e : actors) {
+    if (!e->isStatic) {
+      nonStaticActors.push_back(e);
+    }
+  }
+#endif
+
+  std::vector<Contact> contacts;
+  contacts.reserve(actors.size());
+  for (std::shared_ptr<Actor>& a : nonStaticActors) {
+    for (std::shared_ptr<Actor>& b : actors) {
+      // 同じアクターは衝突しない
+      if (a == b) {
+        continue;
+      }
+
+      // 削除待ちアクターは衝突しない
+      if (a->isDead) {
+        break;
+      } else if (b->isDead) {
+        continue;
+      }
+
+      Contact contact[2];
+      if (DetectCollision(*a, *b, contact[0])) {
+        contact[1] = Reverse(contact[0]);
+        // 配列の中に、作成したコンタクト構造体と似ているものがあるか調べる
+        for (const auto& e : contact) {
+          auto itr = std::find_if(contacts.begin(), contacts.end(),
+            [&e](const Contact& c) { return Equal2(e, c); });
+
+          // 似ているコンタクト構造体が見つからなければ、作成した構造体を配列に追加する
+          if (itr == contacts.end()) {
+            contacts.push_back(e);
+            ++e.a->contactCount;
+          } else {
+            // 似ている構造体が見つかった場合、浸透距離が長いほうを残す
+            if (e.penLength > itr->penLength) {
+              float massB = itr->massB + e.massB;
+              *itr = e;
+              itr->massB = massB;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 重なりを解決する
+  for (int i = 0; i < contacts.size(); ++i) {
+    Contact& c = contacts[i];
+
+    // 重なりを解決する
+    if (!c.a->isStatic) {
+      SolveContact(c);
+    }
+
+    // 衝突処理関数を呼び出す
+    c.a->OnCollision(c);
+#if 0
+    Contact contactBtoA;
+    contactBtoA.a = c.b;
+    contactBtoA.b = c.a;
+    contactBtoA.velocityA = c.velocityB;
+    contactBtoA.velocityB = c.velocityA;
+    contactBtoA.accelA = c.accelB;
+    contactBtoA.accelB = c.accelA;
+    contactBtoA.penetration = -c.penetration;
+    contactBtoA.normal = -c.normal;
+    contactBtoA.position = c.position;
+    contactBtoA.penLength = c.penLength;
+    c.b->OnCollision(contactBtoA);
+#endif
+  }
+}
+
+/**
+* カメラの状態を更新する
+*/
+void GameEngine::UpdateCamera()
+{
+  mainCamera.Update();
+}
+
+/**
+* 新しいフレームを開始する
+*/
+void GameEngine::NewFrame()
+{
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+}
+
+/**
 * 削除待ちのアクターを削除する
 */
 void GameEngine::RemoveDeadActors()
@@ -193,6 +344,34 @@ void GameEngine::RemoveDeadActors()
     a.erase(std::remove_if(a.begin(), a.end(),
       [](std::shared_ptr<Actor>& a) { return a->isDead; }),
       a.end());
+  }
+}
+
+/**
+* デフォルトアクターを描画する
+*/
+void GameEngine::RenderDefault()
+{
+  glEnable(GL_DEPTH_TEST); // 深度バッファを有効にする.
+  //glEnable(GL_CULL_FACE);
+  glClearColor(0.5f, 0.5f, 0.1f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  //glEnable(GL_BLEND);
+  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  primitiveBuffer->BindVertexArray();
+  pipeline->Bind();
+  sampler->Bind(0);
+
+  const glm::mat4& matProj = mainCamera.GetProjectionMatrix();
+  const glm::mat4 matView = mainCamera.GetViewMatrix();
+
+  // アクターを描画する
+  const int layer = static_cast<int>(Layer::Default);
+  ActorList& defaultActors = actors[layer];
+  for (int i = 0; i < defaultActors.size(); ++i) {
+    Draw(*defaultActors[i], *pipeline, matProj, matView);
   }
 }
 
@@ -231,6 +410,23 @@ void GameEngine::RenderUI()
 
   pipelineUI->Unbind();
   samplerUI->Unbind(0);
+  primitiveBuffer->UnbindVertexArray();
+
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+/**
+* 描画の後始末をする
+*/
+void GameEngine::PostRender()
+{
+  // テクスチャの割り当てを解除.
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  glBindSampler(0, 0);
+  glBindProgramPipeline(0);
   primitiveBuffer->UnbindVertexArray();
 }
 

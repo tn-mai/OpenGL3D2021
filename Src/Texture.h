@@ -23,6 +23,18 @@ public:
   void Bind(GLuint unit) const;
   void Unbind(GLuint unit) const;
 
+  GLuint GetId() const { return id; }
+  GLint GetWidth() const {
+    GLint w = 0;
+    glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_WIDTH, &w);
+    return w;
+  }
+  GLint GetHeight() const {
+    GLint h = 0;
+    glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_HEIGHT, &h);
+    return h;
+  }
+
 private:
   std::string name; // 画像ファイル名.
   GLuint id = 0;    // オブジェクトID.

@@ -17,6 +17,7 @@ public:
   static GameManager& Get();
 
   enum class State {
+    initializeLevel,
     start,
     playing,
     gameclear,
@@ -25,6 +26,8 @@ public:
   void SetState(State s);
 
   void Update(float deltaTime);
+  void UpdateCamera();
+  void UpdateUI();
 
 private:
   GameManager() = default;
@@ -32,10 +35,13 @@ private:
   GameManager(const GameManager&) = delete;
   GameManager& operator=(const GameManager&) = delete;
 
+  void LoadPrimitives();
+  void LoadTextures();
   void SpawnPlayer();
   void SpawnEnemies();
+  void SpawnMap();
 
-  State state = State::start;
+  State state = State::initializeLevel;
   std::shared_ptr<Actor> playerTank;
   std::vector<std::shared_ptr<Actor>> enemies;
 };
