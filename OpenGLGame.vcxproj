@@ -169,6 +169,7 @@
     <ClCompile Include="Src\imgui\imgui_tables.cpp" />
     <ClCompile Include="Src\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Src\Main.cpp" />
+    <ClCompile Include="Src\MapEditor.cpp" />
     <ClCompile Include="Src\Primitive.cpp" />
     <ClCompile Include="Src\ProgramPipeline.cpp" />
     <ClCompile Include="Src\Sampler.cpp" />
@@ -205,13 +206,16 @@
     <ClInclude Include="Src\imgui\imstb_rectpack.h" />
     <ClInclude Include="Src\imgui\imstb_textedit.h" />
     <ClInclude Include="Src\imgui\imstb_truetype.h" />
+    <ClInclude Include="Src\MapEditor.h" />
     <ClInclude Include="Src\Primitive.h" />
     <ClInclude Include="Src\ProgramPipeline.h" />
     <ClInclude Include="Src\Sampler.h" />
     <ClInclude Include="Src\Texture.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="hp_bar.tga" />
     <Image Include="Res\Building.tga" />
+    <Image Include="Res\IconEnemy.tga" />
     <Image Include="Res\Ground.tga" />
   </ItemGroup>
   <ItemGroup>

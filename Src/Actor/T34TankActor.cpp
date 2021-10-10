@@ -4,6 +4,7 @@
 #include "T34TankActor.h"
 #include "BulletActor.h"
 #include "../GameEngine.h"
+#include "../GameManager.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include <iostream>
 
@@ -115,6 +116,7 @@ void T34TankActor::OnCollision(const struct Contact& contact)
     health -= 1;
     if (health <= 0) {
       isDead = true; // T-34íÔ‚ğÁ‹‚·‚é
+      GameManager::Get().AddScore(200);
     }
     contact.b->isDead = true; // ’e‚ğÁ‹‚·‚é
   }

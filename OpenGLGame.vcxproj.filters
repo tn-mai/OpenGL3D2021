@@ -96,6 +96,9 @@
     <ClCompile Include="Src\imgui\imgui_widgets.cpp">
       <Filter>ソース ファイル\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="Src\MapEditor.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -194,12 +197,21 @@
     <ClInclude Include="Src\imgui\imstb_truetype.h">
       <Filter>ソース ファイル\imgui</Filter>
     </ClInclude>
+    <ClInclude Include="Src\MapEditor.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Res\Ground.tga">
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="Res\Building.tga">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="hp_bar.tga">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Res\IconEnemy.tga">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>

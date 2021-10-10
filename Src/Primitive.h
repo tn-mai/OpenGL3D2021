@@ -69,12 +69,13 @@ public:
   const Primitive& Get(size_t n) const;
   const Primitive& Find(const char* name) const;
 
-  // モデルの取得.
-  const Model& GetModel(const char* name) const;
-
   // VAOバインド管理.
   void BindVertexArray() const;
   void UnbindVertexArray() const;
+
+  // TODO: テキスト未追加
+  size_t GetCount() const { return primitives.size(); }
+  const Model& GetModel(const char* name) const;
 
 private:
   std::vector<Primitive> primitives;

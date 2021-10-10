@@ -67,6 +67,30 @@ bool ProgramPipeline::SetUniform(GLint location, const glm::mat4& data) const
   return true;
 }
 
+  // TODO: テキスト未追加
+/**
+* ユニフォーム変数にデータをコピーする
+*/
+bool ProgramPipeline::SetUniform(GLint location, const glm::vec4& data) const
+{
+  glGetError(); // エラー状態をリセット.
+
+  // ロケーション番号によってコピー先を変更する
+  // - 0～99: 頂点シェーダ
+  // - 100～: フラグメントシェーダ
+  GLuint program = vp;
+  if (location >= 100) {
+    program = fp;
+  }
+
+  glProgramUniform4fv(program, location, 1, &data.x);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":ユニフォーム変数の設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
 /**
 * プログラムパイプラインをバインドする.
 */

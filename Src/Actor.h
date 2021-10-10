@@ -46,6 +46,7 @@ public:
 */
 struct Box : public Collider
 {
+  Box() : Collider(ShapeType::box) {};
   Box(const glm::vec3& min, const glm::vec3& max) :
     Collider(ShapeType::box), min(min), max(max)
   {}
@@ -118,6 +119,9 @@ public:
   glm::vec3 scale;                 // 物体の拡大縮小率
   float rotation;                  // 物体の回転角度
   glm::vec3 adjustment;            // 物体を原点に移動するための距離
+
+  // TODO: テキスト未追加
+  glm::vec4 color = glm::vec4(1);
 
   glm::vec3 velocity = glm::vec3(0);// 速度(メートル毎秒)
   glm::vec3 oldVelocity = glm::vec3(0); // 以前の速度(メートル毎秒)

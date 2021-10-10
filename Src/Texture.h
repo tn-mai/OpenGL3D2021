@@ -23,7 +23,11 @@ public:
   void Bind(GLuint unit) const;
   void Unbind(GLuint unit) const;
 
+  // テクスチャIDを取得
   GLuint GetId() const { return id; }
+
+  // TODO: テキスト未追加
+  const std::string& GetName() const { return name; }
   GLint GetWidth() const {
     GLint w = 0;
     glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_WIDTH, &w);

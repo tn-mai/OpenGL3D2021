@@ -29,6 +29,8 @@ public:
   void UpdateCamera();
   void UpdateUI();
 
+  void AddScore(int n) { score += n; }
+
 private:
   GameManager() = default;
   ~GameManager() = default;
@@ -44,6 +46,7 @@ private:
   State state = State::initializeLevel;
   std::shared_ptr<Actor> playerTank;
   std::vector<std::shared_ptr<Actor>> enemies;
+  int score = 0;
 };
 
 #endif // GAMEMANAGER_H_INCLUDED

@@ -74,6 +74,10 @@ void Draw(
     pipeline.SetUniform(locMatModel, matModel);
   }
 
+  // TODO: テキスト未追加
+  const GLint locColor = 100;
+  pipeline.SetUniform(locColor, actor.color);
+
   if (actor.tex) {
     actor.tex->Bind(0); // テクスチャを割り当てる
   } else {

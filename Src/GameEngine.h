@@ -103,10 +103,26 @@ public:
   Camera& GetCamera() { return mainCamera; }
   const Camera& GetCamera() const { return mainCamera; }
 
-  // テキストで作成していないメンバ関数
+  // TODO: テキスト未追加
   std::shared_ptr<Texture> GetTexture(const char* filename) const;
   std::shared_ptr<Actor> FindActor(const char* name);
   unsigned int GetRandom();
+  size_t GetTextureCount() const { return textureBuffer.size(); }
+
+  std::shared_ptr<Texture> GetTexture(int n) const
+  {
+    const size_t count = textureBuffer.bucket_count();
+    for (size_t i = 0; i < count; ++i) {
+      const size_t size = textureBuffer.bucket_size(i);
+      if (n < size) {
+        auto itr = textureBuffer.begin(i);
+        std::advance(itr, n);
+        return itr->second;
+      }
+      n -= static_cast<int>(size);
+    }
+    return nullptr;
+  }
 
 private:
   GameEngine() = default;
@@ -127,7 +143,7 @@ private:
   TextureBuffer textureBuffer;                      // テクスチャ配列
   Camera mainCamera;
 
-  // テキストで作成していないメンバ変数
+  // TODO: テキスト未追加
   std::mt19937 rg;
 };
 

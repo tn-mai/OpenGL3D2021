@@ -118,6 +118,7 @@ void GameManager::Update(float deltaTime)
     break;
 
   case State::start:
+    score = 0;
     SpawnPlayer();
     SpawnEnemies();
     {
@@ -214,14 +215,123 @@ void GameManager::UpdateUI()
   * 表示物
   * - スコア
   * - プレイヤーのHP
-  * - メイン武器の種類
-  * - サブ武器の種類/残数
-  * - ステージ数
+  * - 残りの敵の数
+  * - ステージ番号
   * - ミニマップ
   * - 敵のHP
+  * - メイン武器の種類
+  * - サブ武器の種類/残数
   */
-  ImGuiStyle& style = ImGui::GetStyle();
-  ImGuiStyle oldStyle = style;
+  GameEngine& engine = GameEngine::Get();
+  ImGuiStyle& style = ImGui::GetStyle(); // スタイル構造体を取得
+  const ImGuiStyle styleBackup = style;    // 元に戻すためのバックアップ
+
+  // スコア(得点)表示
+  {
+    ImGui::SetNextWindowSize(ImVec2(200, 0));
+    ImGui::SetNextWindowPos(ImVec2(540, 16));
+    ImGui::Begin("SCORE", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar);
+    ImGui::SetWindowFontScale(3.0f);
+    const ImVec2 pos = ImGui::GetCursorPos();
+    ImGui::SetCursorPos(ImVec2(pos.x + 3, pos.y + 3));
+    ImGui::TextColored(ImVec4(0.1f, 0.1f, 1.0f, 1.0f), "%d", score);
+    ImGui::SetCursorPos(pos);
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "%d", score);
+    ImGui::End();
+  }
+
+  // プレイヤーのHP表示
+  if (playerTank) {
+    ImGui::SetNextWindowSize(ImVec2(300, 0));
+    ImGui::SetNextWindowPos(ImVec2(16, 16));
+    ImGui::Begin("HP", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar);
+    style.Colors[ImGuiCol_PlotHistogram] = ImVec4(1, 0, 0, 1);
+    style.Colors[ImGuiCol_FrameBg] = ImVec4(1.0f, 0, 0, 0.5f);
+    style.Colors[ImGuiCol_Border] = ImVec4(1.0f, 1, 1, 1.0f);
+    style.FrameBorderSize = 3.0f; // 枠の太さ
+    style.FrameRounding = 8.0f; // ふちの丸さ
+    const float maxPlayerHealth = 10;
+    const float f = playerTank->health / maxPlayerHealth;
+    ImGui::ProgressBar(f, ImVec2(0, 0), "");
+    style = styleBackup; // スタイルを元に戻す
+    ImGui::End();
+  }
+
+  // 敵の数を表示
+  {
+    ImGui::SetNextWindowSize(ImVec2(600, 0));
+    ImGui::SetNextWindowPos(ImVec2(16, 720 - 16 - 40));
+    ImGui::Begin("EnemyCount", nullptr, ImGuiWindowFlags_NoTitleBar);
+    std::shared_ptr<Texture> tex = engine.LoadTexture("Res/IconEnemy.tga");
+    const ImTextureID texId = reinterpret_cast<ImTextureID>(tex->GetId());
+    for (const std::shared_ptr<Actor>& e : enemies) {
+      if (e->health > 0 && !e->isDead) {
+        ImGui::SameLine();
+        ImGui::Image(texId, ImVec2(40, 40), ImVec2(0, 1), ImVec2(1, 0));
+      }
+    }
+    ImGui::End();
+  }
+
+  // レーダーを表示
+  {
+    const float radius = 100; // レーダーの半径
+    const ImVec2 windowSize(
+      radius * 2 + std::max(style.WindowBorderSize, style.WindowPadding.x) * 2,
+      radius * 2 + std::max(style.WindowBorderSize, style.WindowPadding.y) * 2);
+    const ImVec2 windowPos(1280 - 16 - windowSize.x, 720 - 16 - windowSize.y);
+    ImGui::SetNextWindowSize(windowSize);
+    ImGui::SetNextWindowPos(windowPos);
+    ImGui::Begin("Lader", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+
+    // レーダーの円を表示
+    ImDrawList* drawlist = ImGui::GetWindowDrawList();
+    ImVec2 center = ImGui::GetCursorScreenPos();
+    center.x += radius;
+    center.y += radius;
+    drawlist->AddCircleFilled(center, radius, ImColor(0.0f, 0.0f, 0.0f, 0.75f));
+    drawlist->AddLine(ImVec2(center.x - radius, center.y), ImVec2(center.x + radius, center.y), ImColor(0.1f, 1.0f, 0.1f));
+    drawlist->AddLine(ImVec2(center.x, center.y - radius), ImVec2(center.x, center.y + radius), ImColor(0.1f, 1.0f, 0.1f));
+
+    // プレイヤーを表示
+    const float c = playerTank ? std::cos(playerTank->rotation) : 1.0f;
+    const float s = playerTank ? std::sin(playerTank->rotation) : 0.0f;
+    ImVec2 p[3] = { {0, 6}, {-4, -4}, {4, -4} };
+    for (ImVec2& e : p) {
+      e = ImVec2(center.x + e.x * c + e.y * s, center.y - e.x * s + e.y * c);
+    }
+    drawlist->AddTriangle(p[0], p[1], p[2], ImColor(1.0f, 1.0f, 0.1f), 2.0f);
+
+    // 敵を表示
+    if (playerTank) {
+      for (const std::shared_ptr<Actor>& e : enemies) {
+        if (!e->isDead) {
+          const glm::vec3 v = (e->position - playerTank->position) * 2.0f;
+          if (v.x * v.x + v.z * v.z < radius * radius) {
+            const ImVec2 p(center.x + v.x, center.y + v.z);
+            drawlist->AddCircleFilled(p, 4.0f, ImColor(1.0f, 0.1f, 0.1f));
+          }
+        }
+      }
+    }
+
+    // レーダー枠を表示
+    drawlist->AddCircle(center, radius, ImColor(1.0f, 1.0f, 1.0f, 1.0f), 0, 4.0f);
+
+    ImGui::End();
+  }
+
+#if 0
+  ImGui::Begin("SCORE", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+  ImGui::SetWindowFontScale(4);
+  char scoreText[32];
+  snprintf(scoreText, std::size(scoreText), "%d", score);
+  const float width = ImGui::GetWindowContentRegionMax().x;
+  const float textWidth = ImGui::CalcTextSize(scoreText).x;
+  ImGui::SetCursorPosX(width - textWidth);
+  ImGui::Text(scoreText);
+  ImGui::End();
+
   style.WindowPadding = ImVec2(8, 8);
   style.WindowMinSize = ImVec2();
   style.Alpha = 1.0f;
@@ -258,52 +368,7 @@ void GameManager::UpdateUI()
   ImGui::Text(text);
   ImGui::End();
   style = oldStyle;
-
-  static bool show_demo_window = true;
-  static bool show_another_window = false;
-  static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-  
-  static float f = 0.0f;
-  static int counter = 0;
-  
-  if (show_demo_window)
-    ImGui::ShowDemoWindow(&show_demo_window);
-
-  ImGui::Begin("Hello, world!");
-
-//  auto tex = GameEngine::Get().LoadTexture("Res/Green.tga");
-//  ImGui::Image(reinterpret_cast<ImTextureID>(tex->GetId()), ImVec2(tex->GetWidth(), tex->GetHeight()),
-//    ImVec2(0, 0) , ImVec2(1, 1), ImVec4(1,1,1,1));
-//  ImGui::SetCursorPos(ImVec2(10, 10));
-//  ImGui::BeginChildFrame(1, ImVec2(400, 400), ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
-
-  //ImGui::SetWindowFontScale(2);
-  ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-  //ImGui::SetWindowFontScale(1);
-  ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-  ImGui::Checkbox("Another Window", &show_another_window);
-  
-  ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-  ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-  
-  if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-      counter++;
-
-  ImGui::SameLine();
-  ImGui::Text("counter = %d", counter);
-  
-  ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-//  ImGui::EndChildFrame();
-  ImGui::End();
-
-  if (show_another_window)
-  {
-    ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-    ImGui::Text("Hello from another window!");
-    if (ImGui::Button("Close Me"))
-        show_another_window = false;
-    ImGui::End();
-  }
+#endif
 }
 
 /**
@@ -453,7 +518,7 @@ void GameManager::SpawnMap()
     { "", Primitive(), 0 },    // なし
     { "Tree", primitiveBuffer.Get(4), engine.LoadTexture("Res/Tree.tga"), 1, {}, col1 }, // 木
     { "Warehouse", primitiveBuffer.Get(5), engine.LoadTexture("Res/Building.tga"), 1, {},
-      CreateBoxShape(glm::vec3(-2.5f, 0, -3.5f), glm::vec3(2.5f, 3, 3.5f)) }, // 建物
+      CreateBoxShape(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)) }, // 建物
     { "BrickHouse", primitiveBuffer.Get(8), engine.LoadTexture("Res/house/House38UVTexture.tga"),
       3, glm::vec3(-2.6f, 2.0f, 0.8f), CreateBoxShape(glm::vec3(-3, 0, -2), glm::vec3(3, 3, 2)) }, // 建物
     { "House2", primitiveBuffer.Get(10), engine.LoadTexture("Res/house/broken-house.tga"),

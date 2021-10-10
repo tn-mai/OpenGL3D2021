@@ -101,24 +101,22 @@ bool GameEngine::Initialize()
     const char glsl_version[] = "#version 450";
     ImGui_ImplOpenGL3_Init(glsl_version);
 
+    // ImGuiの入出力を管理するオブジェクトを取得
     ImGuiIO& io = ImGui::GetIO();
 
     // ウィンドウ状態のセーブ機能を無効化
     io.IniFilename = nullptr;
 
-    // GUIの大きさを設定
-    const float guiScale = 1.5f;
-    ImGui::GetStyle().ScaleAllSizes(guiScale);
-
     // デフォルトフォントを指定
-    const float defaultFontPixels = 13.0f;
-    const float fontPixels = 32.0f;
+    const float defaultFontPixels = 13.0f; // ImGui標準のフォントサイズ(ピクセル)
+    const float fontPixels = 32.0f; // 作成するフォントのサイズ(ピクセル)
     ImFont* font = io.Fonts->AddFontFromFileTTF(
       "Res/font/Makinas-4-Flat.otf",
       fontPixels, nullptr, io.Fonts->GetGlyphRangesJapanese());
     if (font) {
       io.FontDefault = font;
-      io.FontGlobalScale = defaultFontPixels / fontPixels * guiScale;
+      io.FontGlobalScale = defaultFontPixels / fontPixels;
+      io.Fonts->Build();
     }
 
     std::random_device rd;

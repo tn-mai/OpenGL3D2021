@@ -11,6 +11,7 @@
 #include "Actor.h"
 #include "GameEngine.h"
 #include "GameManager.h"
+#include "MapEditor.h"
 #include "Actor/PlayerActor.h"
 #include "Actor/T34TankActor.h"
 #include "Actor/RandomMovingEnemyActor.h"
@@ -285,6 +286,10 @@ int main()
   GameManager::Initialize();
   GameManager& manager = GameManager::Get();
 
+  // マップエディタを作成
+  const bool isEditMode = true; // エディタを起動しない場合はfalseにする
+  std::shared_ptr<MapEditor> mapEditor(new MapEditor);
+
   // メインループ.
   double loopTime = engine.GetTime();     // 1/60秒間隔でループ処理するための時刻
   double diffLoopTime = 0;             // 時刻の差分
@@ -309,15 +314,26 @@ int main()
     //
     engine.NewFrame();
     for (; diffLoopTime >= deltaTime; diffLoopTime -= deltaTime) {
-      engine.UpdateActors(deltaTime);
-      manager.Update(deltaTime);
-      engine.PostUpdateActors();
-      engine.UpdatePhysics(deltaTime);
-      manager.UpdateCamera();
+      if (isEditMode) {
+        mapEditor->Update(deltaTime);
+        engine.PostUpdateActors();
+        mapEditor->UpdateCamera(deltaTime);
+      } else {
+        engine.UpdateActors(deltaTime);
+        manager.Update(deltaTime);
+        engine.PostUpdateActors();
+        engine.UpdatePhysics(deltaTime);
+        manager.UpdateCamera();
+      }
       engine.UpdateCamera();
       engine.RemoveDeadActors();
     }
-    manager.UpdateUI();
+
+    if (isEditMode) {
+      mapEditor->UpdateUI();
+    } else {
+      manager.UpdateUI();
+    }
 
     //
     // ゲーム状態を描画する
@@ -328,6 +344,7 @@ int main()
     engine.SwapBuffers();
   }
 
+  mapEditor.reset();
   GameManager::Finalize();
   GameEngine::Finalize();
 

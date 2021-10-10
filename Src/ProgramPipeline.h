@@ -21,6 +21,9 @@ public:
   // ユニフォーム変数の設定
   bool SetUniform(GLint, const glm::mat4&) const;
 
+  // TODO: テキスト未追加
+  bool SetUniform(GLint, const glm::vec4&) const;
+
   // バインド管理
   void Bind() const;
   void Unbind() const;
