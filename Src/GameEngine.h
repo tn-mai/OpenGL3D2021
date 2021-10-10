@@ -33,7 +33,7 @@ public:
   void AddActor(std::shared_ptr<Actor> actor) { newActors.push_back(actor); }
   void UpdateActors(float deltaTime);
   void PostUpdateActors();
-  void UpdatePysics(float deltaTime);
+  void UpdatePhysics(float deltaTime);
   void UpdateCamera();
   void NewFrame();
   void RemoveDeadActors();

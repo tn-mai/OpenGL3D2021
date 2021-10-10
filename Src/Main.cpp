@@ -312,7 +312,7 @@ int main()
       engine.UpdateActors(deltaTime);
       manager.Update(deltaTime);
       engine.PostUpdateActors();
-      engine.UpdatePysics(deltaTime);
+      engine.UpdatePhysics(deltaTime);
       manager.UpdateCamera();
       engine.UpdateCamera();
       engine.RemoveDeadActors();

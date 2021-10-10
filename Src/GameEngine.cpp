@@ -226,7 +226,7 @@ void GameEngine::PostUpdateActors()
 /**
 * アクターの衝突判定を行う
 */
-void GameEngine::UpdatePysics(float deltaTime)
+void GameEngine::UpdatePhysics(float deltaTime)
 {
   ActorList& actors = GetActors(Layer::Default);
 
