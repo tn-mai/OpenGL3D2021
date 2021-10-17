@@ -2,6 +2,7 @@
 * @file Texture.cpp
 */
 #include "Texture.h"
+#include <vector>
 #include <iostream>
 
 GLuint textureBindingArray[16];
@@ -16,6 +17,60 @@ Texture::Texture(const char* filename)
   id = GLContext::CreateImage2D(filename);
   if (id) {
     name = filename;
+    std::cout << "[情報]" << __func__ << "テクスチャ" << name << "を作成.\n";
+  }
+}
+
+/**
+* 配列テクスチャを作成するコンストラクタ
+*/
+Texture::Texture(const char* name, const char** fileList, size_t count)
+{
+  // 画像ファイルを仮テクスチャとして読み込む
+  std::vector<GLuint> texList(count, 0);
+  for (int i = 0; i < count; ++i) {
+    texList[i] = GLContext::CreateImage2D(fileList[i]);
+  }
+
+  // テクスチャのピクセル形式、幅、高さを取得
+  GLint internalFormat, width, height;
+  glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
+  glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_WIDTH, &width);
+  glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_HEIGHT, &height);
+
+  // 配列テクスチャを作成
+  glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &id);
+  glTextureStorage3D(id, 1, internalFormat, width, height, static_cast<GLsizei>(count));
+  this->name = name;
+
+  // 配列テクスチャに画像データを設定
+  for (int i = 0; i < count; ++i) {
+    glCopyImageSubData(
+      texList[i], GL_TEXTURE_2D, 0, 0, 0, 0,
+      id, GL_TEXTURE_2D_ARRAY, 0, 0, 0, i,
+      width, height, 1);
+  }
+
+  // 画像読み込みに使った仮テクスチャを削除
+  glDeleteTextures(static_cast<GLsizei>(count), texList.data());
+
+  const GLenum result = glGetError();
+  if (result != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << "配列テクスチャ" << name << "の作成に失敗\n";
+  } else {
+    std::cout << "[情報]" << __func__ << "配列テクスチャ" << name << "を作成\n";
+  }
+}
+
+/**
+* コンストラクタ.
+*/
+Texture::Texture(const char* name, GLsizei width, GLsizei height,
+  const void* data, GLenum pixelFormat, GLenum type)
+{
+  id = GLContext::CreateImage2D(width, height, data, pixelFormat, type);
+  if (id) {
+    this->name = name;
     std::cout << "[情報]" << __func__ << "テクスチャ" << name << "を作成.\n";
   }
 }
@@ -81,4 +136,18 @@ void Texture::Unbind(GLuint unit) const
   }
 }
 
+/**
+* テクスチャにデータを書き込む
+*/
+void Texture::Write(GLint x, GLint y, GLsizei width, GLsizei height,
+  const void* data, GLenum pixelFormat, GLenum type)
+{
+  if (id) {
+    GLint alignment;
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTextureSubImage2D(id, 0, 0, 0, width, height, pixelFormat, type, data);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+  }
+}
 

@@ -7,6 +7,7 @@
 #include <imgui_impl_opengl3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <fstream>
 
 namespace {
 
@@ -78,10 +79,22 @@ bool GameEngine::Initialize()
     glfwGetWindowSize(window, &w, &h);
     engine->windowSize = glm::vec2(w, h);
 
-    engine->pipeline.reset(new ProgramPipeline("Res/FragmentLighting.vert", "Res/FragmentLighting.frag"));
+    engine->pipeline.reset(new ProgramPipeline(
+      "Res/FragmentLighting.vert", "Res/FragmentLighting.frag"));
     engine->pipelineUI.reset(new ProgramPipeline("Res/Simple.vert", "Res/Simple.frag"));
     engine->sampler = std::shared_ptr<Sampler>(new Sampler(GL_REPEAT));
     engine->samplerUI.reset(new Sampler(GL_CLAMP_TO_EDGE));
+
+    engine->pipelineShadow.reset(new ProgramPipeline("Res/Simple.vert", "Res/Simple.frag"));
+    engine->samplerShadow.reset(new Sampler(GL_CLAMP_TO_EDGE));
+
+    // 地面マップ用データを作成
+    engine->pipelineGround.reset(new ProgramPipeline(
+      "Res/FragmentLighting.vert", "Res/GroundShader.frag"));
+    std::vector<uint32_t> mapData(engine->mapSize.x * engine->mapSize.y, 0);
+    engine->texMap.reset(new Texture("GroundMap",
+      engine->mapSize.x, engine->mapSize.y,
+      mapData.data(), GL_RGBA, GL_UNSIGNED_BYTE));
 
     for (int layer = 0; layer < layerCount; ++layer) {
       engine->actors[layer].reserve(1000);
@@ -94,6 +107,16 @@ bool GameEngine::Initialize()
     // カメラのアスペクト比を設定
     Camera& camera = engine->GetCamera();
     camera.aspectRatio = engine->windowSize.x / engine->windowSize.y;
+
+    // FBOを初期化する
+    engine->fboShadow.reset(new FramebufferObject(1024, 1024, FboType::depth));
+    if (!engine->fboShadow || !engine->fboShadow->GetId()) {
+      return false;
+    }
+    engine->fbo.reset(new FramebufferObject(w, h));
+    if (!engine->fbo|| !engine->fbo->GetId()) {
+      return false;
+    }
 
     // ImGuiの初期化
     ImGui::CreateContext();
@@ -350,27 +373,102 @@ void GameEngine::RemoveDeadActors()
 */
 void GameEngine::RenderDefault()
 {
+  // 平行光源の向き
+  const glm::vec3 lightDirection = glm::normalize(glm::vec4(3,-2,-2, 0));
+
+  // 影用ビュープロジェクション行列を作成
+  const glm::mat4& matShadowProj = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 200.0f);
+  const glm::vec3 viewTarget = mainCamera.target;
+  const glm::vec3 viewPosition = viewTarget + glm::vec3(0, 30, 30);
+  const glm::mat4 matShadowView = glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
+
+  // 影を描画
+  {
+    // 描画先を影描画用FBOに変更
+    fboShadow->Bind();
+
+    glEnable(GL_DEPTH_TEST); // 深度テストを有効にする
+    glEnable(GL_CULL_FACE);  // 裏面カリングを有効にする
+    glDisable(GL_BLEND);     // アルファブレンドを無効にする
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    primitiveBuffer->BindVertexArray();
+    pipeline->Bind();
+    sampler->Bind(0);
+
+    // アクターを描画
+    const int layer = static_cast<int>(Layer::Default);
+    for (auto& e : actors[layer]) {
+      Draw(*e, *pipeline, matShadowProj, matShadowView);
+    }
+
+    // デフォルトのフレームバッファに戻す
+    fboShadow->Unbind();
+  }
+
+  // デフォルトフレームバッファのビューポートを設定
+  glViewport(0, 0, static_cast<GLsizei>(windowSize.x), static_cast<GLsizei>(windowSize.y));
+
+  // 描画先をフレームバッファオブジェクトに変更.
+  fbo->Bind();
+
   glEnable(GL_DEPTH_TEST); // 深度バッファを有効にする.
-  //glEnable(GL_CULL_FACE);
+  glDisable(GL_CULL_FACE);
   glClearColor(0.5f, 0.5f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  //glEnable(GL_BLEND);
-  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   primitiveBuffer->BindVertexArray();
   pipeline->Bind();
   sampler->Bind(0);
+  samplerShadow->Bind(1);
 
   const glm::mat4& matProj = mainCamera.GetProjectionMatrix();
   const glm::mat4 matView = mainCamera.GetViewMatrix();
+
+  // NDC座標系からテクスチャ座標系への座標変換行列
+  const glm::mat4 matShadowTex = glm::mat4(
+    0.5f, 0.0f, 0.0f, 0.0f,
+    0.0f, 0.5f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.5f, 0.0f,
+    0.5f, 0.5f, 0.5f, 1.0f
+  );
+  const GLint locMatShadow = 100;
+  const glm::mat4 matShadow = matShadowTex * matShadowProj * matShadowView;
+  pipeline->SetUniform(locMatShadow, matShadow);
+  pipelineGround->SetUniform(locMatShadow, matShadow);
+  fboShadow->BindDepthTexture(1);
 
   // アクターを描画する
   const int layer = static_cast<int>(Layer::Default);
   ActorList& defaultActors = actors[layer];
   for (int i = 0; i < defaultActors.size(); ++i) {
-    Draw(*defaultActors[i], *pipeline, matProj, matView);
+    switch (defaultActors[i]->shader) {
+    default:
+    case Shader::FragmentLighting:
+      Draw(*defaultActors[i], *pipeline, matProj, matView);
+      break;
+
+    case Shader::Ground:
+      pipelineGround->Bind();
+      texMap->Bind(2);
+      Draw(*defaultActors[i], *pipelineGround, matProj, matView);
+      texMap->Unbind(2);
+      pipeline->Bind();
+      break;
+    }
   }
+  fboShadow->UnbindDepthTexture(1);
+
+  // 描画先をデフォルトのフレームバッファに戻す.
+  fbo->Unbind();
+
+  // デフォルトフレームバッファのビューポートを設定
+  glViewport(0, 0, static_cast<GLsizei>(windowSize.x), static_cast<GLsizei>(windowSize.y));
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 /**
@@ -396,6 +494,26 @@ void GameEngine::RenderUI()
   // ビュー行列を作成.
   const glm::mat4 matView =
     glm::lookAt(glm::vec3(0, 0, 100), glm::vec3(0), glm::vec3(0, 1, 0));
+
+  // FBOの内容を描画.
+  {
+    glDisable(GL_BLEND);
+    fbo->BindColorTexture(0);
+    const Primitive& prim = GetPrimitive("Res/Plane.obj");
+
+    const glm::mat4 matModelS = glm::scale(glm::mat4(1), glm::vec3(windowSize.x, windowSize.y, 1));
+    const glm::mat4 matModelT = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
+    const glm::mat4 matModel = matModelT * matModelS;
+
+    const GLint locMatTRS = 0;
+    const GLint locColor = 200;
+    pipelineUI->SetUniform(locMatTRS, matProj * matView * matModel);
+    pipelineUI->SetUniform(locColor, glm::vec4(1));
+    prim.Draw();
+
+    fbo->UnbindColorTexture(0);
+    glEnable(GL_BLEND);
+  }
 
   // Z座標の降順で2Dアクターを描画する
   ActorList a = actors[static_cast<int>(Layer::UI)];
@@ -460,6 +578,38 @@ std::shared_ptr<Texture> GameEngine::LoadTexture(const char* filename)
     return tex;
   }
   return itr->second;
+}
+
+/**
+* 配列テクスチャを読み込む
+*/
+std::shared_ptr<Texture> GameEngine::LoadTexture(const char* name, const char** fileList, size_t count)
+{
+  TextureBuffer::iterator itr = textureBuffer.find(name);
+  if (itr == textureBuffer.end()) {
+    std::shared_ptr<Texture> tex(new Texture(name, fileList, count));
+    textureBuffer.insert(std::make_pair(std::string(name), tex));
+    return tex;
+  }
+  return itr->second;
+}
+
+/**
+* 地面のマップデータを更新する
+*/
+void GameEngine::UpdateGroundMap(int x, int y, int width, int height, const void* data)
+{
+  if (texMap) {
+    texMap->Write(x, y, width, height, data, GL_RGBA, GL_UNSIGNED_BYTE);
+  }
+}
+
+/**
+* マップデータを読み込む
+*/
+bool GameEngine::LoadGameMap(const char* filename)
+{
+  return false;
 }
 
 /**

@@ -94,6 +94,15 @@ enum class Layer
 static const size_t layerCount = 2; // レイヤー数
 
 /**
+* シェーダの種類
+*/
+enum class Shader
+{
+  FragmentLighting,
+  Ground,
+};
+
+/**
 * 物体を制御するパラメータ.
 */
 class Actor
@@ -120,11 +129,7 @@ public:
   float rotation;                  // 物体の回転角度
   glm::vec3 adjustment;            // 物体を原点に移動するための距離
 
-  // TODO: テキスト未追加
-  glm::vec4 color = glm::vec4(1);
-
   glm::vec3 velocity = glm::vec3(0);// 速度(メートル毎秒)
-  glm::vec3 oldVelocity = glm::vec3(0); // 以前の速度(メートル毎秒)
   float lifespan = 0;              // 寿命(秒、0以下なら寿命なし)
   float health = 10;               // 耐久値
   bool isDead = false;             // false=死亡(削除待ち) true=生存中
@@ -135,11 +140,15 @@ public:
   float cor = 0.4f;                // 反発係数
   float friction = 0.7f;           // 摩擦係数
   bool isStatic = false;           // false=動かせる物体 true=動かせない物体 
-  bool isBlock = true;             // false=通過できる true=通過できない
-  float gravityScale = 1.0f;       // 重力係数
 
   Layer layer = Layer::Default;    // 表示レイヤー
+  Shader shader = Shader::FragmentLighting;
 
+  // TODO: テキスト未追加
+  glm::vec3 oldVelocity = glm::vec3(0); // 以前の速度(メートル毎秒)
+  bool isBlock = true;             // false=通過できる true=通過できない
+  float gravityScale = 1.0f;       // 重力係数
+  glm::vec4 color = glm::vec4(1);
   bool isOnActor = false;
 };
 

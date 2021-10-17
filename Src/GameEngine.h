@@ -9,6 +9,7 @@
 #include "Sampler.h"
 #include "Actor.h"
 #include "Camera.h"
+#include "FramebufferObject.h"
 #include <GLFW/glfw3.h>
 #include <unordered_map>
 #include <random>
@@ -47,6 +48,9 @@ public:
   const Primitive& GetPrimitive(int n) const { return primitiveBuffer->Get(n); }
 
   std::shared_ptr<Texture> LoadTexture(const char* filename);
+  std::shared_ptr<Texture> LoadTexture(const char* name, const char** fileList, size_t count);
+
+  void UpdateGroundMap(int x, int y, int width, int height, const void* data);
 
   /**
   * この関数がtrueを返したらウィンドウを閉じる(=アプリを終了させる)
@@ -108,7 +112,7 @@ public:
   std::shared_ptr<Actor> FindActor(const char* name);
   unsigned int GetRandom();
   size_t GetTextureCount() const { return textureBuffer.size(); }
-
+  bool LoadGameMap(const char* filename);
   std::shared_ptr<Texture> GetTexture(int n) const
   {
     const size_t count = textureBuffer.bucket_count();
@@ -137,6 +141,14 @@ private:
   std::shared_ptr<ProgramPipeline> pipelineUI;
   std::shared_ptr<Sampler> sampler;
   std::shared_ptr<Sampler> samplerUI;
+
+  std::shared_ptr<FramebufferObject> fboShadow; // 影描画用FBO
+
+  // 地面描画用
+  glm::ivec2 mapSize = glm::ivec2(21, 21);
+  std::shared_ptr<ProgramPipeline> pipelineGround;
+  std::shared_ptr<Texture> texMap;
+
   ActorList actors[layerCount]; // アクター配列
   ActorList newActors; // 追加するアクターの配列
   std::shared_ptr<PrimitiveBuffer> primitiveBuffer; // プリミティブ配列
@@ -145,6 +157,9 @@ private:
 
   // TODO: テキスト未追加
   std::mt19937 rg;
+  std::shared_ptr<FramebufferObject> fbo;
+  std::shared_ptr<ProgramPipeline> pipelineShadow;
+  std::shared_ptr<Sampler> samplerShadow;
 };
 
 #endif // GAMEENGINE_H_INCLUDED

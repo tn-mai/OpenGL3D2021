@@ -156,6 +156,7 @@
     <ClCompile Include="Src\Actor\RandomMovingEnemyActor.cpp" />
     <ClCompile Include="Src\Actor\T34TankActor.cpp" />
     <ClCompile Include="Src\Camera.cpp" />
+    <ClCompile Include="Src\FramebufferObject.cpp" />
     <ClCompile Include="Src\GameEngine.cpp" />
     <ClCompile Include="Src\GameManager.cpp" />
     <ClCompile Include="Src\GameMap.cpp" />
@@ -179,6 +180,7 @@
     <None Include="packages.config" />
     <None Include="Res\FragmentLighting.frag" />
     <None Include="Res\FragmentLighting.vert" />
+    <None Include="Res\GroundShader.frag" />
     <None Include="Res\Simple.frag" />
     <None Include="Res\Simple.vert" />
     <None Include="Res\VertexLighting.vert" />
@@ -191,6 +193,7 @@
     <ClInclude Include="Src\Actor\RandomMovingEnemyActor.h" />
     <ClInclude Include="Src\Actor\T34TankActor.h" />
     <ClInclude Include="Src\Camera.h" />
+    <ClInclude Include="Src\FramebufferObject.h" />
     <ClInclude Include="Src\GameEngine.h" />
     <ClInclude Include="Src\GameManager.h" />
     <ClInclude Include="Src\GameMap.h" />

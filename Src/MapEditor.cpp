@@ -3,7 +3,8 @@
 */
 #define _CRT_SECURE_NO_WARNINGS
 #include "MapEditor.h"
-#include "Actor.h"
+#include "Actor/PlayerActor.h"
+#include "Actor/T34TankActor.h"
 #include "GameEngine.h"
 #include <imgui.h>
 #include <glm/glm.hpp>
@@ -79,18 +80,42 @@ MapEditor::MapEditor()
 {
   GameEngine& engine = GameEngine::Get();
 
+  // アクター配置マップのサイズをマップサイズに合わせる
   map.resize(mapSize.x * mapSize.y);
+
+  engine.LoadPrimitive("Res/Plane.obj");
+
+  const char* texList[] = {
+    "Res/Green.tga",
+    "Res/Road.tga",
+    "Res/RoadTiles.tga",
+  };
 
   // 地面用アクターを作成
   engine.LoadPrimitive("Res/Ground.obj");
   std::shared_ptr<Actor> groundActor(new Actor("Ground",
     engine.GetPrimitive("Res/Ground.obj"),
-    engine.LoadTexture("Res/Road.tga"),
+    engine.LoadTexture("GroundTiles", texList, std::size(texList)),
+    //engine.LoadTexture("Res/Image1.tga"),
     glm::vec3(0), glm::vec3(mapSize.x, 1, mapSize.y), 0, glm::vec3(0)));
+  groundActor->shader = Shader::Ground;
   engine.AddActor(groundActor);
 
+  // マップデータテクスチャ操作用の変数を初期化
+  groundMap.resize(mapSize.x * mapSize.y, 0);
+  groundTiles.reserve(std::size(texList));
+  for (const char* filename : texList) {
+    groundTiles.push_back(engine.LoadTexture(filename));
+  }
+
   // 配置用アクターを作成
+  enum class ActorType {
+    player,
+    t34tank,
+    other,
+  };
   struct ObjectData {
+    ActorType type;
     const char* name;
     const char* primitiveFilename;
     const char* textureFilename;
@@ -100,31 +125,48 @@ MapEditor::MapEditor()
     glm::vec3 adjustment = glm::vec3(0);
   };
   const ObjectData objectList[] = {
-    { "Cube", "Res/Cube.obj", "Res/Triangle.tga",
+    { ActorType::other, "Cube", "Res/Cube.obj", "Res/Triangle.tga",
       Box(glm::vec3(0, 0, 0), glm::vec3(2, 2, 2)) },
-    { "Tree", "Res/Tree.obj", "Res/Tree.tga",
+    { ActorType::other, "Tree", "Res/Tree.obj", "Res/Tree.tga",
       Box(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
-    { "Warehouse", "Res/Warehouse.obj", "Res/Building.tga",
+    { ActorType::other, "Warehouse", "Res/Warehouse.obj", "Res/Building.tga",
       Box(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)) },
-    { "BrickHouse", "Res/house/HouseRender.obj", "Res/house/House38UVTexture.tga",
+    { ActorType::other, "BrickHouse", "Res/house/HouseRender.obj", "Res/house/House38UVTexture.tga",
       Box(glm::vec3(-3, 0, -2), glm::vec3(3, 3, 2)),
       glm::vec3(2.0f), 0, glm::vec3(-2.6f, 2.0f, 0.8f) },
-    { "BrokenHouse", "Res/house/broken-house.obj", "Res/house/broken-house.tga",
+    { ActorType::other, "BrokenHouse", "Res/house/broken-house.obj", "Res/house/broken-house.tga",
       Box(glm::vec3(-2, 0, -2), glm::vec3(2, 2, 2)),
       glm::vec3(0.75f) },
-    { "Tiger-I", "Res/tank/Tiger_I.obj", "Res/tank/PzVl_Tiger_I.tga",
+    { ActorType::player, "Tiger-I", "Res/tank/Tiger_I.obj", "Res/tank/PzVl_Tiger_I.tga",
       Box(glm::vec3(-1, 0, -1), glm::vec3(1, 2, 1)) },
-    { "T-34", "Res/tank/T34.obj", "Res/tank/T-34.tga",
+    { ActorType::t34tank, "T-34", "Res/tank/T34.obj", "Res/tank/T-34.tga",
       Box(glm::vec3(-1, 0, -1), glm::vec3(1, 2, 1)) },
   };
   for (const auto& e : objectList) {
     engine.LoadPrimitive(e.primitiveFilename);
-    std::shared_ptr<Actor> actor(new Actor(
-      e.name,
-      engine.GetPrimitive(e.primitiveFilename),
-      engine.LoadTexture(e.textureFilename),
-      glm::vec3(0), e.scale, e.rotation, e.adjustment));
-    actor->collider = std::shared_ptr<Box>(new Box(e.collider.min, e.collider.max));
+    std::shared_ptr<Actor> actor;
+    switch (e.type) {
+    case ActorType::player:
+      actor.reset(new PlayerActor(glm::vec3(0), e.scale, e.rotation));
+      break;
+
+    case ActorType::t34tank:
+      actor.reset(new T34TankActor(
+        e.name,
+        engine.GetPrimitive(e.primitiveFilename),
+        engine.LoadTexture(e.textureFilename),
+        glm::vec3(0), e.scale, e.rotation, e.adjustment, nullptr));
+      break;
+
+    case ActorType::other:
+      actor.reset(new Actor(
+        e.name,
+        engine.GetPrimitive(e.primitiveFilename),
+        engine.LoadTexture(e.textureFilename),
+        glm::vec3(0), e.scale, e.rotation, e.adjustment));
+      actor->collider = std::shared_ptr<Box>(new Box(e.collider.min, e.collider.max));
+      break;
+    }
     actors.push_back(actor);
   }
 
@@ -195,6 +237,11 @@ void MapEditor::Update(float deltaTime)
       }
       break;
 
+    case Mode::groundPaint:
+      groundMap[x + y * mapSize.x] = currentTileNo;
+      engine.UpdateGroundMap(0, 0, mapSize.x, mapSize.y, groundMap.data());
+      break;
+
     default: break;
     }
   }
@@ -241,9 +288,11 @@ void MapEditor::UpdateUI()
   using namespace ImGui;
   GameEngine& engine = GameEngine::Get();
 
+  //ShowDemoWindow();
+
   Begin(u8"ツール");
-  const char* toolName[] = { u8"選択", u8"配置", u8"削除" };
-  const Mode modeList[] = { Mode::select, Mode::set, Mode::remove };
+  const char* toolName[] = { u8"選択", u8"配置", u8"削除", u8"地面ペイント" };
+  const Mode modeList[] = { Mode::select, Mode::set, Mode::remove, Mode::groundPaint };
   for (int i = 0; i < std::size(toolName); ++i) {
     SameLine();
     if (Button(toolName[i])) {
@@ -279,6 +328,71 @@ void MapEditor::UpdateUI()
     EndListBox();
   }
   End();
+
+  if (mode == Mode::groundPaint) {
+    SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
+    Begin(u8"地面タイル選択");
+    const ImVec2 tileListBoxSize(-1,
+      68.0f * groundTiles.size() + GetStyle().FramePadding.y * 2);
+    if (BeginListBox("GroundTileList", tileListBoxSize)) {
+      const float itemWidth = 64.0f + GetFontSize() * 32.0f + GetStyle().FramePadding.x * 2.0f;
+      for (int i = 0; i < groundTiles.size(); ++i) {
+        std::string id = std::string("##") + groundTiles[i]->GetName();
+        const bool isSelected = currentTileNo == i;
+        const ImVec2 cursorPos = GetCursorPos();
+        if (Selectable(id.c_str(), isSelected, 0, ImVec2(itemWidth, 68))) {
+          currentTileNo = i;
+          cursor->color = glm::vec4(0.2f, 0.5f, 1.0f, 0.5f);
+        }
+        if (isSelected) {
+          SetItemDefaultFocus();
+        }
+        SetCursorPos(cursorPos);
+        const ImTextureID texId = reinterpret_cast<ImTextureID>(groundTiles[i]->GetId());
+        Image(texId, ImVec2(64, 64));
+        SameLine();
+        Text(groundTiles[i]->GetName().c_str());
+      }
+      EndListBox();
+    }
+    End();
+  }
+
+#if 0
+  glm::ivec2 newMapSize = mapSize;
+  SetNextWindowSize(ImVec2(200, 0), ImGuiCond_Once);
+  Begin(u8"マップサイズ");
+  Text("X:");
+  SameLine();
+  SetNextItemWidth(-FLT_MIN);
+  if (InputInt("##MapSizeX", &newMapSize.x, 2)) {
+    newMapSize.x |= 1;
+    newMapSize.x = glm::clamp(newMapSize.x, 11, 101);
+  }
+  Text("Y:");
+  SameLine();
+  SetNextItemWidth(-FLT_MIN);
+  if (InputInt("##MapSizeY", &newMapSize.y, 2)) {
+    newMapSize.y |= 1;
+    newMapSize.y = glm::clamp(newMapSize.y, 11, 101);
+  }
+  End();
+  if (mapSize.x != newMapSize.x || mapSize.y != newMapSize.y) {
+    std::shared_ptr<Actor> ground = engine.FindActor("Ground");
+    if (ground) {
+      ground->scale.x = static_cast<float>(newMapSize.x);
+      ground->scale.z = static_cast<float>(newMapSize.y);
+    }
+    std::vector<std::shared_ptr<Actor>> newMap(newMapSize.x * newMapSize.y);
+    for (int y = 0; y < std::min(newMapSize.y, mapSize.y); ++y) {
+      for (int x = 0; x < std::min(newMapSize.x, mapSize.x); ++x) {
+        newMap[x + y * newMapSize.x] = map[x + y * mapSize.x];
+      }
+    }
+    map.swap(newMap);
+    mapSize = newMapSize;
+  }
+#endif
 
 #if 0
   static Actor actor("Dummy", Primitive(), nullptr, glm::vec3(0), glm::vec3(0), 0, glm::vec3(0));
@@ -407,11 +521,34 @@ void MapEditor::Save(const char* filename)
       continue;
     }
     char tmp[256];
-    snprintf(tmp, std::size(tmp), "  [ %s, %.03f, %.03f, %.03f ],",
+    snprintf(tmp, std::size(tmp), "  [ %s, %.03f, %.03f, %.03f ],\n",
       e->name.c_str(), e->position.x, e->position.y, e->position.z);
     ofs << tmp;
   }
-  ofs << "\n]\n";
+  ofs << "],\n";
+
+  ofs << "groundMap: [\n";
+  for (int y = 0; y < mapSize.y; ++y) {
+    ofs << "  ";
+    for (int x = 0; x < mapSize.x; ++x) {
+      ofs << groundMap[x + y * mapSize.y] << ", ";
+    }
+    ofs << '\n';
+  }
+  ofs << "]\n";
+}
+
+/**
+* アクターリストからアクターを取得する
+*/
+std::shared_ptr<Actor> MapEditor::GetActor(const char* name) const
+{
+  for (auto& e : actors) {
+    if (e->name == name) {
+      return e;
+    }
+  }
+  return nullptr;
 }
 
 /**
@@ -424,58 +561,114 @@ void MapEditor::Load(const char* filename)
     std::cerr << "[エラー]" << __func__ << ":" << filename << "を開けません\n";
     return;
   }
-  std::string line;
-  line.reserve(4096);
-  std::getline(ifs, line);
+
+  // マップデータ読み込み用変数
   glm::ivec2 tmpMapSize;
-  if (sscanf(line.data(), "mapSize: [ %d, %d ],", &tmpMapSize.x, &tmpMapSize.y) != 2) {
+  std::vector<std::shared_ptr<Actor>> tmpMap;
+
+  // マップサイズを読み込む
+  std::string line;
+  std::getline(ifs, line);
+  if (sscanf(line.data(), "mapSize: [ %d, %d ],",
+    &tmpMapSize.x, &tmpMapSize.y) != 2) {
     std::cerr << "[エラー]" << __func__ << ": マップサイズの読み込みに失敗\n";
     return;
   }
+  tmpMap.resize(tmpMapSize.x * tmpMapSize.y);
 
+  // map行を読み飛ばす
   std::getline(ifs, line);
   if (line != "map: [") {
+    std::cerr << "[エラー]" << __func__ << ": マップデータの読み込みに失敗\n";
     return;
   }
 
-  std::vector<std::shared_ptr<Actor>> tmpMap;
-  tmpMap.resize(tmpMapSize.x * tmpMapSize.y);
+  // アクターデータを読み込む
   while (!ifs.eof()) {
-    std::string line;
     std::getline(ifs, line);
+
+    // データの終了チェック
+    if (line[0] == ']') {
+      break;
+    }
+
+    // 行を解析
     char name[256];
     glm::vec3 position(0);
     if (sscanf(line.data(), " [ %255[^,], %f, %f, %f ], ",
       name, &position.x, &position.y, &position.z) != 4) {
-      continue;
+      std::cerr << "[警告]" << __func__ << ": 配置データの読み込みに失敗\n" <<
+        "  " << line << "\n";
     }
     name[255] = '\0';
 
+    // アクターを取得
+    std::shared_ptr<Actor> actor = GetActor(name);
+    if (!actor) {
+      std::cerr << "[警告]" << __func__ << ": " <<
+        name << "はアクターリストに存在しません\n";
+      continue;
+    }
+
+    // ワールド座標をマップ座標に変換
     const int x = static_cast<int>(glm::round(position.x / 4)) + tmpMapSize.x / 2;
     const int y = static_cast<int>(glm::round(position.z / 4)) + tmpMapSize.y / 2;
     if (x < 0 || x >= tmpMapSize.x || y < 0 || y >= tmpMapSize.y) {
+      std::cerr << "[警告]" << __func__ << ": " << name <<
+        "の座標(" << position.x << ", " << position.z << ")はマップ範囲外です\n";
       continue;
     }
-    for (auto& e : actors) {
-      if (e->name == name) {
-        std::shared_ptr<Actor> actor(new Actor(*e));
-        actor->position = position;
-        tmpMap[x + y * mapSize.x] = actor;
+
+    // アクターをマップに配置
+    std::shared_ptr<Actor> newActor(new Actor(*actor));
+    newActor->position = position;
+    tmpMap[x + y * mapSize.x] = newActor;
+  }
+
+  // 地面マップを読み込む
+  std::vector<uint32_t> tmpGroundMap;
+  tmpGroundMap.reserve(tmpMapSize.x * tmpMapSize.y);
+  std::getline(ifs, line);
+  if (line == "groundMap: [") {
+    while (!ifs.eof()) {
+      std::getline(ifs, line);
+
+      // データの終了チェック
+      if (line[0] == ']') {
         break;
+      }
+      // 行を解析
+      char* p = line.data();
+      for (;;) {
+        int tileNo = 0;
+        int n = 0;
+        if (sscanf(p, " %d,%n", &tileNo, &n) == 1) {
+          tmpGroundMap.push_back(tileNo);
+          p += n;
+        } else {
+          break;
+        }
       }
     }
   }
+  tmpGroundMap.resize(tmpMapSize.x * tmpMapSize.y, 0);
 
+  // 読み込んだデータをメンバ変数に反映する
   mapSize = tmpMapSize;
   map.swap(tmpMap);
+  groundMap.swap(tmpGroundMap);
 
   GameEngine& engine = GameEngine::Get();
+  engine.UpdateGroundMap(0, 0, mapSize.x, mapSize.y, groundMap.data());
+
+  // ゲームエンジンのアクターを更新
   engine.GetActors().resize(2);
   for (std::shared_ptr<Actor>& e : map) {
     if (e) {
       engine.AddActor(e);
     }
   }
-}
 
+  std::cerr << "[情報]" << __func__ << ": " << filename << "をロード\n";
+}
 

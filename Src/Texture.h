@@ -14,6 +14,9 @@ class Texture
 {
 public:
   Texture(const char* filename);
+  Texture(const char* name, const char** fileList, size_t count);
+  Texture(const char* name, GLsizei width, GLsizei height,
+    const void* data, GLenum pixelFormat, GLenum type);
   ~Texture();
 
   // オブジェクトの有効性を判定する
@@ -26,8 +29,11 @@ public:
   // テクスチャIDを取得
   GLuint GetId() const { return id; }
 
+  void Write(GLint x, GLint y, GLsizei width, GLsizei height,
+    const void* data, GLenum pixelFormat, GLenum type);
+
   // TODO: テキスト未追加
-  const std::string& GetName() const { return name; }
+  const std::string& GetName() const { return name; } // 15bで実装. 15は未実装.
   GLint GetWidth() const {
     GLint w = 0;
     glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_WIDTH, &w);

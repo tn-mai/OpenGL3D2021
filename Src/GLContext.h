@@ -24,6 +24,8 @@ GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor,
   GLuint vboTexcoord, GLuint vboNormal, GLuint ibo);
 GLuint CreateProgram(GLenum type, const GLchar* code);
 GLuint CreateProgramFromFile(GLenum type, const char* filename);
+GLuint CreateProgramFromFile(const char* vsFile, const char* fsFile);
+GLuint CreatePipeline(GLuint program);
 GLuint CreatePipeline(GLuint vp, GLuint fp);
 GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data,
   GLenum pixelFormat, GLenum type);

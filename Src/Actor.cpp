@@ -75,7 +75,7 @@ void Draw(
   }
 
   // TODO: テキスト未追加
-  const GLint locColor = 100;
+  const GLint locColor = 200;
   pipeline.SetUniform(locColor, actor.color);
 
   if (actor.tex) {

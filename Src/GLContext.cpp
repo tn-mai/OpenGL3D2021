@@ -144,6 +144,55 @@ GLuint CreateProgramFromFile(GLenum type, const char* filename)
 }
 
 /**
+*
+*/
+GLuint CreateProgramFromFile(const char* vsFile, const char* fsFile)
+{
+  const char* files[] = { vsFile, fsFile };
+  std::string str[2];
+  for (int i = 0; i < 2; ++i) {
+    std::ifstream ifs(files[i]);
+    if (!ifs) {
+      std::cerr << "[エラー]" << __func__ << ":" << files[i] <<
+        "を開けません.\n";
+      return 0;
+    }
+    std::stringstream ss;
+    ss << ifs.rdbuf();
+    str[i] = ss.str();
+  }
+
+  const GLenum type[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER };
+  GLuint shader[2];
+  for (int i = 0; i < 2; ++i) {
+    shader[i] = glCreateShader(type[i]);
+    const char* p = str[i].c_str();
+    glShaderSource(shader[i], 1, &p, nullptr);
+    glCompileShader(shader[i]);
+  }
+  GLuint program = glCreateProgram();
+  //glProgramParameteri(program, GL_PROGRAM_SEPARABLE, GL_TRUE);
+  glAttachShader(program, shader[0]);
+  glAttachShader(program, shader[1]);
+  glLinkProgram(program);
+  glDeleteShader(shader[0]);
+  glDeleteShader(shader[1]);
+
+  return program;
+}
+
+/**
+*
+*/
+GLuint CreatePipeline(GLuint program)
+{
+  GLuint id;
+  glCreateProgramPipelines(1, &id);
+  glUseProgramStages(id, GL_ALL_SHADER_BITS, program);
+  return id;
+}
+
+/**
 * パイプライン・オブジェクトを作成する.
 *
 * @param vp  頂点シェーダー・プログラム.
@@ -210,13 +259,16 @@ GLuint CreateSampler(GLenum wrapMode)
   }
 
   // フィルタを設定する.
-  glSamplerParameteri(id, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-  glSamplerParameteri(id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glSamplerParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);//GL_NEAREST_MIPMAP_NEAREST);
+  glSamplerParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);// GL_NEAREST);
   if (glGetError() != GL_NO_ERROR) {
     std::cerr << "[エラー]" << __func__ << ":フィルタではない値が指定された.\n";
     glDeleteSamplers(1, &id);
     return 0;
   }
+
+  glSamplerParameteri(id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+  glSamplerParameteri(id, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
   return id;
 }
@@ -238,16 +290,32 @@ GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data,
 {
   GLuint id;
 
+  // 画像データ形式に対応する内部データ形式を選択する
+  GLenum internalFormat = GL_RGBA8;
+  switch (pixelFormat) {
+  case GL_RED: internalFormat = GL_R8; break;
+  case GL_RGB: internalFormat = GL_RGB8; break;
+  case GL_BGR: internalFormat = GL_RGB8; break;
+  case GL_DEPTH_COMPONENT16:
+  case GL_DEPTH_COMPONENT24:
+  case GL_DEPTH_COMPONENT32F:
+    internalFormat = pixelFormat;
+    break;
+  }
+
   // テクスチャ・オブジェクトを作成し、GPUメモリを確保する.
   glCreateTextures(GL_TEXTURE_2D, 1, &id);
-  glTextureStorage2D(id, 1, GL_RGBA8, width, height);
+  glTextureStorage2D(id, 1, internalFormat, width, height);
 
   // GPUメモリにデータを転送する.
-  GLint alignment;
-  glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glTextureSubImage2D(id, 0, 0, 0, width, height, pixelFormat, type, data);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+  if (data) {
+    GLint alignment;
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTextureSubImage2D(id, 0, 0, 0, width, height, pixelFormat, type, data);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+  }
+
   const GLenum result = glGetError();
   if (result != GL_NO_ERROR) {
     std::cerr << "[エラー]" << __func__ << "テクスチャの作成に失敗\n";
