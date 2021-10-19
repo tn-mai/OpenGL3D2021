@@ -414,7 +414,8 @@ public:
 +
 +  // テクスチャのピクセル形式、幅、高さを取得
 +  GLint internalFormat, width, height;
-+  glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
++  glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_INTERNAL_FORMAT,
++    &internalFormat);
 +  glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_WIDTH, &width);
 +  glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_HEIGHT, &height);
  }
@@ -436,7 +437,8 @@ public:
 +
 +  // 配列テクスチャを作成
 +  glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &id);
-+  glTextureStorage3D(id, 1, internalFormat, width, height, static_cast<GLsizei>(count));
++  glTextureStorage3D(id, 1, internalFormat, width, height,
++    static_cast<GLsizei>(count));
  }
 ```
 
@@ -448,7 +450,8 @@ public:
 
 ```diff
    glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &id);
-   glTextureStorage3D(id, 1, internalFormat, width, height, static_cast<GLsizei>(count));
+   glTextureStorage3D(id, 1, internalFormat, width, height,
+     static_cast<GLsizei>(count));
 +
 +  // 配列テクスチャに画像データを設定
 +  for (int i = 0; i < count; ++i) {
@@ -652,7 +655,8 @@ public:
 
 ```diff
    std::shared_ptr<Texture> LoadTexture(const char* filename);
-   std::shared_ptr<Texture> LoadTexture(const char* name, const char** fileList, size_t count);
+   std::shared_ptr<Texture> LoadTexture(
+     const char* name, const char** fileList, size_t count);
 +
 +  void UpdateGroundMap(int x, int y, int width, int height, const void* data);
 
@@ -682,7 +686,8 @@ public:
 
 ### 2.7 地面描画用のシェーダーを作成する
 
-次に、手順1～4を実行する地面描画用シェーダーを作成します。地面描画用シェーダーは`FragmentLighting.frag`に手順1～4を追加して作成します。
+次に、手順1～4を実行する地面描画用シェーダーを作成します。地面描画用シェーダーは<br>
+`FragmentLighting.frag`に手順1～4を追加して作成します。
 
 Visual Studioのソリューションエクスプローラー上ではファイルのコピーを作ることができません。そこで、ファイル選択ウィンドウを利用します。
 
@@ -708,7 +713,8 @@ Visual Studioのソリューションエクスプローラー上ではファイ�
 <img src="images/15b_addition_dialog_add.png" width="66%" />
 </p>
 
-ファイル名を変更したら、`GroundMap.frag`をクリックして選択状態にします(①)。そして、「追加」ボタンを押してファイルをプロジェクトに追加してください(②)。これで、`FragmentLighting.frag`と全く同じ内容の`GroundMap.frag`が追加されました。
+ファイル名を変更したら、`GroundMap.frag`をクリックして選択状態にします(①)。そして、「追加」ボタンを押してファイルをプロジェクトに追加してください(②)。これで、<br>
+`FragmentLighting.frag`と全く同じ内容の`GroundMap.frag`が追加されました。
 
 ### 2.8 マップデータを使うように変更する
 
@@ -772,13 +778,13 @@ vec4 texelFetch(サンプラ, 読み取り位置, 読み取るミップマップ
 
 `sampler2DArray`サンプラから色データを読み取るには、Z要素に配列の添字を追加します。また、X, Y座標は`fract`(フラクト)関数で求めています。フラクト関数は引数で指定された値の小数部分だけを取り出す関数です。
 
+これで地面描画用の変更は完了です。
+
 >**【間接参照(かんせつさんしょう)】**<br>
 >このシェーダーのように、「あるテクスチャから読み取ったデータを、他のテクスチャを読み取るために利用する」といった技法は、「間接参照(かんせつさんしょう)」と呼ばれます。<br>
 >間接参照という用語は「このシェーダーでは`texMap`を使って`texColor`を間接参照している」のように使われます。<br>
 >もっと短く言うと「このシェーダーではテクスチャを間接参照している」とか「このシェーダーでは間接参照テクスチャを使っている」となります。<br>
 >なお「間接参照」を使わないで言うと「このシェーダーでは`texMap`から読み取った値をテクスチャ座標にして`texColor`から値を読み取っている」となります。
-
-これで地面描画用の変更は完了です。
 
 ### 2.9 アクタークラスにシェーダー選択機能を追加する
 
@@ -965,13 +971,15 @@ vec4 texelFetch(サンプラ, 読み取り位置, 読み取るミップマップ
 +
 +    // リストボックスを作成
 +    if (BeginListBox("GroundTileList", tileListBoxSize)) {
-+      const float itemWidth = 64.0f + GetFontSize() * 32.0f + GetStyle().FramePadding.x * 2.0f;
++      const ImVec2 itemSize(
++        64.0f + GetFontSize() * 32.0f + GetStyle().FramePadding.x * 2.0f,
++        64.0f + GetStyle().FramePadding.y * 2.0f);
 +      for (int i = 0; i < groundTiles.size(); ++i) {
 +        // ラベル名の先頭に##を付けるとテキストが表示されなくなる
 +        std::string label = std::string("##") + groundTiles[i]->GetName();
 +        const bool isSelected = currentTileNo == i;
 +        const ImVec2 cursorPos = GetCursorPos();
-+        if (Selectable(label.c_str(), isSelected, 0, ImVec2(itemWidth, 68))) {
++        if (Selectable(label.c_str(), isSelected, 0, itemSize)) {
 +          currentTileNo = i;
 +        }
 +        if (isSelected) {
@@ -980,7 +988,8 @@ vec4 texelFetch(サンプラ, 読み取り位置, 読み取るミップマップ
 +
 +        // リストボックスの要素としてテクスチャとファイル名を表示
 +        SetCursorPos(cursorPos);
-+        const ImTextureID texId = reinterpret_cast<ImTextureID>(groundTiles[i]->GetId());
++        const ImTextureID texId =
++          reinterpret_cast<ImTextureID>(groundTiles[i]->GetId());
 +        Image(texId, ImVec2(64, 64));
 +        SameLine();
 +        Text(groundTiles[i]->GetName().c_str());
