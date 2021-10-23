@@ -335,12 +335,14 @@ void MapEditor::UpdateUI()
     const ImVec2 tileListBoxSize(-1,
       68.0f * groundTiles.size() + GetStyle().FramePadding.y * 2);
     if (BeginListBox("GroundTileList", tileListBoxSize)) {
-      const float itemWidth = 64.0f + GetFontSize() * 32.0f + GetStyle().FramePadding.x * 2.0f;
+      const ImVec2 itemSize(
+        64.0f + GetFontSize() * 32.0f + GetStyle().FramePadding.x * 2.0f,
+        64.0f + GetStyle().FramePadding.y * 2.0f);
       for (int i = 0; i < groundTiles.size(); ++i) {
         std::string id = std::string("##") + groundTiles[i]->GetName();
         const bool isSelected = currentTileNo == i;
         const ImVec2 cursorPos = GetCursorPos();
-        if (Selectable(id.c_str(), isSelected, 0, ImVec2(itemWidth, 68))) {
+        if (Selectable(id.c_str(), isSelected, 0, itemSize)) {
           currentTileNo = i;
           cursor->color = glm::vec4(0.2f, 0.5f, 1.0f, 0.5f);
         }
@@ -348,7 +350,8 @@ void MapEditor::UpdateUI()
           SetItemDefaultFocus();
         }
         SetCursorPos(cursorPos);
-        const ImTextureID texId = reinterpret_cast<ImTextureID>(groundTiles[i]->GetId());
+        const ImTextureID texId =
+          reinterpret_cast<ImTextureID>(groundTiles[i]->GetId());
         Image(texId, ImVec2(64, 64));
         SameLine();
         Text(groundTiles[i]->GetName().c_str());
