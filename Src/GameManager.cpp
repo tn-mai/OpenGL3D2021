@@ -3,6 +3,7 @@
 */
 #include "GameManager.h"
 #include "GameEngine.h"
+#include "AStar.h"
 #include "Actor/PlayerActor.h"
 #include "Actor/T34TankActor.h"
 #include "Actor/ElevatorActor.h"
@@ -118,6 +119,10 @@ void GameManager::Update(float deltaTime)
     break;
 
   case State::start:
+    // A*アルゴリズムのテスト
+    // ※テストが終わったら消すこと
+    AStar::Test();
+
     score = 0;
     SpawnPlayer();
     SpawnEnemies();
