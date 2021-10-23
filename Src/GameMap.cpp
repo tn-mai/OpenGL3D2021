@@ -50,27 +50,24 @@ struct Node
 {
   enum class Status { unlisted, close, open };
 
-  int id = 0;
-  int f = 0;
-  int h = 0;
+  glm::vec2 position;
+  float f = 0;
+  float h = 0;
   Status status = Status::unlisted;
-  Node* parent = nullptr;
-  int neighborCount = 0;
-  int neighbors[4] = { 0, 0, 0, 0 };
+  Node* parent = nullptr; // 親ノード
+  std::vector<Node*> neighbors; // 隣接ノード
 };
 
-struct DistanceAndId {
-  DistanceAndId(const Node& node) : f(node.f), id(node.id) {}
-
-  int f;
-  int id;
-};
-bool operator>(const DistanceAndId& lhs, const DistanceAndId& rhs) { return lhs.f > rhs.f; }
+namespace std {
+  template <> struct less<Node*> {
+    bool operator()(const Node* lhs, const Node* rhs) const { return lhs->f > rhs->f; }
+  };
+} // namespace std
 
 /**
 * 2点間のマンハッタン距離を計算する
 */
-int ManhattanDistance(const glm::ivec2& a, const glm::ivec2& b)
+float ManhattanDistance(const glm::vec2& a, const glm::vec2& b)
 {
   return std::abs(b.x - a.x) + std::abs(b.y - a.y);
 }
@@ -79,19 +76,19 @@ int ManhattanDistance(const glm::ivec2& a, const glm::ivec2& b)
 * (デバッグ用)A*計算用ノードの評価値を出力する
 */
 void PrintNodeMap(
-  int start, int goal,
+  const Node* startNode, const Node* goalNode,
   int width, int height,
   const std::vector<Node>& nodeMap,
   const std::vector<int>& objectMapData, bool hasRoute = false)
 {
-  std::vector<int> route;
+  std::vector<const Node*> route;
   if (hasRoute) {
     route.reserve(128);
-    const Node* p = &nodeMap[goal];
+    const Node* p = goalNode;
     do {
-      route.push_back(p->id);
+      route.push_back(p);
       p = p->parent;
-    } while (p && p->id != start);
+    } while (p && p != startNode);
   }
 
   std::cout << "   ";
@@ -103,22 +100,22 @@ void PrintNodeMap(
     std::cout << std::setw(2) << z << '|';
     for (int x = 0; x < width; ++x) {
       const int current = x + z * width;
-      const Node& node = nodeMap[current];
-      const bool isRoute = std::find(route.begin(), route.end(), current) != route.end();
+      const Node* node = &nodeMap[current];
+      const bool isRoute = std::find(route.begin(), route.end(), node) != route.end();
       if (isRoute) {
         std::cout << "*";
       } else {
         std::cout << " ";
       }
-      if (node.id == start) {
+      if (node == startNode) {
         std::cout << "St";
-      } else if (node.id == goal) {
+      } else if (node == goalNode) {
         std::cout << "Go";
       } else {
         if (objectMapData[current] != 0) {
           std::cout << "--";
         } else {
-          std::cout << std::setw(2) << node.f;
+          std::cout << std::setw(2) << node->f;
         }
       }
     }
@@ -129,101 +126,93 @@ void PrintNodeMap(
 /**
 *
 */
-std::vector<glm::ivec2> GameMap::FindRoute(const glm::ivec2& start, const glm::ivec2& goal) const
+std::vector<glm::vec2> GameMap::FindRoute(const glm::vec2& start, const glm::vec2& goal) const
 {
   // マップに対応するノード配列を作成する
   std::vector<Node> nodeMap(width * height);
   for (int z = 0; z < height; ++z) {
     for (int x = 0; x < width; ++x) {
       Node& node = nodeMap[x + z * width];
-      node.id = x + z * width;
-      const glm::ivec2 position(x, z);
-      const int g = ManhattanDistance(position, start);
-      node.h = ManhattanDistance(position, goal);
+      node.position = glm::vec2(x, z);
+      const float g = ManhattanDistance(node.position, start);
+      node.h = ManhattanDistance(node.position, goal);
       node.f = g + node.h;
 
       // 隣接ノードを設定
-      static const glm::ivec2 neighborOffset[] = { { 1, 0}, {0, -1}, {-1, 0}, {0, 1} };
+      static const glm::vec2 neighborOffset[] = { { 1, 0}, {0, -1}, {-1, 0}, {0, 1} };
       for (int i = 0; i < std::size(neighborOffset); ++i) {
 
         // マップ範囲外なら追加しない
-        const glm::ivec2 pos = position + neighborOffset[i];
+        const glm::ivec2 pos = node.position + neighborOffset[i];
         if (pos.x < 0 || pos.x >= width || pos.y < 0 || pos.y >= height) {
           continue;
         }
 
         // 進入不可なら何もしない
-        const int id = pos.x + pos.y * width;
-        if (objectMapData[id] != 0) {
+        const int index = pos.x + pos.y * width;
+        if (objectMapData[index] != 0) {
           continue;
         }
-        node.neighbors[node.neighborCount] = id;
-        ++node.neighborCount;
+        node.neighbors.push_back(&nodeMap[index]);
       }
     }
   }
 
-  const int idStart = start.x + start.y * width;
-  const int idGoal = goal.x + goal.y * width;
+  Node* startNode = &nodeMap[static_cast<size_t>(start.x + start.y * width)];
+  Node* goalNode = &nodeMap[static_cast<size_t>(goal.x + goal.y * width)];
 
   std::cout << "\n[estimated node cost]\n";
-  PrintNodeMap(idStart, idGoal, width, height, nodeMap, objectMapData, false);
+  PrintNodeMap(startNode, goalNode, width, height, nodeMap, objectMapData, false);
 
-  std::vector<DistanceAndId> tmp;
-  tmp.reserve(width * height);
-  std::priority_queue<DistanceAndId, std::vector<DistanceAndId>, std::greater<DistanceAndId>> openList(std::greater<DistanceAndId>(), tmp);
+  std::priority_queue<Node*> openList;
 
-  openList.push(nodeMap[start.x + start.y * width]);
+  openList.push(startNode);
   while (!openList.empty()) {
-    const int idCurrent = openList.top().id;
+    Node* n = openList.top();
     openList.pop();
 
     // ゴールに到達したら探索終了
-    Node& n = nodeMap[idCurrent];
-    if (n.id == idGoal) {
+    if (n == goalNode) {
       break;
     }
 
     // 「探索済み」ノードなら何もしない
-    if (n.status == Node::Status::close) {
+    if (n->status == Node::Status::close) {
       continue;
     }
 
     // ノードを「探索済み」にする
-    n.status = Node::Status::close;
+    n->status = Node::Status::close;
 
-    // 周囲4方向のノードをオープンリストに追加
-    const int nx = n.id % width;
-    const int ny = n.id / width;
-    for (int i = 0; i < n.neighborCount; ++i) {
-      const int id = n.neighbors[i];
-      Node& m = nodeMap[id];
-      const int f = (n.f - n.h) + 1 + m.h;
+    // 隣接ノードをオープンリストに追加
+    for (Node* m : n->neighbors) {
+      const float f = (n->f - n->h) + 1.0f + m->h;
       // 現在のルートのほうが短い場合は情報を上書きする
-      if (m.status == Node::Status::unlisted|| f < m.f) {
-        m.f = f;
-        m.parent = &n;
-        m.status = Node::Status::open;
+      if (m->status == Node::Status::unlisted|| f < m->f) {
+        m->f = f;
+        m->parent = n;
+        m->status = Node::Status::open;
       }
       openList.push(m);
     }
   }
 
   std::cout << "[actual node cost]\n";
-  PrintNodeMap(idStart, idGoal, width, height, nodeMap, objectMapData, true);
+  PrintNodeMap(startNode, goalNode, width, height, nodeMap, objectMapData, true);
 
   // オープンリストが空の場合は到達可能なルートが存在しない
   if (openList.empty()) {
     return {};
   }
 
-  std::vector<glm::ivec2> route;
-  route.reserve(ManhattanDistance(start, goal));
-  const Node* p = &nodeMap[goal.x + goal.y * width];
+  // 最短経路を作成
+  std::vector<glm::vec2> route;
+  route.reserve(static_cast<size_t>(ManhattanDistance(start, goal)));
+  const Node* p = goalNode;
   do {
-    route.push_back(glm::ivec2(p->id % width, p->id / width));
+    route.push_back(p->position);
     p = p->parent;
-  } while (p && p->id != idStart);
+  } while (p && p != startNode);
   return route;
 }
 
