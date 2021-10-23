@@ -288,7 +288,10 @@ int main()
 
   // マップエディタを作成
   const bool isEditMode = true; // エディタを起動しない場合はfalseにする
-  std::shared_ptr<MapEditor> mapEditor(new MapEditor);
+  std::shared_ptr<MapEditor> mapEditor;
+  if (isEditMode) {
+    mapEditor.reset(new MapEditor);
+  }
 
   // メインループ.
   double loopTime = engine.GetTime();     // 1/60秒間隔でループ処理するための時刻
