@@ -8,7 +8,7 @@
 * テクスチャを画像以外の目的で使えることを理解する。
 * 配列テクスチャの作りかたと使いかたを理解する。
 
-## 1.マップデータを読み込めるようにする
+## 1. マップデータを読み込めるようにする
 
 ### 1.1 セーブ関数の修正
 
@@ -863,7 +863,7 @@ vec4 texelFetch(サンプラ, 読み取り位置, 読み取るミップマップ
 +  };
 
    // 地面用アクターを作成
-   engine.LoadPrimitive("Res/Ground.obj");
+   engine.GetPrimitiveBuffer().AddFromObjFile("Res/Ground.obj");
    std::shared_ptr<Actor> groundActor(new Actor("Ground",
      engine.GetPrimitive("Res/Ground.obj"),
 -    engine.LoadTexture("Res/Road.tga"),
