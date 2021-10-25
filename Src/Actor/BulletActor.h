@@ -21,6 +21,9 @@ public:
     const glm::vec3& adjustment);
 
   virtual ~BulletActor() = default;
+  virtual std::shared_ptr<Actor> Clone() const override {
+    return std::shared_ptr<Actor>(new BulletActor(*this));
+  }
   virtual void OnCollision(const struct Contact& contact) override;
 };
 

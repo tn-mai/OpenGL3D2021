@@ -21,6 +21,9 @@ public:
     const glm::vec3& adjustment);
 
   virtual ~ElevatorActor() = default;
+  virtual std::shared_ptr<Actor> Clone() const override {
+    return std::shared_ptr<Actor>(new ElevatorActor(*this));
+  }
   virtual void OnUpdate(float deltaTime) override;
 
 private:

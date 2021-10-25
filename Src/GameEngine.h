@@ -31,7 +31,10 @@ public:
   {
     return actors[static_cast<int>(layer)];
   }
+  ActorList& GetNewActors() { return newActors; }
   void AddActor(std::shared_ptr<Actor> actor) { newActors.push_back(actor); }
+  std::shared_ptr<Actor> FindActor(const char* name);
+  void ClearAllActors();
   void UpdateActors(float deltaTime);
   void PostUpdateActors();
   void UpdatePhysics(float deltaTime);
@@ -109,10 +112,8 @@ public:
 
   // TODO: テキスト未追加
   std::shared_ptr<Texture> GetTexture(const char* filename) const;
-  std::shared_ptr<Actor> FindActor(const char* name);
   unsigned int GetRandom();
   size_t GetTextureCount() const { return textureBuffer.size(); }
-  bool LoadGameMap(const char* filename);
   std::shared_ptr<Texture> GetTexture(int n) const
   {
     const size_t count = textureBuffer.bucket_count();

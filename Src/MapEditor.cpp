@@ -76,14 +76,41 @@ bool Intersect(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& q, con
 /**
 * コンストラクタ
 */
-MapEditor::MapEditor()
+MapEditor::MapEditor(SystemType type) : systemType(type)
+{
+  GameEngine& engine = GameEngine::Get();
+
+  // 既存のアクターをすべて削除
+  engine.ClearAllActors();
+
+  LoadCommonPrimitive();
+  InitActorList();
+  if (systemType == SystemType::editor) {
+    InitGroundActor();
+    InitEditor();
+  }
+}
+
+/**
+* 汎用プリミティブを読み込む
+*/
+void MapEditor::LoadCommonPrimitive()
+{
+  GameEngine& engine = GameEngine::Get();
+
+  engine.LoadPrimitive("Res/Plane.obj");
+  engine.LoadPrimitive("Res/Bullet.obj");
+}
+
+/**
+* 地面用アクターを作成
+*/
+void MapEditor::InitGroundActor()
 {
   GameEngine& engine = GameEngine::Get();
 
   // アクター配置マップのサイズをマップサイズに合わせる
   map.resize(mapSize.x * mapSize.y);
-
-  engine.LoadPrimitive("Res/Plane.obj");
 
   const char* texList[] = {
     "Res/Green.tga",
@@ -96,24 +123,43 @@ MapEditor::MapEditor()
   std::shared_ptr<Actor> groundActor(new Actor("Ground",
     engine.GetPrimitive("Res/Ground.obj"),
     engine.LoadTexture("GroundTiles", texList, std::size(texList)),
-    //engine.LoadTexture("Res/Image1.tga"),
     glm::vec3(0), glm::vec3(mapSize.x, 1, mapSize.y), 0, glm::vec3(0)));
   groundActor->shader = Shader::Ground;
+  groundActor->isStatic = true;
+  const glm::vec2 colliderSize = glm::vec2(mapSize) * gridSize * 0.5f;
+  groundActor->collider = CreateBoxShape(
+    glm::vec3(-colliderSize.x, -10.0f, -colliderSize.y),
+    glm::vec3(colliderSize.x, 0.0f, colliderSize.y));
   engine.AddActor(groundActor);
 
   // マップデータテクスチャ操作用の変数を初期化
-  groundMap.resize(mapSize.x * mapSize.y, 0);
-  groundTiles.reserve(std::size(texList));
-  for (const char* filename : texList) {
-    groundTiles.push_back(engine.LoadTexture(filename));
+  if (systemType == SystemType::editor) {
+    groundMap.resize(mapSize.x * mapSize.y, 0);
+    groundTiles.clear();
+    groundTiles.reserve(std::size(texList));
+    for (const char* filename : texList) {
+      groundTiles.push_back(engine.LoadTexture(filename));
+    }
   }
+}
 
-  // 配置用アクターを作成
+/**
+* 配置用アクターを作成
+*/
+void MapEditor::InitActorList()
+{
+  GameEngine& engine = GameEngine::Get();
+
+  actors.clear();
+
+  // アクターの型
   enum class ActorType {
     player,
     t34tank,
     other,
   };
+
+  // 配置用アクターを作成
   struct ObjectData {
     ActorType type;
     const char* name;
@@ -125,21 +171,35 @@ MapEditor::MapEditor()
     glm::vec3 adjustment = glm::vec3(0);
   };
   const ObjectData objectList[] = {
-    { ActorType::other, "Cube", "Res/Cube.obj", "Res/Triangle.tga",
+    {
+      ActorType::other, "Cube",
+      "Res/Cube.obj", "Res/Triangle.tga",
       Box(glm::vec3(0, 0, 0), glm::vec3(2, 2, 2)) },
-    { ActorType::other, "Tree", "Res/Tree.obj", "Res/Tree.tga",
+    {
+      ActorType::other, "Tree",
+      "Res/Tree.obj", "Res/Tree.tga",
       Box(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
-    { ActorType::other, "Warehouse", "Res/Warehouse.obj", "Res/Building.tga",
+    {
+      ActorType::other, "Warehouse",
+      "Res/Warehouse.obj", "Res/Building.tga",
       Box(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)) },
-    { ActorType::other, "BrickHouse", "Res/house/HouseRender.obj", "Res/house/House38UVTexture.tga",
+
+    { ActorType::other, "BrickHouse",
+      "Res/house/HouseRender.obj", "Res/house/House38UVTexture.tga",
       Box(glm::vec3(-3, 0, -2), glm::vec3(3, 3, 2)),
       glm::vec3(2.0f), 0, glm::vec3(-2.6f, 2.0f, 0.8f) },
-    { ActorType::other, "BrokenHouse", "Res/house/broken-house.obj", "Res/house/broken-house.tga",
+
+    { ActorType::other, "BrokenHouse",
+      "Res/house/broken-house.obj", "Res/house/broken-house.tga",
       Box(glm::vec3(-2, 0, -2), glm::vec3(2, 2, 2)),
       glm::vec3(0.75f) },
-    { ActorType::player, "Tiger-I", "Res/tank/Tiger_I.obj", "Res/tank/PzVl_Tiger_I.tga",
+
+    { ActorType::player, "Tiger-I",
+      "Res/tank/Tiger_I.obj", "Res/tank/PzVl_Tiger_I.tga",
       Box(glm::vec3(-1, 0, -1), glm::vec3(1, 2, 1)) },
-    { ActorType::t34tank, "T-34", "Res/tank/T34.obj", "Res/tank/T-34.tga",
+
+    { ActorType::t34tank, "T-34",
+      "Res/tank/T34.obj", "Res/tank/T-34.tga",
       Box(glm::vec3(-1, 0, -1), glm::vec3(1, 2, 1)) },
   };
   for (const auto& e : objectList) {
@@ -156,6 +216,8 @@ MapEditor::MapEditor()
         engine.GetPrimitive(e.primitiveFilename),
         engine.LoadTexture(e.textureFilename),
         glm::vec3(0), e.scale, e.rotation, e.adjustment, nullptr));
+      actor->collider = std::shared_ptr<Box>(new Box(e.collider.min, e.collider.max));
+      actor->mass = 36'000;
       break;
 
     case ActorType::other:
@@ -165,10 +227,19 @@ MapEditor::MapEditor()
         engine.LoadTexture(e.textureFilename),
         glm::vec3(0), e.scale, e.rotation, e.adjustment));
       actor->collider = std::shared_ptr<Box>(new Box(e.collider.min, e.collider.max));
+      actor->isStatic = true;
       break;
     }
     actors.push_back(actor);
   }
+}
+
+/**
+* エディタを動かすために必要な変数を初期化する
+*/
+void MapEditor::InitEditor()
+{
+  GameEngine& engine = GameEngine::Get();
 
   // 位置表示アクターを作成
   cursor.reset(new Actor(*actors[0]));
@@ -179,9 +250,6 @@ MapEditor::MapEditor()
   Camera& camera = engine.GetCamera();
   camera.target = glm::vec3(0, 0, 0);
   camera.position = camera.target + cameraOffset;
-
-  // 既存のアクターをすべて削除
-  engine.GetActors().clear();
 }
 
 /**
@@ -544,12 +612,17 @@ void MapEditor::Save(const char* filename)
 /**
 * アクターリストからアクターを取得する
 */
-std::shared_ptr<Actor> MapEditor::GetActor(const char* name) const
+std::shared_ptr<Actor> MapEditor::GetActor(const char* name, int* no) const
 {
+  int i = 1;
   for (auto& e : actors) {
     if (e->name == name) {
+      if (no) {
+        *no = i;
+      }
       return e;
     }
+    ++i;
   }
   return nullptr;
 }
@@ -557,17 +630,18 @@ std::shared_ptr<Actor> MapEditor::GetActor(const char* name) const
 /**
 * マップデータをファイルから読み込む
 */
-void MapEditor::Load(const char* filename)
+bool MapEditor::Load(const char* filename)
 {
   std::ifstream ifs(filename);
   if (!ifs) {
     std::cerr << "[エラー]" << __func__ << ":" << filename << "を開けません\n";
-    return;
+    return false;
   }
 
   // マップデータ読み込み用変数
   glm::ivec2 tmpMapSize;
   std::vector<std::shared_ptr<Actor>> tmpMap;
+  std::vector<int> tmpGameMap;
 
   // マップサイズを読み込む
   std::string line;
@@ -575,15 +649,16 @@ void MapEditor::Load(const char* filename)
   if (sscanf(line.data(), "mapSize: [ %d, %d ],",
     &tmpMapSize.x, &tmpMapSize.y) != 2) {
     std::cerr << "[エラー]" << __func__ << ": マップサイズの読み込みに失敗\n";
-    return;
+    return false;
   }
   tmpMap.resize(tmpMapSize.x * tmpMapSize.y);
+  tmpGameMap.resize(tmpMapSize.x * tmpMapSize.y, 0);
 
   // map行を読み飛ばす
   std::getline(ifs, line);
   if (line != "map: [") {
     std::cerr << "[エラー]" << __func__ << ": マップデータの読み込みに失敗\n";
-    return;
+    return false;
   }
 
   // アクターデータを読み込む
@@ -606,7 +681,8 @@ void MapEditor::Load(const char* filename)
     name[255] = '\0';
 
     // アクターを取得
-    std::shared_ptr<Actor> actor = GetActor(name);
+    int actorNo = 0;
+    std::shared_ptr<Actor> actor = GetActor(name, &actorNo);
     if (!actor) {
       std::cerr << "[警告]" << __func__ << ": " <<
         name << "はアクターリストに存在しません\n";
@@ -623,9 +699,10 @@ void MapEditor::Load(const char* filename)
     }
 
     // アクターをマップに配置
-    std::shared_ptr<Actor> newActor(new Actor(*actor));
+    std::shared_ptr<Actor> newActor = actor->Clone();
     newActor->position = position;
     tmpMap[x + y * mapSize.x] = newActor;
+    tmpGameMap[x + y * mapSize.x] = actorNo;
   }
 
   // 地面マップを読み込む
@@ -658,6 +735,7 @@ void MapEditor::Load(const char* filename)
 
   // 読み込んだデータをメンバ変数に反映する
   mapSize = tmpMapSize;
+  gameMap.swap(tmpGameMap);
   map.swap(tmpMap);
   groundMap.swap(tmpGroundMap);
 
@@ -665,13 +743,19 @@ void MapEditor::Load(const char* filename)
   engine.UpdateGroundMap(0, 0, mapSize.x, mapSize.y, groundMap.data());
 
   // ゲームエンジンのアクターを更新
-  engine.GetActors().resize(2);
+  engine.ClearAllActors();
+  InitGroundActor();
   for (std::shared_ptr<Actor>& e : map) {
     if (e) {
       engine.AddActor(e);
     }
   }
 
+  if (systemType == SystemType::editor) {
+    InitEditor();
+  }
+
   std::cerr << "[情報]" << __func__ << ": " << filename << "をロード\n";
+  return true;
 }
 

@@ -118,6 +118,9 @@ public:
     const glm::vec3& adjustment);
 
   virtual ~Actor() = default;
+  virtual std::shared_ptr<Actor> Clone() const {
+    return std::shared_ptr<Actor>(new Actor(*this));
+  }
   virtual void OnUpdate(float deltaTime);
   virtual void OnCollision(const struct Contact& contact);
 

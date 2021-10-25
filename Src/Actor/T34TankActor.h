@@ -22,8 +22,12 @@ public:
     const std::shared_ptr<Actor>& target);
 
   virtual ~T34TankActor() = default;
+  virtual std::shared_ptr<Actor> Clone() const override {
+    return std::shared_ptr<Actor>(new T34TankActor(*this));
+  }
   virtual void OnUpdate(float deltaTime) override;
   virtual void OnCollision(const struct Contact& contact) override;
+  void SetTarget(std::shared_ptr<Actor> t) { target = t; }
 
 private:
   std::shared_ptr<Actor> target; // 追いかける対象のアクター

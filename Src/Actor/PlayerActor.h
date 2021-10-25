@@ -17,6 +17,9 @@ public:
     float rotation);
 
   virtual ~PlayerActor() = default;
+  virtual std::shared_ptr<Actor> Clone() const override {
+    return std::shared_ptr<Actor>(new PlayerActor(*this));
+  }
   virtual void OnUpdate(float deltaTime);
   virtual void OnCollision(const struct Contact& contact);
 

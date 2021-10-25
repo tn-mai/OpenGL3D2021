@@ -176,7 +176,7 @@ GameEngine& GameEngine::Get()
 }
 
 /**
-*
+* 名前の一致するアクターを検索する
 */
 std::shared_ptr<Actor> GameEngine::FindActor(const char* name)
 {
@@ -186,7 +186,22 @@ std::shared_ptr<Actor> GameEngine::FindActor(const char* name)
       return actor;
     }
   }
+  std::shared_ptr<Actor> actor = Find(newActors, name);
+  if (actor) {
+    return actor;
+  }
   return nullptr;
+}
+
+/**
+* すべてのアクターを削除する
+*/
+void GameEngine::ClearAllActors()
+{
+  for (int layer = 0; layer < layerCount; ++layer) {
+    actors[layer].clear();
+  }
+  newActors.clear();
 }
 
 /**
@@ -541,16 +556,21 @@ void GameEngine::PostRender()
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  glBindSampler(0, 0);
-  glBindProgramPipeline(0);
+  sampler->Unbind(0);
+  pipeline->Unbind();
   primitiveBuffer->UnbindVertexArray();
 }
 
 /**
-*
+* OBJファイルからプリミティブを追加する
 */
 bool GameEngine::LoadPrimitive(const char* filename)
 {
+  // 既に同名のプリミティブが追加されていたら何もしない
+  if (primitiveBuffer->Find(filename).GetName() == filename) {
+    return true; // 追加済み
+  }
+  // まだ追加されていないのでOBJファイルを読み込む
   return primitiveBuffer->AddFromObjFile(filename);
 }
 
@@ -602,14 +622,6 @@ void GameEngine::UpdateGroundMap(int x, int y, int width, int height, const void
   if (texMap) {
     texMap->Write(x, y, width, height, data, GL_RGBA, GL_UNSIGNED_BYTE);
   }
-}
-
-/**
-* マップデータを読み込む
-*/
-bool GameEngine::LoadGameMap(const char* filename)
-{
-  return false;
 }
 
 /**

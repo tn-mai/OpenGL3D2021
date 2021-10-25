@@ -3,6 +3,7 @@
 */
 #include "GameManager.h"
 #include "GameEngine.h"
+#include "MapEditor.h"
 #include "AStar.h"
 #include "Actor/PlayerActor.h"
 #include "Actor/T34TankActor.h"
@@ -112,9 +113,9 @@ void GameManager::Update(float deltaTime)
   GameEngine& engine = GameEngine::Get();
   switch (state) {
   case State::initializeLevel:
-    LoadPrimitives();
-    LoadTextures();
-    SpawnMap();
+    //LoadPrimitives();
+    //LoadTextures();
+    //SpawnMap();
     SetState(State::start);
     break;
 
@@ -124,9 +125,26 @@ void GameManager::Update(float deltaTime)
     AStar::Test();
 
     score = 0;
-    SpawnPlayer();
-    SpawnEnemies();
-    {
+    //SpawnPlayer();
+    //SpawnEnemies();
+
+    // マップデータをロードする
+    MapEditor(MapEditor::SystemType::game).Load("mapdata.txt");
+
+    // プレイヤーが操作するアクターを取得する
+    playerTank = engine.FindActor("Tiger-I");
+
+    // 敵アクターのポインタを配列にコピーする
+    enemies.clear();
+    for (auto& e : engine.GetNewActors()) {
+      if (e->name == "T-34") {
+        T34TankActor& enemy = static_cast<T34TankActor&>(*e);
+        enemy.SetTarget(playerTank);
+        enemies.push_back(e);
+      }
+    }
+    
+    { // ゲーム開始メッセージを表示する
       std::shared_ptr<Actor> gamestart(new Actor{ "GameStart",
         engine.GetPrimitive("Res/Plane.obj"),
         engine.LoadTexture("Res/GameStart.tga"),

@@ -287,10 +287,10 @@ int main()
   GameManager& manager = GameManager::Get();
 
   // マップエディタを作成
-  const bool isEditMode = true; // エディタを起動しない場合はfalseにする
+  const bool isEditMode = false; // エディタを起動しない場合はfalseにする
   std::shared_ptr<MapEditor> mapEditor;
   if (isEditMode) {
-    mapEditor.reset(new MapEditor);
+    mapEditor.reset(new MapEditor(MapEditor::SystemType::editor));
   }
 
   // メインループ.

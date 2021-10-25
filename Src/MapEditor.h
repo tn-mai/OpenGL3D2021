@@ -12,19 +12,34 @@
 class MapEditor
 {
 public:
-  MapEditor();
+  // 動作の種類
+  enum class SystemType {
+    editor, // マップエディタ用のロード処理を行う
+    game,   // ゲーム用のロード処理を行う
+  };
+
+  MapEditor(SystemType type);
   ~MapEditor() = default;
 
   void Update(float deltaTime);
   void UpdateCamera(float deltaTime);
   void UpdateUI();
   void Save(const char* filename);
-  void Load(const char* filename);
-  std::shared_ptr<Actor> GetActor(const char* name) const;
+
+  bool Load(const char* filename);
+  std::shared_ptr<Actor> GetActor(const char* name, int* no = nullptr) const;
 
 private:
+  void LoadCommonPrimitive();
+  void InitGroundActor();
+  void InitActorList();
+  void InitEditor();
+
+  const SystemType systemType;             // 動作タイプ
+  glm::vec2 gridSize = glm::vec2(4.0f);    // マス目のサイズ(m)
   glm::ivec2 mapSize = glm::ivec2(21, 21); // マップの広さ
-  std::vector<std::shared_ptr<Actor>> map; // アクター配置マップ
+  std::vector<std::shared_ptr<Actor>> map; // アクター配置マップ(エディタ用)
+  std::vector<int> gameMap;                // アクター配置マップ(ゲーム用)
   std::vector<std::shared_ptr<Actor>> actors; // 配置可能なアクター
   std::shared_ptr<Actor> cursor; // マップ操作カーソル
   glm::vec3 cameraOffset = glm::vec3(0, 30, 30); // カメラの位置
