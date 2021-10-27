@@ -145,15 +145,19 @@
 +std::shared_ptr<Actor> GameEngine::FindActor(const char* name)
 +{
 +  for (int layer = 0; layer < layerCount; ++layer) {
-+    std::shared_ptr<Actor> actor = Find(actors[layer], name);
-+    if (actor) {
-+      return actor;
++    for (std::shared_ptr<Actor>& e : actors[layer]) {
++      if (e->name == name) {
++        return e;
++      }
 +    }
 +  }
-+  std::shared_ptr<Actor> actor = Find(newActors, name);
-+  if (actor) {
-+    return actor;
++
++  for (std::shared_ptr<Actor>& e : newActors) {
++    if (e->name == name) {
++      return e;
++    }
 +  }
++
 +  return nullptr;
 +}
 
