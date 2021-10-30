@@ -8,6 +8,9 @@
 #include "Actor/PlayerActor.h"
 #include "Actor/T34TankActor.h"
 #include "Actor/ElevatorActor.h"
+#include "Audio.h"
+#include "Audio/MainWorkUnit/BGM.h"
+#include "Audio/MainWorkUnit/SE.h"
 #include <imgui.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -154,6 +157,10 @@ void GameManager::Update(float deltaTime)
       gamestart->layer = Layer::UI;
       engine.AddActor(gamestart);
     }
+
+    // BGM‚ðÄ¶
+    Audio::Get().Play(0, CRI_BGM_MAINGAME);
+
     SetState(State::playing);
     break;
 
@@ -166,6 +173,9 @@ void GameManager::Update(float deltaTime)
       gameover->isStatic = true;
       gameover->layer = Layer::UI;
       engine.AddActor(gameover);
+
+      Audio& audio = Audio::Get();
+      audio.Play(0, CRI_BGM_GAMEOVER);
       SetState(State::gameover);
     }
     else {
@@ -184,6 +194,9 @@ void GameManager::Update(float deltaTime)
         gameclear->isStatic = true;
         gameclear->layer = Layer::UI;
         engine.AddActor(gameclear);
+
+        Audio& audio = Audio::Get();
+        audio.Play(0, CRI_BGM_GAMECLEAR);
         SetState(State::gameclear);
       }
     }
@@ -191,6 +204,8 @@ void GameManager::Update(float deltaTime)
 
   case State::gameclear:
     if (engine.GetKey(GLFW_KEY_ENTER)) {
+      Audio& audio = Audio::Get();
+      audio.Play(1, CRI_SE_UI_OK);
       std::shared_ptr<Actor> gameclear = engine.FindActor("GameClear");
       if (gameclear) {
         gameclear->isDead = true;
@@ -201,6 +216,8 @@ void GameManager::Update(float deltaTime)
 
   case State::gameover:
     if (engine.GetKey(GLFW_KEY_ENTER)) {
+      Audio& audio = Audio::Get();
+      audio.Play(1, CRI_SE_UI_OK);
       std::shared_ptr<Actor> gameover = engine.FindActor("GameOver");
       if (gameover) {
         gameover->isDead = true;

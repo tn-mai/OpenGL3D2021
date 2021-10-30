@@ -5,6 +5,8 @@
 #include "BulletActor.h"
 #include "../GameEngine.h"
 #include "../GameManager.h"
+#include "../Audio.h"
+#include "../Audio/MainWorkUnit/SE.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include <iostream>
 
@@ -100,6 +102,8 @@ void T34TankActor::OnUpdate(float deltaTime)
       bullet->friction = 1.0f;
 
       engine.AddActor(bullet);
+
+      Audio::Get().Play(1, CRI_SE_SHOT);
     }
   }
 }
@@ -117,6 +121,9 @@ void T34TankActor::OnCollision(const struct Contact& contact)
     if (health <= 0) {
       isDead = true; // T-34êÌé‘Çè¡ãéÇ∑ÇÈ
       GameManager::Get().AddScore(200);
+
+      // îöî≠âπÇçƒê∂
+      Audio::Get().Play(1, CRI_SE_EXPLOSION);
     }
     contact.b->isDead = true; // íeÇè¡ãéÇ∑ÇÈ
   }

@@ -2,6 +2,8 @@
 * @file GameEngine.cpp
 */
 #include "GameEngine.h"
+#include "Audio.h"
+#include "Audio/OpenGLGame_acf.h"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -142,6 +144,13 @@ bool GameEngine::Initialize()
       io.Fonts->Build();
     }
 
+    // 音声を初期化する.
+    Audio::Initialize("Res/Audio/OpenGLGame.acf",
+      CRI_OPENGLGAME_ACF_DSPSETTING_DSPBUSSETTING_0);
+    Audio& audio = Audio::Get();
+    audio.Load(0, "Res/Audio/MainWorkUnit/SE.acb", nullptr);
+    audio.Load(1, "Res/Audio/MainWorkUnit/BGM.acb", "Res/Audio/MainWorkUnit/BGM.awb");
+
     std::random_device rd;
     engine->rg.seed(rd());
   }
@@ -154,6 +163,9 @@ bool GameEngine::Initialize()
 void GameEngine::Finalize()
 {
   if (engine) {
+    // 音声の終了.
+    Audio::Finalize();
+
     // GUIの終了
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -372,6 +384,9 @@ void GameEngine::NewFrame()
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
+
+  // 音声の更新
+  Audio::Get().Update();
 }
 
 /**

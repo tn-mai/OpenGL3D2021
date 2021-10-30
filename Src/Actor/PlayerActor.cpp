@@ -3,6 +3,8 @@
 */
 #include "PlayerActor.h"
 #include "../GameEngine.h"
+#include "../Audio.h"
+#include "../Audio/MainWorkUnit/SE.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 /**
@@ -35,11 +37,15 @@ void PlayerActor::OnUpdate(float deltaTime)
 {
   GameEngine& engine = GameEngine::Get();
 
+  bool playTankTruck = false;
+
   if (isOnActor) {
     if (engine.GetKey(GLFW_KEY_A)) {
       rotation += glm::radians(90.0f) * deltaTime;
+      playTankTruck = true;
     } else if (engine.GetKey(GLFW_KEY_D)) {
       rotation -= glm::radians(90.0f) * deltaTime;
+      playTankTruck = true;
     }
   }
 
@@ -56,8 +62,10 @@ void PlayerActor::OnUpdate(float deltaTime)
       float tankAccel = 0.2f; // 戦車の加速度
       if (engine.GetKey(GLFW_KEY_W)) {
         velocity += tankFront * tankAccel;
+        playTankTruck = true;
       } else if (engine.GetKey(GLFW_KEY_S)) {
         velocity -= tankFront * tankAccel;
+        playTankTruck = true;
       } else {
         float v = glm::dot(tankFront, velocity);
         velocity -= tankFront * glm::clamp(v, -0.1f, 0.1f);
@@ -66,6 +74,12 @@ void PlayerActor::OnUpdate(float deltaTime)
       float rightSpeed = glm::dot(tankRight, velocity);
       velocity -= tankRight * glm::clamp(rightSpeed, -0.2f, 0.2f);
     //}
+  }
+
+  if (playTankTruck) {
+    Audio::Get().Play(2, CRI_SE_TANK_MOVE);
+  } else {
+    Audio::Get().Stop(2);
   }
 
   // マウス左ボタンの状態を取得する
@@ -103,6 +117,8 @@ void PlayerActor::OnUpdate(float deltaTime)
     bullet->friction = 1.0f;
 
     engine.AddActor(bullet);
+
+    Audio::Get().Play(1, CRI_SE_SHOT);
   }
 
   // 「前回のショットボタンの状態」を更新する
@@ -119,6 +135,7 @@ void PlayerActor::OnCollision(const struct Contact& contact)
   if (contact.b->name == "EnemyBullet") {
     --health;
     if (health <= 0) {
+      Audio::Get().Play(1, CRI_SE_EXPLOSION);
       isDead = true;
     }
     contact.b->isDead = true;
