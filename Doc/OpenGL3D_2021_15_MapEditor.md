@@ -251,7 +251,7 @@
 +    // アクターをマップに配置
 +    std::shared_ptr<Actor> newActor(new Actor(*actor));
 +    newActor->position = position;
-+    tmpMap[x + y * mapSize.x] = newActor;
++    tmpMap[x + y * tmpMapSize.x] = newActor;
    }
  }
 ```
@@ -268,7 +268,7 @@
 
 ```diff
      newActor->position = position;
-     tmpMap[x + y * mapSize.x] = newActor;
+     tmpMap[x + y * tmpMapSize.x] = newActor;
    }
 +
 +  // 読み込んだデータをメンバ変数に反映する
@@ -1037,7 +1037,7 @@ ImGuiではGUIをラベル名で区別します。そのため、すべてのGUI
 +  for (int y = 0; y < mapSize.y; ++y) {
 +    ofs << "  ";
 +    for (int x = 0; x < mapSize.x; ++x) {
-+      ofs << groundMap[x + y * mapSize.y] << ", ";
++      ofs << groundMap[x + y * mapSize.x] << ", ";
 +    }
 +    ofs << '\n';
 +  }
@@ -1053,7 +1053,7 @@ ImGuiではGUIをラベル名で区別します。そのため、すべてのGUI
 
 ```diff
      newActor->position = position;
-     tmpMap[x + y * mapSize.x] = newActor;
+     tmpMap[x + y * tmpMapSize.x] = newActor;
    }
 +
 +  // 地面マップを読み込む

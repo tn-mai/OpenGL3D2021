@@ -798,7 +798,7 @@
 -    std::shared_ptr<Actor> newActor(new Actor(*actor));
 +    std::shared_ptr<Actor> newActor(actor->Clone());
      newActor->position = position;
-     tmpMap[x + y * mapSize.x] = newActor;
+     tmpMap[x + y * tmpMapSize.x] = newActor;
    }
 ```
 
