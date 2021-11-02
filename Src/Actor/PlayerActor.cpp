@@ -77,7 +77,7 @@ void PlayerActor::OnUpdate(float deltaTime)
   }
 
   if (playTankTruck) {
-    Audio::Get().Play(2, CRI_SE_TANK_MOVE);
+    Audio::Get().Play(2, CRI_SE_TANK_MOVE, 0.1f);
   } else {
     Audio::Get().Stop(2);
   }

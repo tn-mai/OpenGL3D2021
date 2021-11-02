@@ -46,6 +46,12 @@ void T34TankActor::OnUpdate(float deltaTime)
     // T-34戦車からタイガーI戦車への距離を計算
     float length = glm::length(d);
 
+    // プレイヤーが視認範囲外にいるときは何もしない
+    const float maxViewLength = 40.0f; // プレイヤーを発見できる距離(m)
+    if (length > maxViewLength) {
+      return;
+    }
+
     // ベクトルdを正規化
     d = glm::normalize(d);
 
@@ -56,7 +62,11 @@ void T34TankActor::OnUpdate(float deltaTime)
     if (r < glm::radians(10.0f)) {
       // タイガーI戦車までの距離が10mより遠い場合は前に加速
       if (length > 10.0f) {
-        velocity += t34Front * 0.3f;
+        // 進行方向への速度が最高速度以下なら加速
+        const float maxSpeed = (40.0f/* km/h */ * 1000.0f)/* m/h */ / 3600.0f/* m/s */;
+        if (glm::dot(velocity, t34Front) < maxSpeed) {
+          velocity += t34Front * 0.3f;
+        }
       } else {
         // ベロシティのt34Front方向の長さを計算
         float v = glm::dot(t34Front, velocity);

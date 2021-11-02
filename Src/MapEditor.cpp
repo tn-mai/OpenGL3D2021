@@ -8,9 +8,9 @@
 #include "GameEngine.h"
 #include <imgui.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <math.h>
 #include <fstream>
-#include <filesystem>
 #include <iostream>
 
 /**
@@ -180,9 +180,37 @@ void MapEditor::InitActorList()
       "Res/Tree.obj", "Res/Tree.tga",
       Box(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
     {
+      ActorType::other, "Tree2",
+      "Res/tree/fir.obj", "Res/tree/branch.tga",
+      Box(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
+    {
+      ActorType::other, "Tree3",
+      "Res/tree/LowPolyTree.obj", "Res/tree/LowPolyLeaves.tga",
+      Box(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
+    {
+      ActorType::other, "Tree4",
+      "Res/tree/Tree_Conifer_1.obj", "Res/tree/Fantasy_conifer_1.tga",
+      Box(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)), glm::vec3(0.02f) },
+    {
+      ActorType::other, "House-1-5(2)",
+      "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 2.tga",
+      Box(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
+    {
+      ActorType::other, "House-1-5(3)",
+      "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 3.tga",
+      Box(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
+    {
+      ActorType::other, "House-1-5(4)",
+      "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 4.tga",
+      Box(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
+    {
+      ActorType::other, "House-1-5(5)",
+      "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 5.tga",
+      Box(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
+    {
       ActorType::other, "Warehouse",
       "Res/Warehouse.obj", "Res/Building.tga",
-      Box(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)) },
+      Box(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
 
     { ActorType::other, "BrickHouse",
       "Res/house/HouseRender.obj", "Res/house/House38UVTexture.tga",
@@ -192,7 +220,7 @@ void MapEditor::InitActorList()
     { ActorType::other, "BrokenHouse",
       "Res/house/broken-house.obj", "Res/house/broken-house.tga",
       Box(glm::vec3(-2, 0, -2), glm::vec3(2, 2, 2)),
-      glm::vec3(0.75f) },
+      glm::vec3(1.00f) },
 
     { ActorType::player, "Tiger-I",
       "Res/tank/Tiger_I.obj", "Res/tank/PzVl_Tiger_I.tga",
@@ -253,6 +281,59 @@ void MapEditor::InitEditor()
 }
 
 /**
+* マップサイズを変更する
+*/
+void MapEditor::Resize(const  glm::ivec2& newMapSize)
+{
+  if (mapSize.x == newMapSize.x && mapSize.y == newMapSize.y) {
+    return;
+  }
+
+  GameEngine& engine = GameEngine::Get();
+
+  // 地面モデルの大きさを変更
+  std::shared_ptr<Actor> groundActor = engine.FindActor("Ground");
+  if (groundActor) {
+    groundActor->scale = glm::vec3(newMapSize.x, 1.0f, newMapSize.y);
+    const glm::vec2 colliderSize = glm::vec2(newMapSize) * gridSize * 0.5f;
+    groundActor->collider = CreateBoxShape(
+      glm::vec3(-colliderSize.x, -10.0f, -colliderSize.y),
+      glm::vec3(colliderSize.x, 0.0f, colliderSize.y));
+  }
+
+  // マップデータテクスチャの大きさを変更
+  std::vector<uint32_t> newGroundMap(newMapSize.x * newMapSize.y, 0);
+  for (int y = 0; y < std::min(newMapSize.y, mapSize.y); ++y) {
+    for (int x = 0; x < std::min(newMapSize.x, mapSize.x); ++x) {
+      newGroundMap[x + y * newMapSize.x] = groundMap[x + y * mapSize.x];
+    }
+  }
+  groundMap.swap(newGroundMap);
+  engine.ResizeGroundMap(newMapSize.x, newMapSize.y, groundMap.data());
+
+  // マップデータの大きさを変更
+  for (auto& e : map) {
+    if (e) {
+      e->isDead = true;
+    }
+  }
+  std::vector<std::shared_ptr<Actor>> newMap(newMapSize.x * newMapSize.y);
+  for (int y = 0; y < std::min(newMapSize.y, mapSize.y); ++y) {
+    for (int x = 0; x < std::min(newMapSize.x, mapSize.x); ++x) {
+      std::shared_ptr<Actor>& actor = map[x + y * mapSize.x];
+      if (actor) {
+        actor->isDead = false;
+        actor->position.x = (x - newMapSize.x / 2) * gridSize.x;
+        actor->position.z = (y - newMapSize.y / 2) * gridSize.y;
+        newMap[x + y * newMapSize.x] = actor;
+      }
+    }
+  }
+  map.swap(newMap);
+  mapSize = newMapSize;
+}
+
+/**
 * マップエディタの状態を更新する
 */
 void MapEditor::Update(float deltaTime)
@@ -285,6 +366,7 @@ void MapEditor::Update(float deltaTime)
     case Mode::set:
       // 選択アクターと種類が同じ場合は配置しない
       if (target && target->name == cursor->name) {
+        target->rotation = cursor->rotation;
         break;
       }
       // 既存のアクターがあれば削除する
@@ -375,6 +457,68 @@ void MapEditor::UpdateUI()
   if (Button(u8"ロード")) {
     Load("mapdata.txt");
   }
+  SameLine();
+
+  static glm::ivec2 newMapSize;
+  if (Button(u8"新規作成")) {
+    OpenPopup(u8"新しいマップの広さ");
+    newMapSize = glm::ivec2(21, 21);
+  }
+  if (BeginPopupModal(u8"新しいマップの広さ")) {
+    Text(u8"横");
+    SameLine();
+    SetNextItemWidth(-1);
+    SliderInt("##map size x", &newMapSize.x, 11, 101, "%d", ImGuiSliderFlags_AlwaysClamp);
+    newMapSize.x = newMapSize.x | 1;
+    Text(u8"縦");
+    SameLine();
+    SetNextItemWidth(-1);
+    SliderInt("##map size y", &newMapSize.y, 11, 101, "%d", ImGuiSliderFlags_AlwaysClamp);
+    newMapSize.y = newMapSize.y | 1;
+    if (Button(u8"このサイズで作成")) {
+      // マップデータを消去
+      mapSize = newMapSize;
+      map = std::vector<std::shared_ptr<Actor>>(mapSize.x * mapSize.y);
+      groundMap = std::vector<uint32_t>(mapSize.x * mapSize.y, 0);
+      engine.ResizeGroundMap(mapSize.x, mapSize.y, groundMap.data());
+      engine.ClearAllActors();
+      InitGroundActor();
+      InitEditor();
+      CloseCurrentPopup();
+    }
+    SameLine();
+    if (Button(u8"キャンセル")) {
+      CloseCurrentPopup();
+    }
+    EndPopup();
+  }
+
+  SameLine();
+  if (Button(u8"マップサイズ")) {
+    OpenPopup(u8"マップサイズ変更");
+    newMapSize = mapSize;
+  }
+  SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
+  if (BeginPopupModal(u8"マップサイズ変更")) {
+    Text(u8"横");
+    SameLine();
+    SliderInt("##map size x", &newMapSize.x, 11, 101, "%d", ImGuiSliderFlags_AlwaysClamp);
+    newMapSize.x = newMapSize.x | 1;
+    Text(u8"縦");
+    SameLine();
+    SliderInt("##map size y", &newMapSize.y, 11, 101, "%d", ImGuiSliderFlags_AlwaysClamp);
+    newMapSize.y = newMapSize.y | 1;
+    if (Button("OK")) {
+      Resize(newMapSize);
+      CloseCurrentPopup();
+    }
+    SameLine();
+    if (Button(u8"キャンセル")) {
+      CloseCurrentPopup();
+    }
+    EndPopup();
+  }
+
   Text(toolName[static_cast<int>(mode)]);
   End();
 
@@ -395,6 +539,18 @@ void MapEditor::UpdateUI()
     }
     EndListBox();
   }
+  End();
+
+  Begin(u8"アクター情報");
+  Text(u8"名前: %s", cursor->name.c_str());
+  Text(u8"回転:");
+  SameLine();
+  static int rotation = 0;
+  static const char* strRotation[] = { "0", "90", "180", "270" };
+  SliderInt("rotation", &rotation,
+    0, static_cast<int>(std::size(strRotation)) - 1,
+    strRotation[rotation], ImGuiSliderFlags_NoInput);
+  cursor->rotation = static_cast<float>(rotation) * glm::radians(90.0f);
   End();
 
   if (mode == Mode::groundPaint) {
@@ -592,8 +748,10 @@ void MapEditor::Save(const char* filename)
       continue;
     }
     char tmp[256];
-    snprintf(tmp, std::size(tmp), "  [ %s, %.03f, %.03f, %.03f ],\n",
-      e->name.c_str(), e->position.x, e->position.y, e->position.z);
+    snprintf(tmp, std::size(tmp),
+      "  [ %s, %.03f, %.03f, %.03f, %.03f, %.03f, %.03f, %.03f ],\n",
+      e->name.c_str(), e->position.x, e->position.y, e->position.z,
+      e->scale.x, e->scale.y, e->scale.z, glm::degrees(e->rotation));
     ofs << tmp;
   }
   ofs << "],\n";
@@ -602,7 +760,7 @@ void MapEditor::Save(const char* filename)
   for (int y = 0; y < mapSize.y; ++y) {
     ofs << "  ";
     for (int x = 0; x < mapSize.x; ++x) {
-      ofs << groundMap[x + y * mapSize.y] << ", ";
+      ofs << groundMap[x + y * mapSize.x] << ", ";
     }
     ofs << '\n';
   }
@@ -673,11 +831,15 @@ bool MapEditor::Load(const char* filename)
     // 行を解析
     char name[256];
     glm::vec3 position(0);
-    if (sscanf(line.data(), " [ %255[^,], %f, %f, %f ], ",
-      name, &position.x, &position.y, &position.z) != 4) {
+    glm::vec3 scale(1);
+    float rotation = 0;
+    if (sscanf(line.data(), " [ %255[^,], %f, %f, %f, %f, %f, %f, %f ], ",
+      name, &position.x, &position.y, &position.z,
+      &scale.x, &scale.y, &scale.z, &rotation) < 4) {
       std::cerr << "[警告]" << __func__ << ": 配置データの読み込みに失敗\n" <<
         "  " << line << "\n";
     }
+    rotation = glm::radians(rotation);
     name[255] = '\0';
 
     // アクターを取得
@@ -701,8 +863,19 @@ bool MapEditor::Load(const char* filename)
     // アクターをマップに配置
     std::shared_ptr<Actor> newActor = actor->Clone();
     newActor->position = position;
-    tmpMap[x + y * mapSize.x] = newActor;
-    tmpGameMap[x + y * mapSize.x] = actorNo;
+    newActor->scale = scale;
+    newActor->rotation = rotation;
+    if (newActor->collider->shapeType == ShapeType::box && rotation) {
+      // 衝突判定を回転させる
+      Box& box = static_cast<Box&>(*newActor->collider);
+      const glm::mat3 matRot = glm::rotate(glm::mat4(1), rotation, glm::vec3(0, 1, 0));
+      const glm::vec3 a = matRot * box.min;
+      const glm::vec3 b = matRot * box.max;
+      box.min = glm::min(a, b);
+      box.max = glm::max(a, b);
+    }
+    tmpMap[x + y * tmpMapSize.x] = newActor;
+    tmpGameMap[x + y * tmpMapSize.x] = actorNo;
   }
 
   // 地面マップを読み込む
@@ -735,12 +908,12 @@ bool MapEditor::Load(const char* filename)
 
   // 読み込んだデータをメンバ変数に反映する
   mapSize = tmpMapSize;
-  gameMap.swap(tmpGameMap);
   map.swap(tmpMap);
   groundMap.swap(tmpGroundMap);
+  gameMap.swap(tmpGameMap);
 
   GameEngine& engine = GameEngine::Get();
-  engine.UpdateGroundMap(0, 0, mapSize.x, mapSize.y, groundMap.data());
+  engine.ResizeGroundMap(mapSize.x, mapSize.y, groundMap.data());
 
   // ゲームエンジンのアクターを更新
   engine.ClearAllActors();

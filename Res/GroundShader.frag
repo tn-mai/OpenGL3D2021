@@ -15,6 +15,7 @@ layout(binding=1) uniform sampler2D texShadow;
 layout(binding=2) uniform sampler2D texMap;
 
 layout(location=100) uniform mat4 matShadow;
+layout(location=101) uniform vec4 mapSize; // マップの広さ
 
 // TODO: テキスト未追加
 layout(location=200) uniform vec4 actorColor;
@@ -43,10 +44,12 @@ const vec2 poissonDisk[sampleCount] = {
 // フラグメントシェーダプログラム
 void main()
 {
-  const float tileSize = 4.0;
-  const vec2 mapSize = vec2(21.0, 21.0);
-  vec2 texcoord = inPosition.xz / tileSize + mapSize * 0.5;
+  const float tileSize = 4.0; // マス目の大きさ
+
+  // テクスチャ番号を取得
+  vec2 texcoord = inPosition.xz / tileSize + mapSize.xy * 0.5;
   float tileNo = texelFetch(texMap, ivec2(texcoord), 0).r * 255.0;
+
   vec4 tc = texture(texColor, vec3(fract(texcoord), tileNo));
   fragColor = inColor * tc * actorColor;
 

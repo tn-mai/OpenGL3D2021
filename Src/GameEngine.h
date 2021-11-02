@@ -54,6 +54,7 @@ public:
   std::shared_ptr<Texture> LoadTexture(const char* name, const char** fileList, size_t count);
 
   void UpdateGroundMap(int x, int y, int width, int height, const void* data);
+  void ResizeGroundMap(int width, int height, const void* data);
 
   /**
   * この関数がtrueを返したらウィンドウを閉じる(=アプリを終了させる)

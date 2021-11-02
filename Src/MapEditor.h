@@ -34,6 +34,7 @@ private:
   void InitGroundActor();
   void InitActorList();
   void InitEditor();
+  void Resize(const glm::ivec2& newMapSize);
 
   const SystemType systemType;             // 動作タイプ
   glm::vec2 gridSize = glm::vec2(4.0f);    // マス目のサイズ(m)

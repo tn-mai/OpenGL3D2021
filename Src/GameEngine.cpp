@@ -94,9 +94,9 @@ bool GameEngine::Initialize()
     engine->pipelineGround.reset(new ProgramPipeline(
       "Res/FragmentLighting.vert", "Res/GroundShader.frag"));
     std::vector<uint32_t> mapData(engine->mapSize.x * engine->mapSize.y, 0);
-    engine->texMap.reset(new Texture("GroundMap",
+    engine->ResizeGroundMap(
       engine->mapSize.x, engine->mapSize.y,
-      mapData.data(), GL_RGBA, GL_UNSIGNED_BYTE));
+      mapData.data());
 
     for (int layer = 0; layer < layerCount; ++layer) {
       engine->actors[layer].reserve(1000);
@@ -448,7 +448,12 @@ void GameEngine::RenderDefault()
   fbo->Bind();
 
   glEnable(GL_DEPTH_TEST); // 深度バッファを有効にする.
+
+  // 裏面カリングを無効にする
+  // - 戦車モデルの一部が裏返っており、裏面を表示しないと本来のモデルにならない。
+  // - 木や草のモデルは裏面を表示する必要がある。
   glDisable(GL_CULL_FACE);
+
   glClearColor(0.5f, 0.5f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -641,6 +646,19 @@ void GameEngine::UpdateGroundMap(int x, int y, int width, int height, const void
   if (texMap) {
     texMap->Write(x, y, width, height, data, GL_RGBA, GL_UNSIGNED_BYTE);
   }
+}
+
+/**
+* 地面のマップデータの大きさを変更する
+*/
+void GameEngine::ResizeGroundMap(int width, int height, const void* data)
+{
+  mapSize = glm::ivec2(width, height);
+  texMap.reset(new Texture("GroundMap",
+    mapSize.x, mapSize.y, data, GL_RGBA, GL_UNSIGNED_BYTE));
+
+  const GLint locMapSize = 101;
+  pipelineGround->SetUniform(locMapSize, glm::vec4(mapSize, 0, 0));
 }
 
 /**
