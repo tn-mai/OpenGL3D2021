@@ -119,6 +119,11 @@ void main()
   vec4 tc = texture(texColor, inTexcoord);
   fragColor = inColor * tc * actorColor;
 
+  // TODO: テキスト未実装
+  if (fragColor.a < 0.5) {
+    discard;
+  }
+
   // ワールド座標系の法線を正規化.
   vec3 worldNormal = normalize(inNormal);
 

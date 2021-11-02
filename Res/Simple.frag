@@ -17,5 +17,10 @@ layout(location=200) uniform vec4 modelColor;
 void main() {
   vec4 tc = texture(texColor, inTexcoord);
   fragColor = inColor * tc * modelColor;
+
+  // TODO: テキスト未実装
+  if (fragColor.a < 0.5) {
+    discard;
+  }
 }
 
