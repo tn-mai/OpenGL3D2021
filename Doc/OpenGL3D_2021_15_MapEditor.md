@@ -974,7 +974,7 @@ vec4 texelFetch(サンプラ, 読み取り位置, 読み取るミップマップ
        }
        break;
 +
-+    case Mode::mapPaint:
++    case Mode::groundPaint:
 +      groundMap[x + y * mapSize.x] = currentTileNo;
 +      engine.UpdateGroundMap(0, 0, mapSize.x, mapSize.y, groundMap.data());
 +      break;
@@ -992,7 +992,7 @@ vec4 texelFetch(サンプラ, 読み取り位置, 読み取るミップマップ
 -  const char* toolName[] = { u8"選択", u8"配置", u8"削除" };
 -  const Mode modeList[] = { Mode::select, Mode::set, Mode::remove };
 +  const char* toolName[] = { u8"選択", u8"配置", u8"削除", u8"地面ペイント" };
-+  const Mode modeList[] = { Mode::select, Mode::set, Mode::remove, Mode::mapPaint };
++  const Mode modeList[] = { Mode::select, Mode::set, Mode::remove, Mode::groundPaint };
    for (int i = 0; i < std::size(toolName); ++i) {
      SameLine();
 ```
