@@ -788,7 +788,7 @@
 
 ### 1.9 クローン仮想関数を使ってアクターをコピーする
 
-最後に、アクターのコピー方法を変更します。`MapEditor.cpp`を開き、ロード関数を次のように変更してください
+アクターのコピー方法を、クローン関数を使うように変更します。`MapEditor.cpp`を開き、ロード関数を次のように変更してください
 
 ```diff
        continue;
@@ -804,7 +804,38 @@
 
 プログラムが書けたらビルドして実行してください。プレイヤーが操作できたら成功です。
 
-### 1.10 敵が意図した弾を撃つようにする
+### 1.10 攻撃対象を指定する
+
+現在のT-34には攻撃対象が設定されていませんので、プレイヤーを追いかけたり弾を撃ったりをしません。そこで、攻撃対象を設定しましょう。`T34TankActor.h`を開き、次のプログラムを追加してください。
+
+```diff
+   virtual ~T34TankActor() = default;
+   virtual std::shared_ptr<Actor> Clone() const override {
+     return std::shared_ptr<Actor>(new T34TankActor(*this));
+   }
++
++  // 攻撃対象を設定
++  void SetTarget(std::shared_ptr<Actor> target) { this->target; }
++
+   virtual void OnUpdate(float deltaTime) override;
+   virtual void OnCollision(const struct Contact& contact) override;
+```
+
+次に、`GameManager.cpp`を開き、次のプログラムを追加してください。
+
+```diff
+ for (auto& e : engine.GetNewActors()) {
+   if (e->name == "T-34") {
+     T34TankActor& enemy = static_cast<T34TankActor&>(*e);
++    enemy.SetTarget(palyerTank); // 攻撃対象を設定
+     enemies.push_back(e);
+   }
+ }
+```
+
+プログラムが書けたらビルドして実行してください。敵がプレイヤーを追いかけてきたら成功です。このとき、弾が正しく表示されないかもしれませんが、それは次の節で修正します。
+
+### 1.11 敵が意図した弾を撃つようにする
 
 弾を発射するときの挙動がおかしいのは、弾のプリミティブを番号で取得しているからです。
 
@@ -818,7 +849,7 @@
        GameEngine& engine = GameEngine::Get();
        std::shared_ptr<Actor> bullet(new BulletActor{ "EnemyBullet",
 -        engine.GetPrimitive(9),
-+        engine.LoadPrimitive("Res/Bullet.obj"),
++        engine.GetPrimitive("Res/Bullet.obj"),
          engine.LoadTexture("Res/Bullet.tga"),
          position, glm::vec3(0.25f), rotation, glm::vec3(0) });
 ```
