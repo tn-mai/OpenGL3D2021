@@ -150,7 +150,7 @@ void RandomMovingEnemyActor::OnUpdate(float deltaTime)
       position, glm::vec3(0.25f), rotation, glm::vec3(0) });
     bullet->lifespan = 1.5f;
     bullet->velocity = front * 20.0f;
-    bullet->collider = CreateBoxShape(glm::vec3(-0.25f), glm::vec3(0.25f));
+    bullet->collider = Box::Create(glm::vec3(-0.25f), glm::vec3(0.25f));
     bullet->mass = 6.8f;
     bullet->friction = 1.0f;
 

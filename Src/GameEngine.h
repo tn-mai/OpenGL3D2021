@@ -157,6 +157,11 @@ private:
   TextureBuffer textureBuffer;                      // テクスチャ配列
   Camera mainCamera;
 
+  // コライダー表示用変数(デバッグ用)
+  bool showCollider = true; // コライダー表示フラグ
+  std::shared_ptr<ProgramPipeline> pipelineCollider;
+  std::shared_ptr<Texture> texCollider;
+
   // TODO: テキスト未追加
   std::mt19937 rg;
   std::shared_ptr<FramebufferObject> fbo;

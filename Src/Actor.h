@@ -7,6 +7,7 @@
 #include "Primitive.h"
 #include "Texture.h"
 #include "ProgramPipeline.h"
+#include "Collision.h"
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
@@ -24,64 +25,6 @@
 * 8. EnemyActorクラスのTickをオーバーライド.
 * 9. PlayerActorクラスを作成し、Tickをオーバーライド.
 */
-
-// 図形の種類
-enum class ShapeType
-{
-  box,      // 直方体
-  cylinder, // 円柱
-};
-
-struct Collider
-{
-public:
-  explicit Collider(ShapeType type) : shapeType(type) {}
-  virtual ~Collider() = default;
-
-  ShapeType shapeType;
-};
-
-/**
-* 直方体
-*/
-struct Box : public Collider
-{
-  Box() : Collider(ShapeType::box) {};
-  Box(const glm::vec3& min, const glm::vec3& max) :
-    Collider(ShapeType::box), min(min), max(max)
-  {}
-  virtual ~Box() = default;
-
-  glm::vec3 min = glm::vec3(0);
-  glm::vec3 max = glm::vec3(0);
-};
-
-inline std::shared_ptr<Box> CreateBoxShape(
-  const glm::vec3& min, const glm::vec3& max)
-{
-  return std::make_shared<Box>(min, max);
-}
-
-/**
-* 円柱
-*/
-struct Cylinder : public Collider
-{
-  Cylinder(const glm::vec3& bottom, float radius, float height) :
-    Collider(ShapeType::cylinder), bottom(bottom), radius(radius), height(height)
-  {}
-  virtual ~Cylinder() = default;
-
-  glm::vec3 bottom = glm::vec3(0); // 下端の座標
-  float radius = 0.5f; // 半径
-  float height = 1.0f; // 高さ
-};
-
-inline std::shared_ptr<Cylinder> CreateCylinderShape(
-  const glm::vec3& bottom, float radius, float height)
-{
-  return std::make_shared<Cylinder>(bottom, radius, height);
-}
 
 /**
 * 表示レイヤー
@@ -119,7 +62,11 @@ public:
 
   virtual ~Actor() = default;
   virtual std::shared_ptr<Actor> Clone() const {
-    return std::shared_ptr<Actor>(new Actor(*this));
+    std::shared_ptr<Actor> clone(new Actor(*this));
+    if (collider) {
+      clone->collider = collider->Clone();
+    }
+    return clone;
   }
   virtual void OnUpdate(float deltaTime);
   virtual void OnCollision(const struct Contact& contact);
@@ -138,7 +85,7 @@ public:
   bool isDead = false;             // false=死亡(削除待ち) true=生存中
 
   std::shared_ptr<Collider> collider; // 衝突判定
-  float contactCount = 1;         // 接触点の数
+  //float contactCount = 1;         // 接触点の数
   float mass = 1;                  // 質量(kg)
   float cor = 0.4f;                // 反発係数
   float friction = 0.7f;           // 摩擦係数
@@ -185,10 +132,6 @@ struct Contact
 Contact Reverse(const Contact& contact);
 
 bool DetectCollision(Actor& a, Actor& b, Contact& contact);
-bool CollisionBoxBox(Actor& a, Actor& b, Contact& contact);
-bool CollisionCylinderCylinder(Actor& a, Actor& b, Contact& contact);
-bool CollisionBoxCylinder(Actor& a, Actor& b, Contact& contact);
-bool CollisionCylinderBox(Actor& a, Actor& b, Contact& contact);
 void SolveContact(Contact& contact);
 bool Equal(const Contact& ca, const Contact& cb);
 bool Equal2(const Contact& ca, const Contact& cb);

@@ -43,6 +43,7 @@ private:
   std::vector<int> gameMap;                // アクター配置マップ(ゲーム用)
   std::vector<std::shared_ptr<Actor>> actors; // 配置可能なアクター
   std::shared_ptr<Actor> cursor; // マップ操作カーソル
+  std::shared_ptr<Actor> cursorBase; // マップ操作カーソルの元になったアクター
   glm::vec3 cameraOffset = glm::vec3(0, 30, 30); // カメラの位置
 
   std::vector<std::shared_ptr<Texture>> groundTiles; // 地面用テクスチャ

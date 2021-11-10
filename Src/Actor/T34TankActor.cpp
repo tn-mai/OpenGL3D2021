@@ -107,7 +107,7 @@ void T34TankActor::OnUpdate(float deltaTime)
       bullet->velocity = t34Front * 20.0f;
 
       // ’e‚ÉÕ“Ë”»’è‚ð•t‚¯‚é
-      bullet->collider = CreateBoxShape(glm::vec3(-0.25f), glm::vec3(0.25f));
+      bullet->collider = Box::Create(glm::vec3(-0.25f), glm::vec3(0.25f));
       bullet->mass = 6.8f;
       bullet->friction = 1.0f;
 

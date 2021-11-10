@@ -5,6 +5,7 @@
 #include "MapEditor.h"
 #include "Actor/PlayerActor.h"
 #include "Actor/T34TankActor.h"
+#include "Actor/Boss01.h"
 #include "GameEngine.h"
 #include <imgui.h>
 #include <glm/glm.hpp>
@@ -127,7 +128,7 @@ void MapEditor::InitGroundActor()
   groundActor->shader = Shader::Ground;
   groundActor->isStatic = true;
   const glm::vec2 colliderSize = glm::vec2(mapSize) * gridSize * 0.5f;
-  groundActor->collider = CreateBoxShape(
+  groundActor->collider = Box::Create(
     glm::vec3(-colliderSize.x, -10.0f, -colliderSize.y),
     glm::vec3(colliderSize.x, 0.0f, colliderSize.y));
   engine.AddActor(groundActor);
@@ -156,6 +157,7 @@ void MapEditor::InitActorList()
   enum class ActorType {
     player,
     t34tank,
+    boss01,
     other,
   };
 
@@ -165,7 +167,7 @@ void MapEditor::InitActorList()
     const char* name;
     const char* primitiveFilename;
     const char* textureFilename;
-    Box collider;
+    std::shared_ptr<Collider> collider;
     glm::vec3 scale = glm::vec3(1);
     float rotation = 0;
     glm::vec3 adjustment = glm::vec3(0);
@@ -174,61 +176,77 @@ void MapEditor::InitActorList()
     {
       ActorType::other, "Cube",
       "Res/Cube.obj", "Res/Triangle.tga",
-      Box(glm::vec3(0, 0, 0), glm::vec3(2, 2, 2)) },
+      Box::Create(glm::vec3(0, 0, 0), glm::vec3(2, 2, 2)) },
     {
       ActorType::other, "Tree",
       "Res/Tree.obj", "Res/Tree.tga",
-      Box(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
+      Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
     {
       ActorType::other, "Tree2",
       "Res/tree/fir.obj", "Res/tree/branch.tga",
-      Box(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
+      Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
     {
       ActorType::other, "Tree3",
       "Res/tree/LowPolyTree.obj", "Res/tree/LowPolyLeaves.tga",
-      Box(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
+      Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
     {
       ActorType::other, "Tree4",
       "Res/tree/Tree_Conifer_1.obj", "Res/tree/Fantasy_conifer_1.tga",
-      Box(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)), glm::vec3(0.02f) },
+      Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)), glm::vec3(0.02f) },
     {
       ActorType::other, "House-1-5(2)",
       "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 2.tga",
-      Box(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
+      Box::Create(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
     {
       ActorType::other, "House-1-5(3)",
       "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 3.tga",
-      Box(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
+      Box::Create(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
     {
       ActorType::other, "House-1-5(4)",
       "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 4.tga",
-      Box(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
+      Box::Create(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
     {
       ActorType::other, "House-1-5(5)",
       "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 5.tga",
-      Box(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
+      Box::Create(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
+    {
+      ActorType::other, "Lamppost",
+      "Res/house/test/Lamppost.obj", "Res/house/test/Houses Colorscheme.tga",
+      Box::Create(glm::vec3(-0.5f, 0, -0.5f), glm::vec3(0.5f, 2, 0.5f)) },
+    {
+      ActorType::other, "Bench",
+      "Res/house/test/Bench.obj", "Res/house/test/Houses Colorscheme.tga",
+      Box::Create(glm::vec3(-0.5f, 0, -0.5f), glm::vec3(0.5f, 0.5f, 0.5f)) },
+    {
+      ActorType::other, "Chair",
+      "Res/house/test/Chair.obj", "Res/house/test/Houses Colorscheme.tga",
+      Box::Create(glm::vec3(-0.5f, 0, -0.5f), glm::vec3(0.5f, 0.5f, 0.5f)) },
     {
       ActorType::other, "Warehouse",
       "Res/Warehouse.obj", "Res/Building.tga",
-      Box(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
+      Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
 
     { ActorType::other, "BrickHouse",
       "Res/house/HouseRender.obj", "Res/house/House38UVTexture.tga",
-      Box(glm::vec3(-3, 0, -2), glm::vec3(3, 3, 2)),
+      Box::Create(glm::vec3(-3, 0, -2), glm::vec3(3, 3, 2)),
       glm::vec3(2.0f), 0, glm::vec3(-2.6f, 2.0f, 0.8f) },
 
     { ActorType::other, "BrokenHouse",
       "Res/house/broken-house.obj", "Res/house/broken-house.tga",
-      Box(glm::vec3(-2, 0, -2), glm::vec3(2, 2, 2)),
+      Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 2, 2)),
       glm::vec3(1.00f) },
-
-    { ActorType::player, "Tiger-I",
-      "Res/tank/Tiger_I.obj", "Res/tank/PzVl_Tiger_I.tga",
-      Box(glm::vec3(-1, 0, -1), glm::vec3(1, 2, 1)) },
 
     { ActorType::t34tank, "T-34",
       "Res/tank/T34.obj", "Res/tank/T-34.tga",
-      Box(glm::vec3(-1, 0, -1), glm::vec3(1, 2, 1)) },
+      Box::Create(glm::vec3(-1, 0, -1), glm::vec3(1, 2, 1)) },
+
+    { ActorType::boss01, "Boss01",
+      "Res/Black_Track.obj", "Res/Black_Track.tga",
+      Box::Create(glm::vec3(-3, 0, -3), glm::vec3(3, 2.5f, 3)) },
+
+    { ActorType::player, "Tiger-I",
+      "Res/tank/Tiger_I.obj", "Res/tank/PzVl_Tiger_I.tga",
+      Box::Create(glm::vec3(-1, 0, -1), glm::vec3(1, 2, 1)) },
   };
   for (const auto& e : objectList) {
     engine.LoadPrimitive(e.primitiveFilename);
@@ -244,8 +262,14 @@ void MapEditor::InitActorList()
         engine.GetPrimitive(e.primitiveFilename),
         engine.LoadTexture(e.textureFilename),
         glm::vec3(0), e.scale, e.rotation, e.adjustment, nullptr));
-      actor->collider = std::shared_ptr<Box>(new Box(e.collider.min, e.collider.max));
+      actor->collider = e.collider;
       actor->mass = 36'000;
+      break;
+
+    case ActorType::boss01:
+      actor.reset(new Boss01(
+        glm::vec3(0), e.scale, e.rotation, nullptr));
+      actor->collider = e.collider;
       break;
 
     case ActorType::other:
@@ -254,7 +278,7 @@ void MapEditor::InitActorList()
         engine.GetPrimitive(e.primitiveFilename),
         engine.LoadTexture(e.textureFilename),
         glm::vec3(0), e.scale, e.rotation, e.adjustment));
-      actor->collider = std::shared_ptr<Box>(new Box(e.collider.min, e.collider.max));
+      actor->collider = e.collider;
       actor->isStatic = true;
       break;
     }
@@ -296,7 +320,7 @@ void MapEditor::Resize(const  glm::ivec2& newMapSize)
   if (groundActor) {
     groundActor->scale = glm::vec3(newMapSize.x, 1.0f, newMapSize.y);
     const glm::vec2 colliderSize = glm::vec2(newMapSize) * gridSize * 0.5f;
-    groundActor->collider = CreateBoxShape(
+    groundActor->collider = Box::Create(
       glm::vec3(-colliderSize.x, -10.0f, -colliderSize.y),
       glm::vec3(colliderSize.x, 0.0f, colliderSize.y));
   }
@@ -530,7 +554,9 @@ void MapEditor::UpdateUI()
     for (int i = 0; i < actors.size(); ++i) {
       const bool isSelected = cursor == actors[i];
       if (Selectable(actors[i]->name.c_str(), isSelected)) {
-        *cursor = *actors[i];
+        // エディタ上でコライダーの回転を可能にするため、クローンを作る
+        cursorBase = actors[i];
+        *cursor = *actors[i]->Clone();
         cursor->color = glm::vec4(0.2f, 0.5f, 1.0f, 0.5f);
       }
       if (isSelected) {
@@ -550,7 +576,12 @@ void MapEditor::UpdateUI()
   SliderInt("rotation", &rotation,
     0, static_cast<int>(std::size(strRotation)) - 1,
     strRotation[rotation], ImGuiSliderFlags_NoInput);
-  cursor->rotation = static_cast<float>(rotation) * glm::radians(90.0f);
+  const float radians = glm::radians(static_cast<float>(rotation) * 90.0f);
+  if (radians != cursor->rotation) {
+    cursor->rotation = radians;
+    cursor->collider = cursorBase->collider->Clone();
+    cursor->collider->RotateY(radians);
+  }
   End();
 
   if (mode == Mode::groundPaint) {
@@ -865,14 +896,9 @@ bool MapEditor::Load(const char* filename)
     newActor->position = position;
     newActor->scale = scale;
     newActor->rotation = rotation;
-    if (newActor->collider->shapeType == ShapeType::box && rotation) {
+    if (rotation) {
       // 衝突判定を回転させる
-      Box& box = static_cast<Box&>(*newActor->collider);
-      const glm::mat3 matRot = glm::rotate(glm::mat4(1), rotation, glm::vec3(0, 1, 0));
-      const glm::vec3 a = matRot * box.min;
-      const glm::vec3 b = matRot * box.max;
-      box.min = glm::min(a, b);
-      box.max = glm::max(a, b);
+      newActor->collider->RotateY(rotation);
     }
     tmpMap[x + y * tmpMapSize.x] = newActor;
     tmpGameMap[x + y * tmpMapSize.x] = actorNo;

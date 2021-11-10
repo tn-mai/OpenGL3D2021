@@ -21,8 +21,8 @@ PlayerActor::PlayerActor(
     position, scale, rotation, glm::vec3(0))
 {
   health = 10;
-  //collider = CreateBoxCollider(glm::vec3(-1.8f, 0, -1.8f), glm::vec3(1.8f, 2.8f, 1.8f));
-  collider = CreateCylinderShape(glm::vec3(0), 1.8f, 2.8f);
+  //collider = Box::Create(glm::vec3(-1.8f, 0, -1.8f), glm::vec3(1.8f, 2.8f, 1.8f));
+  collider = Cylinder::Create(glm::vec3(0), 1.8f, 2.5f);
   mass = 57'000;
   //cor = 0.1f;
   //friction = 1.0f;
@@ -70,10 +70,13 @@ void PlayerActor::OnUpdate(float deltaTime)
         float v = glm::dot(tankFront, velocity);
         velocity -= tankFront * glm::clamp(v, -0.1f, 0.1f);
       }
-      glm::vec3 tankRight = glm::normalize(glm::cross(tankFront, glm::vec3(0, 1, 0)));
-      float rightSpeed = glm::dot(tankRight, velocity);
-      velocity -= tankRight * glm::clamp(rightSpeed, -0.2f, 0.2f);
+      //glm::vec3 tankRight = glm::normalize(glm::cross(tankFront, glm::vec3(0, 1, 0)));
+      //float rightSpeed = glm::dot(tankRight, velocity);
+      //velocity -= tankRight * glm::clamp(rightSpeed, -0.2f, 0.2f);
     //}
+      if (engine.GetKey(GLFW_KEY_SPACE)) {
+        velocity.y = 12;
+      }
   }
 
   if (playTankTruck) {
@@ -112,7 +115,9 @@ void PlayerActor::OnUpdate(float deltaTime)
     bullet->velocity = tankFront * 30.0f;
 
     // ’e‚ÉÕ“Ë”»’è‚ð•t‚¯‚é
-    bullet->collider = CreateBoxShape(glm::vec3(-0.25f), glm::vec3(0.25f));
+    //bullet->collider = Box::Create(glm::vec3(-0.25f), glm::vec3(0.25f));
+    //bullet->collider = Sphere::Create(glm::vec3(0), 1.0f);
+    bullet->collider = Cylinder::Create(glm::vec3(0, -0.3f, 0), 0.3f, 0.6f);
     bullet->mass = 6.8f;
     bullet->friction = 1.0f;
 

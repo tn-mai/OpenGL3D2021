@@ -28,12 +28,142 @@ GameEngine* engine = nullptr;
 */
 void GLAPIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
+  if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
+    return;
+  }
+
   if (length < 0) {
     std::cerr << message << "\n";
   } else {
     const std::string s(message, message + length);
     std::cerr << s << "\n";
   }
+}
+
+/**
+* 直方体(ライン)を作成(デバッグ用)
+*/
+void CreateBoxPrimitive(PrimitiveBuffer& buffer, const glm::vec3& min, const glm::vec3& max)
+{
+  const int count = 4;
+  std::vector<glm::vec3> positions(count * 2);
+  std::vector<glm::vec3> normals(count * 2);
+  std::vector<glm::vec2> texcoords(count * 2, glm::vec2(0));
+  std::vector<glm::vec4> colors(count * 2, glm::vec4(0.8f, 0.4f, 0.1f, 1.0f));
+  positions[0] = glm::vec3(min.x, min.y, min.z);
+  positions[1] = glm::vec3(max.x, min.y, min.z);
+  positions[2] = glm::vec3(max.x, min.y, max.z);
+  positions[3] = glm::vec3(min.x, min.y, max.z);
+  for (int i = 0; i < count; ++i) {
+    positions[i + 4] = glm::vec3(positions[i].x, max.y, positions[i].z);
+  }
+  for (int i = 0; i < count * 2; ++i) {
+    normals[i] = glm::normalize(positions[i]);
+  }
+
+  std::vector<GLushort> indices(count * 6);
+  for (int i = 0; i < count; ++i) {
+    indices[(i + count * 0) * 2] = i;
+    indices[(i + count * 0) * 2 + 1] = (i + 1) % count;
+    indices[(i + count * 1) * 2] = i + count;
+    indices[(i + count * 1) * 2 + 1] = (i + 1) % count + count;
+    indices[(i + count * 2) * 2] = i;
+    indices[(i + count * 2) * 2 + 1] = i + count;
+  }
+
+  buffer.Add(positions.size(),
+    positions.data(), colors.data(), texcoords.data(), normals.data(),
+    indices.size(), indices.data(), "Collider(Box)", GL_LINES);
+}
+
+/**
+*
+*/
+void CreateSpherePrimitive(PrimitiveBuffer& buffer, float radius, int longitude, int latitude)
+{
+  longitude = std::max(3, longitude);
+  latitude = std::max(3, latitude);
+  const int count2 = longitude * latitude;
+  std::vector<glm::vec3> positions(count2);
+  std::vector<glm::vec3> normals(count2);
+  std::vector<glm::vec2> texcoords(count2, glm::vec2(0));
+  std::vector<glm::vec4> colors(count2, glm::vec4(0.8f, 0.4f, 0.1f, 1.0f));
+
+  int i = 0;
+  for (int lon = 0; lon < longitude; ++lon) {
+    const float ry = glm::radians(180.0f / static_cast<float>(longitude - 1) * lon);
+    const float y = std::cos(ry);
+    const float scaleXZ = std::sin(ry);
+    for (int lat = 0; lat < latitude; ++lat) {
+      const float rx = glm::radians(360.0f / static_cast<float>(latitude) * lat);
+      const float x = std::cos(rx) * scaleXZ;
+      const float z = -std::sin(rx) * scaleXZ;
+      normals[i] = glm::vec3(x, y, z);
+      positions[i] = glm::vec3(x, y, z) * radius;
+      ++i;
+    }
+  }
+
+  std::vector<GLushort> indices((longitude - 1) * latitude * 8);
+  i = 0;
+  for (int lon = 0; lon < longitude - 1; ++lon) {
+    for (int lat = 0; lat < latitude; ++lat) {
+      const int base = lon * latitude + lat;
+      const int next = lon * latitude + (lat + 1) % latitude;
+      indices[base * 8 + 0] = base;
+      indices[base * 8 + 1] = next;
+
+      indices[base * 8 + 2] = next;
+      indices[base * 8 + 3] = next + latitude;
+
+      indices[base * 8 + 4] = next + latitude;
+      indices[base * 8 + 5] = base + latitude;
+
+      indices[base * 8 + 6] = base + latitude;
+      indices[base * 8 + 7] = base;
+    }
+  }
+
+  buffer.Add(positions.size(),
+    positions.data(), colors.data(), texcoords.data(), normals.data(),
+    indices.size(), indices.data(), "Collider(Sphere)", GL_LINES);
+}
+
+/**
+* 円柱(ライン)を作成(デバッグ用)
+*/
+void CreateCylinderPrimitive(PrimitiveBuffer& buffer, float top, float bottom, float radius, int count)
+{
+  count = std::max(3, count);
+  std::vector<glm::vec3> positions(count * 2);
+  std::vector<glm::vec3> normals(count * 2);
+  std::vector<glm::vec2> texcoords(count * 2, glm::vec2(0));
+  std::vector<glm::vec4> colors(count * 2, glm::vec4(0.8f, 0.4f, 0.1f, 1.0f));
+  for (int i = 0; i < count; ++i) {
+    const float r = glm::radians(360.0f / static_cast<float>(count) * i);
+    float x = std::cos(r);
+    float z = -std::sin(r);
+    normals[i] = glm::vec3(x, 0, z);
+    normals[i + count] = glm::vec3(x, 0, z);
+    x *= radius;
+    z *= radius;
+    positions[i] = glm::vec3(x, top, z);
+    positions[i + count] = glm::vec3(x, bottom, z);
+  }
+
+  std::vector<GLushort> indices(count * 2 * 3);
+  for (int i = 0; i < count; ++i) {
+    indices[(i + count * 0) * 2] = i;
+    indices[(i + count * 0) * 2 + 1] = (i + 1) % count;
+    indices[(i + count * 1) * 2] = i + count;
+    indices[(i + count * 1) * 2 + 1] = (i + 1) % count + count;
+    indices[(i + count * 2) * 2] = i;
+    indices[(i + count * 2) * 2 + 1] = i + count;
+  }
+
+  buffer.Add(positions.size(),
+    positions.data(), colors.data(), texcoords.data(), normals.data(),
+    indices.size(), indices.data(), "Collider(Cylinder)", GL_LINES);
 }
 
 }
@@ -105,6 +235,15 @@ bool GameEngine::Initialize()
     engine->newActors.reserve(1000);
     engine->primitiveBuffer.reset(new PrimitiveBuffer(1'000'000, 4'000'000));
     engine->textureBuffer.reserve(1000);
+
+    // コライダー表示用データを作成(デバッグ用)
+    engine->pipelineCollider = engine->pipelineUI; // UIシェーダを流用
+    const std::vector<uint32_t> imageWhite(4 * 4, 0xff1080f0);
+    engine->texCollider = std::make_shared<Texture>(
+      "Debug(Collider)", 4, 4, imageWhite.data(), GL_RGBA, GL_UNSIGNED_BYTE);
+    CreateBoxPrimitive(*engine->primitiveBuffer, glm::vec3(-1.0f), glm::vec3(1.0f));
+    CreateSpherePrimitive(*engine->primitiveBuffer, 1, 7, 12);
+    CreateCylinderPrimitive(*engine->primitiveBuffer, 1, 0, 1, 12);
 
     // カメラのアスペクト比を設定
     Camera& camera = engine->GetCamera();
@@ -284,29 +423,23 @@ void GameEngine::UpdatePhysics(float deltaTime)
 
   // 接地していない状態にする
   for (int i = 0; i < actors.size(); ++i) {
-    actors[i]->contactCount = 0;
+    //actors[i]->contactCount = 0;
     actors[i]->isOnActor = false;
   }
 
-#if 1
-  // 非スタティックなアクターをリストアップ
-  ActorList nonStaticActors;
-  nonStaticActors.reserve(actors.size());
-  for (std::shared_ptr<Actor>& e : actors) {
-    if (!e->isStatic) {
-      nonStaticActors.push_back(e);
-    }
-  }
-#endif
+  // アクターを非スタティックとスタティックに分ける
+  ActorList partitionedActors = actors;
+  const auto itrEndA = std::partition(
+    partitionedActors.begin(), partitionedActors.end(),
+    [](const ActorList::value_type& e) { return !e->isStatic; });
+  const auto itrEndB = partitionedActors.end();
 
   std::vector<Contact> contacts;
   contacts.reserve(actors.size());
-  for (std::shared_ptr<Actor>& a : nonStaticActors) {
-    for (std::shared_ptr<Actor>& b : actors) {
-      // 同じアクターは衝突しない
-      if (a == b) {
-        continue;
-      }
+  for (auto itrA = partitionedActors.begin(); itrA != itrEndA; ++itrA) {
+    std::shared_ptr<Actor>& a = *itrA;
+    for (auto itrB = itrA + 1; itrB != itrEndB; ++itrB) {
+      std::shared_ptr<Actor>& b = *itrB;
 
       // 削除待ちアクターは衝突しない
       if (a->isDead) {
@@ -315,25 +448,19 @@ void GameEngine::UpdatePhysics(float deltaTime)
         continue;
       }
 
-      Contact contact[2];
-      if (DetectCollision(*a, *b, contact[0])) {
-        contact[1] = Reverse(contact[0]);
+      Contact contact;
+      if (DetectCollision(*a, *b, contact)) {
         // 配列の中に、作成したコンタクト構造体と似ているものがあるか調べる
-        for (const auto& e : contact) {
-          auto itr = std::find_if(contacts.begin(), contacts.end(),
-            [&e](const Contact& c) { return Equal2(e, c); });
+        auto itr = std::find_if(contacts.begin(), contacts.end(),
+          [&contact](const Contact& c) { return Equal(contact, c); });
 
-          // 似ているコンタクト構造体が見つからなければ、作成した構造体を配列に追加する
-          if (itr == contacts.end()) {
-            contacts.push_back(e);
-            ++e.a->contactCount;
-          } else {
-            // 似ている構造体が見つかった場合、浸透距離が長いほうを残す
-            if (e.penLength > itr->penLength) {
-              float massB = itr->massB + e.massB;
-              *itr = e;
-              itr->massB = massB;
-            }
+        // 似ているコンタクト構造体が見つからなければ、作成した構造体を配列に追加する
+        if (itr == contacts.end()) {
+          contacts.push_back(contact);
+        } else {
+          // 似ている構造体が見つかった場合、浸透距離が長いほうを残す
+          if (contact.penLength > itr->penLength) {
+            *itr = contact;
           }
         }
       }
@@ -345,13 +472,11 @@ void GameEngine::UpdatePhysics(float deltaTime)
     Contact& c = contacts[i];
 
     // 重なりを解決する
-    if (!c.a->isStatic) {
-      SolveContact(c);
-    }
+    SolveContact(c);
 
     // 衝突処理関数を呼び出す
     c.a->OnCollision(c);
-#if 0
+
     Contact contactBtoA;
     contactBtoA.a = c.b;
     contactBtoA.b = c.a;
@@ -364,7 +489,6 @@ void GameEngine::UpdatePhysics(float deltaTime)
     contactBtoA.position = c.position;
     contactBtoA.penLength = c.penLength;
     c.b->OnCollision(contactBtoA);
-#endif
   }
 }
 
@@ -501,6 +625,57 @@ void GameEngine::RenderDefault()
     }
   }
   fboShadow->UnbindDepthTexture(1);
+
+  // コライダーを表示する(デバッグ用)
+  if (showCollider) {
+    const Primitive& primBox = GetPrimitive("Collider(Box)");
+    const Primitive& primSphere = GetPrimitive("Collider(Sphere)");
+    const Primitive& primCylinder = GetPrimitive("Collider(Cylinder)");
+    pipelineCollider->Bind();
+    texCollider->Bind(0);
+    for (auto& e : defaultActors) {
+      switch (e->collider->GetShapeType()) {
+      case ShapeType::box: {
+        const Box& box = static_cast<Box&>(*e->collider);
+        const glm::vec3 scale = (box.max - box.min) * 0.5f;
+        const glm::vec3 offset = (box.min + box.max) * 0.5f;
+        const glm::mat4 matTRS =
+          glm::translate(glm::mat4(1), e->position + offset) *
+          glm::scale(glm::mat4(1), scale);
+        pipelineCollider->SetUniform(0, matProj * matView * matTRS);
+        primBox.Draw();
+        break;
+      }
+
+      case ShapeType::sphere: {
+        const Sphere& sphere = static_cast<Sphere&>(*e->collider);
+        const glm::vec3 scale = glm::vec3(sphere.radius);
+        const glm::vec3 offset = sphere.center;
+        const glm::mat4 matTRS =
+          glm::translate(glm::mat4(1), e->position + offset) *
+          glm::scale(glm::mat4(1), scale);
+        pipelineCollider->SetUniform(0, matProj * matView * matTRS);
+        primSphere.Draw();
+        break;
+      }
+
+      case ShapeType::cylinder: {
+        const Cylinder& cylinder = static_cast<Cylinder&>(*e->collider);
+        const glm::vec3 scale =
+          glm::vec3(cylinder.radius, cylinder.height, cylinder.radius);
+        const glm::vec3 offset = cylinder.bottom;
+        const glm::mat4 matTRS =
+          glm::translate(glm::mat4(1), e->position + offset) *
+          glm::scale(glm::mat4(1), scale);
+        pipelineCollider->SetUniform(0, matProj * matView * matTRS);
+        primCylinder.Draw();
+        break;
+      }
+      }
+    }
+    texCollider->Unbind(0);
+    pipelineCollider->Unbind();
+  }
 
   // 描画先をデフォルトのフレームバッファに戻す.
   fbo->Unbind();

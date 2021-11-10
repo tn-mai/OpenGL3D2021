@@ -8,6 +8,7 @@
 #include "Actor/PlayerActor.h"
 #include "Actor/T34TankActor.h"
 #include "Actor/ElevatorActor.h"
+#include "Actor/Boss01.h"
 #include "Audio.h"
 #include "Audio/MainWorkUnit/BGM.h"
 #include "Audio/MainWorkUnit/SE.h"
@@ -142,6 +143,10 @@ void GameManager::Update(float deltaTime)
     for (auto& e : engine.GetNewActors()) {
       if (e->name == "T-34") {
         T34TankActor& enemy = static_cast<T34TankActor&>(*e);
+        enemy.SetTarget(playerTank);
+        enemies.push_back(e);
+      } else if (e->name == "Boss01") {
+        Boss01& enemy = static_cast<Boss01&>(*e);
         enemy.SetTarget(playerTank);
         enemies.push_back(e);
       }
@@ -498,7 +503,7 @@ void GameManager::SpawnEnemies()
       engine.LoadTexture("Res/tank/t-34.tga"),
       pos, glm::vec3(1), 0.0f, glm::vec3(-0.78f, 0, 1.0f), playerTank });
     //enemy->collider = CreateBoxCollider(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2.5f, 1.5f));
-    enemy->collider = CreateCylinderShape(glm::vec3(0), 1.5f, 2.5f);
+    enemy->collider = std::make_shared<Cylinder>(glm::vec3(0), 1.5f, 2.5f);
     enemy->mass = 36'000;
     enemies.push_back(enemy);
   }
@@ -533,36 +538,36 @@ void GameManager::SpawnMap()
 
   actors.push_back(std::shared_ptr<Actor>(new Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
     glm::vec3(-36, 0, -34), glm::vec3(1, 2, 32), 0.0f, glm::vec3(0) }));
-  actors.back()->collider = CreateBoxShape(glm::vec3(0, 0, 0), glm::vec3(1, 4, 64));
+  actors.back()->collider = Box::Create(glm::vec3(0, 0, 0), glm::vec3(1, 4, 64));
   actors.back()->isStatic = true;
 
   actors.push_back(std::shared_ptr<Actor>(new Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
     glm::vec3(30, 0, -34), glm::vec3(1, 2, 32), 0.0f, glm::vec3(0) }));
-  actors.back()->collider = CreateBoxShape(glm::vec3(0, 0, 0), glm::vec3(1, 4, 64));
+  actors.back()->collider = Box::Create(glm::vec3(0, 0, 0), glm::vec3(1, 4, 64));
   actors.back()->isStatic = true;
 
   actors.push_back(std::shared_ptr<Actor>(new Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
     glm::vec3(-34, 0, -36), glm::vec3(32, 2, 1), 0.0f, glm::vec3(0) }));
-  actors.back()->collider = CreateBoxShape(glm::vec3(0, 0, 0), glm::vec3(64, 4, 1));
+  actors.back()->collider = Box::Create(glm::vec3(0, 0, 0), glm::vec3(64, 4, 1));
   actors.back()->isStatic = true;
 
   actors.push_back(std::shared_ptr<Actor>(new Actor{ "Wall", primitiveBuffer.Get(3), texTriangle,
     glm::vec3(-34, 0, 30), glm::vec3(32, 2, 1), 0.0f, glm::vec3(0) }));
-  actors.back()->collider = CreateBoxShape(glm::vec3(0, 0, 0), glm::vec3(64, 4, 1));
+  actors.back()->collider = Box::Create(glm::vec3(0, 0, 0), glm::vec3(64, 4, 1));
   actors.back()->isStatic = true;
 
   // •`‰æ‚·‚é•¨‘Ì‚ÌƒŠƒXƒg.
   //std::shared_ptr<Box> col1 = CreateBoxCollider(glm::vec3(-1.75f, 0, -1.75f), glm::vec3(1.75f, 2, 1.75f));
-  std::shared_ptr<Cylinder> col1 = CreateCylinderShape(glm::vec3(0), 1.75f, 3.0f);
+  std::shared_ptr<Cylinder> col1 = Cylinder::Create(glm::vec3(0), 1.75f, 3.0f);
   const ObjectData objectList[] = {
     { "", Primitive(), 0 },    // ‚È‚µ
     { "Tree", primitiveBuffer.Get(4), engine.LoadTexture("Res/Tree.tga"), 1, {}, col1 }, // –Ø
     { "Warehouse", primitiveBuffer.Get(5), engine.LoadTexture("Res/Building.tga"), 1, {},
-      CreateBoxShape(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)) }, // Œš•¨
+      Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)) }, // Œš•¨
     { "BrickHouse", primitiveBuffer.Get(8), engine.LoadTexture("Res/house/House38UVTexture.tga"),
-      3, glm::vec3(-2.6f, 2.0f, 0.8f), CreateBoxShape(glm::vec3(-3, 0, -2), glm::vec3(3, 3, 2)) }, // Œš•¨
+      3, glm::vec3(-2.6f, 2.0f, 0.8f), Box::Create(glm::vec3(-3, 0, -2), glm::vec3(3, 3, 2)) }, // Œš•¨
     { "House2", primitiveBuffer.Get(10), engine.LoadTexture("Res/house/broken-house.tga"),
-      1, {}, CreateBoxShape(glm::vec3(-2.5f, 0, -3.5f), glm::vec3(2.5f, 3, 3.5f)) }, // Œš•¨
+      1, {}, Box::Create(glm::vec3(-2.5f, 0, -3.5f), glm::vec3(2.5f, 3, 3.5f)) }, // Œš•¨
   };
 
   // –Ø‚ğA‚¦‚é.
@@ -598,7 +603,7 @@ void GameManager::SpawnMap()
       const int textureNo = mapData[y][x];
       actors.push_back(std::shared_ptr<Actor>(new Actor{ "Ground", primitiveBuffer.Get(0), mapTexList[textureNo],
         position, glm::vec3(1), 0.0f, glm::vec3(0) }));
-      actors.back()->collider = CreateBoxShape(glm::vec3(-2, -10, -2), glm::vec3(2, 0, 2));
+      actors.back()->collider = Box::Create(glm::vec3(-2, -10, -2), glm::vec3(2, 0, 2));
       actors.back()->isStatic = true;
     }
   }
@@ -610,7 +615,7 @@ void GameManager::SpawnMap()
       "Elevator", primitiveBuffer.Get(0), mapTexList[0],
       position, glm::vec3(1), 0.0f, glm::vec3(0) }));
     actors.back()->velocity.y = 1;
-    actors.back()->collider = CreateBoxShape(glm::vec3(-2, -10, -2), glm::vec3(2, 0, 2));
+    actors.back()->collider = Box::Create(glm::vec3(-2, -10, -2), glm::vec3(2, 0, 2));
     actors.back()->isStatic = true;
   }
 

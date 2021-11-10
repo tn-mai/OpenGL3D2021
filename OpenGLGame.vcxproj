@@ -154,6 +154,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Src\Actor.cpp" />
+    <ClCompile Include="Src\Actor\Boss01.cpp" />
     <ClCompile Include="Src\Actor\BulletActor.cpp" />
     <ClCompile Include="Src\Actor\ElevatorActor.cpp" />
     <ClCompile Include="Src\Actor\PlayerActor.cpp" />
@@ -162,6 +163,7 @@
     <ClCompile Include="Src\AStar.cpp" />
     <ClCompile Include="Src\Audio.cpp" />
     <ClCompile Include="Src\Camera.cpp" />
+    <ClCompile Include="Src\Collision.cpp" />
     <ClCompile Include="Src\FramebufferObject.cpp" />
     <ClCompile Include="Src\GameEngine.cpp" />
     <ClCompile Include="Src\GameManager.cpp" />
@@ -193,6 +195,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\Actor.h" />
+    <ClInclude Include="Src\Actor\Boss01.h" />
     <ClInclude Include="Src\Actor\BulletActor.h" />
     <ClInclude Include="Src\Actor\ElevatorActor.h" />
     <ClInclude Include="Src\Actor\PlayerActor.h" />
@@ -201,6 +204,7 @@
     <ClInclude Include="Src\AStar.h" />
     <ClInclude Include="Src\Audio.h" />
     <ClInclude Include="Src\Camera.h" />
+    <ClInclude Include="Src\Collision.h" />
     <ClInclude Include="Src\FramebufferObject.h" />
     <ClInclude Include="Src\GameEngine.h" />
     <ClInclude Include="Src\GameManager.h" />
