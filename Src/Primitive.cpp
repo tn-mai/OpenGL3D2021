@@ -116,7 +116,7 @@ PrimitiveBuffer::~PrimitiveBuffer()
 */
 bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
   const glm::vec4* pColor, const glm::vec2* pTexcoord, const glm::vec3* pNormal,
-  size_t indexCount, const GLushort* pIndex, const char* name)
+  size_t indexCount, const GLushort* pIndex, const char* name, GLenum type)
 {
   // エラーチェック.
   if (!vao) {
@@ -161,7 +161,7 @@ bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
   }
 
   // 描画データを作成.
-  const Primitive prim(name, GL_TRIANGLES, static_cast<GLsizei>(indexCount),
+  const Primitive prim(name, type, static_cast<GLsizei>(indexCount),
     sizeof(GLushort) * curIndexCount, curVertexCount);
 
   // 描画データを配列に追加.

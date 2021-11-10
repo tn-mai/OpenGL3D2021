@@ -62,7 +62,7 @@ public:
   // プリミティブの追加.
   bool Add(size_t vertexCount, const glm::vec3* pPosition, const glm::vec4* pColor,
     const glm::vec2* pTexcoord, const glm::vec3* pNormal,
-    size_t indexCount, const GLushort* pIndex, const char* name = nullptr);
+    size_t indexCount, const GLushort* pIndex, const char* name = nullptr, GLenum type = GL_TRIANGLES);
   bool AddFromObjFile(const char* filename);
 
   // プリミティブの取得.
