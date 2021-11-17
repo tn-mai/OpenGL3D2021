@@ -150,7 +150,7 @@
        mapSize = newMapSize;
        map = std::vector<std::shared_ptr<Actor>>(mapSize.x * mapSize.y);
        groundMap = std::vector<uint32_t>(mapSize.x * mapSize.y, 0);
-+      engine.ResizeGroundMap(mapSize.x, mapSize.y);
++      engine.ResizeGroundMap(mapSize.x, mapSize.y, groundMap.data());
        engine.ClearAllActors();
        InitGroundActor();
 ```
