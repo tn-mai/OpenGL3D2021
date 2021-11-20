@@ -359,7 +359,7 @@ public:
 +  const std::string& GetName() const { return name; }
 
  private:
-   std::string name; // 画像ファイル名.
+   std::string name; // 画像ファイル名
 ```
 
 次に`Texture.cpp`を開き、`vector`ヘッダをインクルードしてください。ベクタークラスは配列テクスチャを読み込むときに使用します。
@@ -538,8 +538,8 @@ public:
 +    const void* data, GLenum pixelFormat, GLenum type);
 
  private:
-   std::string name; // 画像ファイル名.
-   GLuint id = 0;    // オブジェクトID.
+   std::string name; // 画像ファイル名
+   GLuint id = 0;    // オブジェクトID
 ```
 
 書き込み関数の名前は`Write`(ライト)にしました。`Texture.cpp`を開き、アンバインド関数の定義の下に、次のプログラムを追加してください。
