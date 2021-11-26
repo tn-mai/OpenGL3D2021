@@ -1,0 +1,7 @@
+Res/title/title_bg.tga
+Doc/images/19b_result_0.png [modified by tn_mai]
+Doc/images/19b_result_1.png [modified by tn_mai]
+Doc/images/19b_result_2.png [modified by tn_mai]
+Doc/images/19b_result_3.png [modified by tn_mai]
+	Bundesarchiv, Bild 101I-461-0213-34 / Zwirner / CC-BY-SA 3.0
+	https://commons.wikimedia.org/wiki/File:Bundesarchiv_Bild_101I-461-0213-34,_Russland,_Panzer_VI_(Tiger_I)_wird_aufmunitioniert.jpg
