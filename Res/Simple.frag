@@ -19,8 +19,8 @@ void main() {
   fragColor = inColor * tc * modelColor;
 
   // TODO: テキスト未実装
-  if (fragColor.a < 0.5) {
-    discard;
-  }
+  //if (fragColor.a < 0.5) {
+  //  discard;
+  //}
 }
 
