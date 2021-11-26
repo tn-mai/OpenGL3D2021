@@ -5,6 +5,12 @@
 #include "BulletActor.h"
 #include "../GameEngine.h"
 #include "../GameManager.h"
+#include "../Audio.h"
+#ifdef USE_EASY_AUDIO
+#include "../EasyAudioSettings.h"
+#else
+#include "../Audio/MainWorkUnit/SE.h"
+#endif // USE_EASY_AUDIO
 #include <glm/gtc/matrix_transform.hpp>
 #include <math.h>
 
@@ -43,8 +49,18 @@ void Boss01::OnCollision(const struct Contact& contact)
 {
   if (contact.b->name == "Bullet") {
     health -= 1;
+#ifdef USE_EASY_AUDIO
+    Audio::PlayOneShot(SE_HIT);
+#else
+    Audio::Get().Play(1, CRI_SE_HIT);
+#endif // USE_EASY_AUDIO
     if (health <= 0) {
-      isDead = true; // T-34êÌé‘Çè¡ãéÇ∑ÇÈ
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_BOSS_EXPLOSION);
+#else
+      Audio::Get().Play(1, CRI_SE_EXPLOSION);
+#endif // USE_EASY_AUDIO
+      isDead = true;
       GameManager::Get().AddScore(2000);
     }
     contact.b->isDead = true; // íeÇè¡ãéÇ∑ÇÈ
@@ -130,9 +146,14 @@ void Boss01::Danmaku(float deltaTime)
   shotTimer -= deltaTime;
   if (shotTimer <= 0) {
     for (float i = 0; i < 360; i += 60) {
-      NormalShot(engine, position + glm::vec3(0, 2.8f, 0), shotDirection + i);
-      NormalShot(engine, position + glm::vec3(0, 3.0f, 0), 360 - shotDirection + i + 30);
+      NormalShot(engine, position + glm::vec3(0, 2.8f, 0), shotDirection + i - 15);
+      NormalShot(engine, position + glm::vec3(0, 3.0f, 0), 360 - shotDirection + i + 15);
     }
+#ifdef USE_EASY_AUDIO
+    Audio::PlayOneShot(SE_ENEMY_SHOT);
+#else
+    Audio::Get().Play(1, CRI_SE_SHOT);
+#endif // USE_EASY_AUDIO
     shotTimer = 0.2f;
     shotDirection = std::fmod(shotDirection + 5.0f, 360.0f);
   }
@@ -160,6 +181,11 @@ void Boss01::Machinegun(float deltaTime)
       const glm::vec3 v = glm::normalize(target->position - position);
       const float speed = 20.0f;
       NormalShot(GameEngine::Get(), position + glm::vec3(0, 3, 0), v * speed);
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_ENEMY_SHOT);
+#else
+      Audio::Get().Play(1, CRI_SE_SHOT);
+#endif // USE_EASY_AUDIO
 
       --ammo;
 
@@ -197,6 +223,11 @@ void Boss01::Missile(float deltaTime)
       // âîíºìäÇ∞è„Ç∞ÇÃåˆéÆÇ©ÇÁYï˚å¸ÇÃë¨ìxÇåvéZ
       v.y = 0.5f * gravity * flightTime;
       NormalShot(GameEngine::Get(), position + glm::vec3(0, 3, 0), v, flightTime);
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_ENEMY_SHOT);
+#else
+      Audio::Get().Play(1, CRI_SE_SHOT);
+#endif // USE_EASY_AUDIO
       --ammo;
       shotTimer = 4.0f;
     }

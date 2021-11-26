@@ -92,7 +92,10 @@ private:
   GLsizei maxVertexCount = 0; // 格納できる最大頂点数.
   GLsizei curVertexCount = 0; // 格納済み頂点数.
   GLsizei maxIndexCount = 0; // 格納できる最大インデックス数.
-  GLsizei curIndexCount = 0; // 格納済みインデックス数.private:
+  GLsizei curIndexCount = 0; // 格納済みインデックス数.
 };
+
+bool CopyData(GLuint writeBuffer, GLsizei unitSize,
+  GLsizei offsetCount, size_t count, const void* data);
 
 #endif // PRIMITIVE_H_INCLUDED

@@ -10,8 +10,12 @@
 #include "Actor/ElevatorActor.h"
 #include "Actor/Boss01.h"
 #include "Audio.h"
+#ifdef USE_EASY_AUDIO
+#include "EasyAudioSettings.h"
+#else
 #include "Audio/MainWorkUnit/BGM.h"
 #include "Audio/MainWorkUnit/SE.h"
+#endif // USE_EASY_AUDIO
 #include <imgui.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -116,11 +120,8 @@ void GameManager::Update(float deltaTime)
 {
   GameEngine& engine = GameEngine::Get();
   switch (state) {
-  case State::initializeLevel:
-    //LoadPrimitives();
-    //LoadTextures();
-    //SpawnMap();
-    SetState(State::start);
+  case State::title:
+    UpdateTitle(deltaTime);
     break;
 
   case State::start:
@@ -164,7 +165,11 @@ void GameManager::Update(float deltaTime)
     }
 
     // BGMを再生
+#ifdef USE_EASY_AUDIO
+    Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_MAINGAME, 1.0f, true);
+#else
     Audio::Get().Play(0, CRI_BGM_MAINGAME);
+#endif // USE_EASY_AUDIO
 
     SetState(State::playing);
     break;
@@ -179,8 +184,11 @@ void GameManager::Update(float deltaTime)
       gameover->layer = Layer::UI;
       engine.AddActor(gameover);
 
-      Audio& audio = Audio::Get();
-      audio.Play(0, CRI_BGM_GAMEOVER);
+#ifdef USE_EASY_AUDIO
+      Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_GAMEOVER);
+#else
+      Audio::Get().Play(0, CRI_BGM_GAMEOVER);
+#endif // USE_EASY_AUDIO
       SetState(State::gameover);
     }
     else {
@@ -200,8 +208,11 @@ void GameManager::Update(float deltaTime)
         gameclear->layer = Layer::UI;
         engine.AddActor(gameclear);
 
-        Audio& audio = Audio::Get();
-        audio.Play(0, CRI_BGM_GAMECLEAR);
+#ifdef USE_EASY_AUDIO
+        Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_GAMECLEAR);
+#else
+        Audio::Get().Play(0, CRI_BGM_GAMECLEAR);
+#endif // USE_EASY_AUDIO
         SetState(State::gameclear);
       }
     }
@@ -209,8 +220,11 @@ void GameManager::Update(float deltaTime)
 
   case State::gameclear:
     if (engine.GetKey(GLFW_KEY_ENTER)) {
-      Audio& audio = Audio::Get();
-      audio.Play(1, CRI_SE_UI_OK);
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_OK);
+#else
+      Audio::Get().Play(1, CRI_SE_UI_OK);
+#endif // USE_EASY_AUDIO
       std::shared_ptr<Actor> gameclear = engine.FindActor("GameClear");
       if (gameclear) {
         gameclear->isDead = true;
@@ -221,13 +235,16 @@ void GameManager::Update(float deltaTime)
 
   case State::gameover:
     if (engine.GetKey(GLFW_KEY_ENTER)) {
-      Audio& audio = Audio::Get();
-      audio.Play(1, CRI_SE_UI_OK);
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_OK);
+#else
+      Audio::Get().Play(1, CRI_SE_UI_OK);
+#endif // USE_EASY_AUDIO
       std::shared_ptr<Actor> gameover = engine.FindActor("GameOver");
       if (gameover) {
         gameover->isDead = true;
       }
-      SetState(State::start);
+      SetState(State::title);
     }
     break;
   }
@@ -243,7 +260,8 @@ void GameManager::UpdateCamera()
   // カメラデータを更新する
   std::shared_ptr<Actor> target = Find(engine.GetActors(), "Tiger-I");
   if (target) {
-    const glm::mat4 matRot = glm::rotate(glm::mat4(1), target->rotation, glm::vec3(0, 1, 0));
+    const glm::mat4 matRot =
+      glm::rotate(glm::mat4(1), target->rotation, glm::vec3(0, 1, 0));
     const glm::vec3 tankFront = matRot * glm::vec4(0, 0, 1, 1);
     Camera& camera = engine.GetCamera();
     camera.position = target->position + glm::vec3(0, 20, 20);
@@ -256,6 +274,17 @@ void GameManager::UpdateCamera()
 */
 void GameManager::UpdateUI()
 {
+  switch (state) {
+  case State::title: UpdateTitleUI(); break;
+  default:           UpdateGameUI(); break;
+  }
+}
+
+/**
+* ゲームUIの更新
+*/
+void GameManager::UpdateGameUI()
+{
   /*
   * 表示物
   * - スコア
@@ -267,9 +296,9 @@ void GameManager::UpdateUI()
   * - メイン武器の種類
   * - サブ武器の種類/残数
   */
-  GameEngine& engine = GameEngine::Get();
+  GameEngine& engine = GameEngine::Get(); // ゲームエンジンを取得
   ImGuiStyle& style = ImGui::GetStyle(); // スタイル構造体を取得
-  const ImGuiStyle styleBackup = style;    // 元に戻すためのバックアップ
+  const ImGuiStyle styleBackup = style;  // 元に戻すためのバックアップ
 
   // スコア(得点)表示
   {
@@ -414,6 +443,168 @@ void GameManager::UpdateUI()
   ImGui::End();
   style = oldStyle;
 #endif
+}
+
+/**
+* タイトル画面の更新
+*/
+void GameManager::UpdateTitle(float deltaTime)
+{
+  switch (titleState) {
+  case TitleState::init:
+    GameEngine::Get().ClearAllActors();
+#ifdef USE_EASY_AUDIO
+    Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_TITLE, 1.0f, true);
+#endif // USE_EASY_AUDIO
+    titleLogoAlpha = 0;
+    titleBgAlpha = 0;
+    fadeAlpha = 0;
+    titleState = TitleState::logoFadein;
+    break;
+
+  case TitleState::logoFadein:
+    titleLogoAlpha += deltaTime;
+    if (titleLogoAlpha >= 1.0f) {
+      titleState = TitleState::bgFadein;
+    }
+    break;
+
+  case TitleState::bgFadein:
+    titleBgAlpha += deltaTime * 0.5f;
+    if (titleBgAlpha >= 1.0f) {
+      titleState = TitleState::idle;
+    }
+    break;
+
+  case TitleState::idle:
+    // 何もしない(UI操作待ち)
+    break;
+
+  case TitleState::fadeout:
+#ifdef USE_EASY_AUDIO
+    Audio::SetVolume(AUDIO_PLAYER_ID_BGM, std::max(0.0f, Audio::GetVolume(AUDIO_PLAYER_ID_BGM) - deltaTime));
+#endif
+    fadeAlpha += deltaTime;
+    if (fadeAlpha > 1) {
+      titleState = TitleState::init;
+
+#ifdef USE_EASY_AUDIO
+      Audio::Stop(AUDIO_PLAYER_ID_BGM);
+#endif // USE_EASY_AUDIO
+      state = State::start;
+    }
+    break;
+  }
+}
+
+/**
+* タイトル画面UIの更新
+*/
+void GameManager::UpdateTitleUI()
+{
+  using namespace ImGui;
+
+  GameEngine& engine = GameEngine::Get();
+  ImGuiStyle& style = GetStyle();
+  const ImGuiStyle styleBackup = style;
+  ImDrawList* drawList = GetBackgroundDrawList();
+
+  // 何度も使う値は定数として定義しておく
+  const ImVec2 screenMin(0, 0);
+  const ImVec2 screenMax(engine.GetWindowSize().x, engine.GetWindowSize().y);
+  const ImVec2 uv0(0, 1);
+  const ImVec2 uv1(1, 0);
+
+  // 黒背景
+  drawList->AddRectFilled(screenMin, screenMax, ImColor(0, 0, 0));
+
+  // 背景
+  std::shared_ptr<Texture> texBg = engine.LoadTexture("Res/title/title_bg.tga");
+  drawList->AddImage(texBg->GetIdByPtr(), screenMin, screenMax,
+    uv0, uv1, ImColor(0.4f, 0.35f, 0.3f, titleBgAlpha));
+
+  // エフェクト
+  std::shared_ptr<Texture> texEffect =
+    engine.LoadTexture("Res/title/title_effect.tga");
+  glTextureParameteri(texEffect->GetId(), GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+  glTextureParameteri(texEffect->GetId(), GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+  drawList->AddCallback(
+    [](const ImDrawList*, const ImDrawCmd*) { glBlendFunc(GL_SRC_ALPHA, GL_ONE); },
+    nullptr);
+  const float effectSpeed[2] = { 1.0f, 0.3f };
+  for (int i = 0; i < std::size(titleEffectPosX); ++i) {
+    titleEffectPosX[i] = fmod(titleEffectPosX[i] + effectSpeed[i], screenMax.x * 2);
+    drawList->AddImage(texEffect->GetIdByPtr(),
+      ImVec2(screenMin.x - titleEffectPosX[i], screenMin.y),
+      ImVec2(screenMax.x * 3 - titleEffectPosX[i], screenMax.y),
+      ImVec2(0, 1 + static_cast<float>(i)), ImVec2(3 + 3 * static_cast<float>(i), 0),
+      ImColor(1.0f, 0.9f, 0.8f, 0.5f * titleBgAlpha));
+  }
+  drawList->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
+
+  // ロゴ
+  std::shared_ptr<Texture> texLogo = engine.LoadTexture("Res/title/title_logo.tga");
+  const glm::vec2 logoSize(texLogo->GetWidth(), texLogo->GetHeight());
+  const float cx = (screenMin.x + screenMax.x) * 0.5f;
+  drawList->AddImage(texLogo->GetIdByPtr(),
+    ImVec2(cx - logoSize.x * 0.5f, 100),
+    ImVec2(cx + logoSize.x * 0.5f, 100 + logoSize.y), uv0, uv1,
+    ImColor(1.0f, 1.0f, 1.0f, titleLogoAlpha));
+
+  if (titleState == TitleState::idle) {
+    const ImVec2 buttonSize(320, 64);
+    SetNextWindowPos(ImVec2(cx - buttonSize.x * 0.5f, 500));
+    Begin("Start", nullptr,
+      ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration);
+    style.Colors[ImGuiCol_Button] = ImVec4(0.5f, 0.5f, 0.55f, 0.8f);
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.7f, 0.7f, 0.75f, 0.8f);
+    //style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.5f, 0.5f, 1.0f, 0.8f);
+    style.Colors[ImGuiCol_Text] = ImVec4(0, 0, 0, 1);
+    //style.Colors[ImGuiCol_Border] = ImVec4(0.5f, 0.5f, 0.5f, 1);
+    //style.Colors[ImGuiCol_BorderShadow] = ImVec4(0, 0, 0, 1);
+    style.FrameRounding = 12;
+    style.FrameBorderSize = 4;
+    //style.ItemSpacing = ImVec2(8, 16);
+    SetWindowFontScale(4.0f);
+    if (Button(u8"ゲーム開始", buttonSize)) {
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_OK);
+#endif // USE_EASY_AUDIO
+      titleState = TitleState::fadeout;
+    }
+#ifdef USE_EASY_AUDIO
+    if (IsItemHovered()) {
+      if (!startHovered) {
+        startHovered = true;
+        Audio::PlayOneShot(SE_SELECT);
+      }
+    } else {
+      startHovered = false;
+    }
+#endif // USE_EASY_AUDIO
+    if (Button(u8"終了", buttonSize)) {
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_CANCEL);
+#endif // USE_EASY_AUDIO
+      engine.SetWindowShouldClose(true);
+    }
+#ifdef USE_EASY_AUDIO
+    if (IsItemHovered()) {
+      if (!exitHovered) {
+        exitHovered = true;
+        Audio::PlayOneShot(SE_SELECT);
+      }
+    } else {
+      exitHovered = false;
+    }
+#endif // USE_EASY_AUDIO
+    style = styleBackup;
+    End();
+  }
+
+  // フェードアウト用の黒い平面
+  GetForegroundDrawList()->AddRectFilled(screenMin, screenMax,
+    ImColor(0.0f, 0.0f, 0.0f, fadeAlpha));
 }
 
 /**

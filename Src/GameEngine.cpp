@@ -245,6 +245,9 @@ bool GameEngine::Initialize()
     CreateSpherePrimitive(*engine->primitiveBuffer, 1, 7, 12);
     CreateCylinderPrimitive(*engine->primitiveBuffer, 1, 0, 1, 12);
 
+    // スプライト描画オブジェクトを初期化
+    engine->spriteRenderer.Allocate(1000);
+
     // カメラのアスペクト比を設定
     Camera& camera = engine->GetCamera();
     camera.aspectRatio = engine->windowSize.x / engine->windowSize.y;
@@ -283,12 +286,16 @@ bool GameEngine::Initialize()
       io.Fonts->Build();
     }
 
-    // 音声を初期化する.
+    // 音声を初期化する
+#ifdef USE_EASY_AUDIO
+    Audio::Initialize();
+#else
     Audio::Initialize("Res/Audio/OpenGLGame.acf",
       CRI_OPENGLGAME_ACF_DSPSETTING_DSPBUSSETTING_0);
     Audio& audio = Audio::Get();
     audio.Load(0, "Res/Audio/MainWorkUnit/SE.acb", nullptr);
     audio.Load(1, "Res/Audio/MainWorkUnit/BGM.acb", "Res/Audio/MainWorkUnit/BGM.awb");
+#endif // USE_EASY_AUDIO
 
     std::random_device rd;
     engine->rg.seed(rd());
@@ -510,7 +517,11 @@ void GameEngine::NewFrame()
   ImGui::NewFrame();
 
   // 音声の更新
+#ifdef USE_EASY_AUDIO
+  Audio::Update();
+#else
   Audio::Get().Update();
+#endif
 }
 
 /**
@@ -534,10 +545,32 @@ void GameEngine::RenderDefault()
   // 平行光源の向き
   const glm::vec3 lightDirection = glm::normalize(glm::vec4(3,-2,-2, 0));
 
+  // NOTE: テキスト未実装
+#ifdef SUPRESS_SHADOW_JITTERING
+  const float worldUnitPerTexel = 100.0f / static_cast<float>(fboShadow->GetWidth());
+  const float areaMin = std::floor(-50.0f / worldUnitPerTexel) * worldUnitPerTexel;
+  const float areaMax = std::floor(50.0f / worldUnitPerTexel) * worldUnitPerTexel;
+
   // 影用ビュープロジェクション行列を作成
-  const glm::mat4& matShadowProj = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 200.0f);
-  const glm::vec3 viewTarget = mainCamera.target;
-  const glm::vec3 viewPosition = viewTarget + glm::vec3(0, 30, 30);
+  const glm::mat4& matShadowProj =
+    glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 200.0f);
+
+  // 影描画時のカメラ座標を影テクスチャのピクセル幅に制限
+  const glm::vec3 viewFront = -glm::normalize(glm::vec3(0, 30, 30));
+  const glm::vec3 viewRight = glm::normalize(glm::cross(viewFront, glm::vec3(0, 1, 0)));
+  const glm::vec3 viewUp = glm::normalize(glm::cross(viewRight, viewFront));
+  glm::vec3 viewTarget = mainCamera.target;
+  viewTarget = viewFront * glm::dot(viewFront, mainCamera.target);
+  viewTarget += viewRight * std::floor(glm::dot(viewRight, mainCamera.target) / worldUnitPerTexel) * worldUnitPerTexel;
+  viewTarget += viewUp * std::floor(glm::dot(viewUp, mainCamera.target) / worldUnitPerTexel) * worldUnitPerTexel;
+#else
+  // 影用ビュープロジェクション行列を作成
+  const glm::mat4& matShadowProj =
+    glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 200.0f);
+  const glm::vec3 viewFront = -glm::normalize(glm::vec3(0, 30, 30));
+  glm::vec3 viewTarget = mainCamera.target;
+#endif
+  const glm::vec3 viewPosition = viewTarget - viewFront * 30.0f;
   const glm::mat4 matShadowView = glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
 
   // 影を描画
@@ -676,13 +709,20 @@ void GameEngine::RenderDefault()
     texCollider->Unbind(0);
     pipelineCollider->Unbind();
   }
+}
 
-  // 描画先をデフォルトのフレームバッファに戻す.
-  fbo->Unbind();
+/**
+* スプライトを描画する
+*/
+void GameEngine::RenderSprite()
+{
+  fbo->Bind();
 
-  // デフォルトフレームバッファのビューポートを設定
-  glViewport(0, 0, static_cast<GLsizei>(windowSize.x), static_cast<GLsizei>(windowSize.y));
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  const glm::mat4& matProj = mainCamera.GetProjectionMatrix();
+  const glm::mat4 matView = mainCamera.GetViewMatrix();
+  spriteRenderer.Update(GetActors(Layer::Sprite), matView);
+  spriteRenderer.Draw(pipelineUI, matProj * matView);
+
 }
 
 /**
@@ -690,6 +730,13 @@ void GameEngine::RenderDefault()
 */
 void GameEngine::RenderUI()
 {
+  // 描画先をデフォルトのフレームバッファに戻す.
+  fbo->Unbind();
+
+  // デフォルトフレームバッファのビューポートを設定
+  glViewport(0, 0, static_cast<GLsizei>(windowSize.x), static_cast<GLsizei>(windowSize.y));
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
 

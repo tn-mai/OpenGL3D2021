@@ -8,6 +8,7 @@
 #include "Texture.h"
 #include "ProgramPipeline.h"
 #include "Collision.h"
+#include "Animation.h"
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
@@ -32,9 +33,10 @@
 enum class Layer
 {
   Default,
+  Sprite,
   UI,
 };
-static const size_t layerCount = 2; // レイヤー数
+static const size_t layerCount = 3; // レイヤー数
 
 /**
 * シェーダの種類
@@ -79,6 +81,10 @@ public:
   float rotation;                  // 物体の回転角度
   glm::vec3 adjustment;            // 物体を原点に移動するための距離
 
+  // 19で追加. 19bは未追加.
+  glm::vec4 color = glm::vec4(1);  // テクスチャに合成する色
+  float gravityScale = 1.0f;       // 重力の影響度
+
   glm::vec3 velocity = glm::vec3(0);// 速度(メートル毎秒)
   float lifespan = 0;              // 寿命(秒、0以下なら寿命なし)
   float health = 10;               // 耐久値
@@ -95,10 +101,14 @@ public:
   Shader shader = Shader::FragmentLighting;
 
   // TODO: テキスト未追加
+  void SetAnimator(AnimatorPtr a) { 
+    animator = a;
+    a->SetActor(this);
+  }
+  AnimatorPtr animator;
+
   glm::vec3 oldVelocity = glm::vec3(0); // 以前の速度(メートル毎秒)
   bool isBlock = true;             // false=通過できる true=通過できない
-  float gravityScale = 1.0f;       // 重力係数
-  glm::vec4 color = glm::vec4(1);
   bool isOnActor = false;
 };
 

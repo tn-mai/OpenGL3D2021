@@ -3,6 +3,14 @@
 */
 #ifndef AUDIO_H_INCLUDED
 #define AUDIO_H_INCLUDED
+
+// PH19向け簡易オーディオライブラリを使う場合に定義する
+//#define USE_EASY_AUDIO
+
+#ifdef USE_EASY_AUDIO
+#include "EasyAudio.h"
+#else
+
 #define NOMINMAX
 #undef APIENTRY
 #include <cri_adx2le.h>
@@ -41,5 +49,6 @@ private:
   std::vector<CriAtomExPlayerHn> players;
   std::vector<CriAtomExAcbHn> cueIdToAcbMap;
 };
+#endif // USE_EASY_AUDIO
 
 #endif // AUDIO_H_INCLUDED

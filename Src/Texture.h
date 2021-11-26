@@ -14,7 +14,7 @@ class Texture
 {
 public:
   Texture(const char* filename);
-  Texture(const char* name, const char** fileList, size_t count);
+  Texture(const char* name, const char** fileList, size_t count); // 15bで実装. 15は未実装.
   Texture(const char* name, GLsizei width, GLsizei height,
     const void* data, GLenum pixelFormat, GLenum type);
   ~Texture();
@@ -28,26 +28,31 @@ public:
 
   // テクスチャIDを取得
   GLuint GetId() const { return id; }
+  // 19bで実装. 19は未実装.
+  void* GetIdByPtr() const
+  {
+    return reinterpret_cast<void*>(static_cast<uintptr_t>(id));
+  }
 
+  // 15bで実装. 15は未実装.
+  // テクスチャ名を取得
+  const std::string& GetName() const { return name; }
+
+  // 15bで実装. 15は未実装
   void Write(GLint x, GLint y, GLsizei width, GLsizei height,
     const void* data, GLenum pixelFormat, GLenum type);
 
-  // TODO: テキスト未追加
-  const std::string& GetName() const { return name; } // 15bで実装. 15は未実装.
-  GLint GetWidth() const {
-    GLint w = 0;
-    glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_WIDTH, &w);
-    return w;
-  }
-  GLint GetHeight() const {
-    GLint h = 0;
-    glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_HEIGHT, &h);
-    return h;
-  }
+  // テクスチャの幅、高さを取得
+  GLint GetWidth() const { return width; }
+  GLint GetHeight() const { return height; }
 
 private:
   std::string name; // 画像ファイル名.
   GLuint id = 0;    // オブジェクトID.
+
+  // 19で実装. 19bは未実装.
+  GLsizei width = 0;
+  GLsizei height = 0;
 };
 
 #endif // TEXTURE_H_INCLUDED

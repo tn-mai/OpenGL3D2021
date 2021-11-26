@@ -7,6 +7,9 @@
 #include "Texture.h"
 #include <memory>
 
+// 影のゆらぎを抑制するコードを有効化する(テキスト未実装)
+#define SUPRESS_SHADOW_JITTERING
+
 /**
 * FBOの種類
 */
@@ -33,6 +36,26 @@ public:
   void UnbindColorTexture(GLuint) const;
   void BindDepthTexture(GLuint) const;
   void UnbindDepthTexture(GLuint) const;
+
+#ifdef SUPRESS_SHADOW_JITTERING
+  GLint GetWidth() const {
+    if (texColor) {
+      return texColor->GetWidth();
+    } else if (texDepth) {
+      return texDepth->GetWidth();
+    }
+    return 0;
+  }
+
+  GLint GetHeight() const {
+    if (texColor) {
+      return texColor->GetHeight();
+    } else if (texDepth) {
+      return texDepth->GetHeight();
+    }
+    return 0;
+  }
+#endif // SUPRESS_SHADOW_JITTERING
 
   // フレームバッファオブジェクトIDを取得する
   GLuint GetId() const { return fbo; }

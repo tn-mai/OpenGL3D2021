@@ -22,6 +22,9 @@
     <Filter Include="ソース ファイル\imgui">
       <UniqueIdentifier>{312c884f-def7-4a28-b2df-0f635bcc99e0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="リソース ファイル\Sprite">
+      <UniqueIdentifier>{699d0ba0-a980-4786-aa06-eb37c52c4262}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Src\Main.cpp">
@@ -113,6 +116,15 @@
     </ClCompile>
     <ClCompile Include="Src\Actor\Boss01.cpp">
       <Filter>ソース ファイル\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Sprite.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Animation.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\EasyAudio.cpp">
+      <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -233,6 +245,18 @@
     <ClInclude Include="Src\Actor\Boss01.h">
       <Filter>ソース ファイル\Actor</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Sprite.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Animation.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\EasyAudio.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\EasyAudioSettings.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Res\Ground.tga">
@@ -246,6 +270,12 @@
     </Image>
     <Image Include="Res\IconEnemy.tga">
       <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="Res\Sprite\Explosion.tga">
+      <Filter>リソース ファイル\Sprite</Filter>
+    </Image>
+    <Image Include="Res\Sprite\smoke.tga">
+      <Filter>リソース ファイル\Sprite</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>

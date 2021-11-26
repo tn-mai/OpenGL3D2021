@@ -10,6 +10,7 @@
 #include "Actor.h"
 #include "Camera.h"
 #include "FramebufferObject.h"
+#include "Sprite.h"
 #include <GLFW/glfw3.h>
 #include <unordered_map>
 #include <random>
@@ -42,6 +43,7 @@ public:
   void NewFrame();
   void RemoveDeadActors();
   void RenderDefault();
+  void RenderSprite();
   void RenderUI();
   void PostRender();
 
@@ -62,6 +64,15 @@ public:
   bool WindowShouldClose() const
   {
     return glfwWindowShouldClose(window);
+  }
+
+  // 19bで実装. 19は未実装
+  /**
+  * アプリ終了フラグをセットする
+  */
+  void SetWindowShouldClose(bool isClose)
+  {
+    glfwSetWindowShouldClose(window, isClose);
   }
 
   /**
@@ -111,6 +122,9 @@ public:
   Camera& GetCamera() { return mainCamera; }
   const Camera& GetCamera() const { return mainCamera; }
 
+  // 課題
+  void ShowCollider(bool flag) { showCollider = flag; }
+
   // TODO: テキスト未追加
   std::shared_ptr<Texture> GetTexture(const char* filename) const;
   unsigned int GetRandom();
@@ -158,9 +172,12 @@ private:
   Camera mainCamera;
 
   // コライダー表示用変数(デバッグ用)
-  bool showCollider = true; // コライダー表示フラグ
+  bool showCollider = false; // コライダー表示フラグ
   std::shared_ptr<ProgramPipeline> pipelineCollider;
   std::shared_ptr<Texture> texCollider;
+
+  // スプライト描画用
+  SpriteRenderer spriteRenderer;
 
   // TODO: テキスト未追加
   std::mt19937 rg;

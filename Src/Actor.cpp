@@ -34,7 +34,10 @@ Actor::Actor(
 */
 void Actor::OnUpdate(float deltaTime)
 {
-  // 何もしない
+  // TODO: テキスト未実装
+  if (animator) {
+    animator->Update(deltaTime);
+  }
 }
 
 /**

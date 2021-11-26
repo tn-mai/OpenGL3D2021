@@ -6,7 +6,11 @@
 #include "../GameEngine.h"
 #include "../GameManager.h"
 #include "../Audio.h"
+#ifdef USE_EASY_AUDIO
+#include "../EasyAudioSettings.h"
+#else
 #include "../Audio/MainWorkUnit/SE.h"
+#endif // USE_EASY_AUDIO
 #include "glm/gtc/matrix_transform.hpp"
 #include <iostream>
 
@@ -91,6 +95,12 @@ void T34TankActor::OnUpdate(float deltaTime)
     if (shotTimer <= 0) {
       shotTimer = 3;
 
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_ENEMY_SHOT);
+#else
+      Audio::Get().Play(1, CRI_SE_SHOT);
+#endif // USE_EASY_AUDIO
+
       // 発射位置を砲の先端に設定
       glm::vec3 position = this->position + t34Front * 2.0f;
       position.y += 2.0f;
@@ -112,8 +122,6 @@ void T34TankActor::OnUpdate(float deltaTime)
       bullet->friction = 1.0f;
 
       engine.AddActor(bullet);
-
-      Audio::Get().Play(1, CRI_SE_SHOT);
     }
   }
 }
@@ -126,14 +134,91 @@ void T34TankActor::OnUpdate(float deltaTime)
 void T34TankActor::OnCollision(const struct Contact& contact)
 {
   if (contact.b->name == "Bullet") {
+#ifdef USE_EASY_AUDIO
+    Audio::PlayOneShot(SE_HIT);
+#else
+    Audio::Get().Play(1, CRI_SE_HIT);
+#endif // USE_EASY_AUDIO
+
     // T-34戦車の耐久値を減らす
     health -= 1;
     if (health <= 0) {
       isDead = true; // T-34戦車を消去する
       GameManager::Get().AddScore(200);
 
+      GameEngine& engine = GameEngine::Get();
+      const auto tex0 = engine.LoadTexture("Res/Sprite/Explosion.tga");
+      std::shared_ptr<Sprite> sprExprosion =
+        std::make_shared<Sprite>(position + glm::vec3(0, 1, 0), tex0);
+      sprExprosion->lifespan = 0.5f;
+
+//      AnimatorPtr animator = std::make_shared<Animator>();
+//      animator->AddClip<glm::vec3>(
+//          &sprExprosion->scale, 0, 0.5f, glm::vec3(2), glm::vec3(8));
+//      animator->AddClip<float>(
+//          &sprExprosion->rotation, 0, 0.5f, 0.0f, 1.5f);
+//      animator->AddClip<float>(
+//          &sprExprosion->color.a, 0, 0.5f, 8, 0);
+//      animator->Play();
+//      sprExprosion->animator = animator;
+
+      engine.AddActor(sprExprosion);
+
+      // 煙エフェクトを発生
+      const std::shared_ptr<Texture> texSmoke =
+        engine.LoadTexture("Res/Sprite/smoke.tga");
+#if 1
+      const float smokeCount = 12;
+      for (float i = 0; i < smokeCount; ++i) {
+        const float r = glm::radians(360.0f / smokeCount * i);
+        const glm::vec3 v(std::cos(r), 0, std::sin(r));
+        const glm::vec3 pos = position + glm::vec3(0, 1, 0) + v;
+        std::shared_ptr<Sprite> sprite = std::make_shared<Sprite>(pos, texSmoke);
+        sprite->velocity = v * 6.0f;
+        sprite->lifespan = 1.5f;
+        sprite->gravityScale = 0;
+        sprite->pixelsPerMeter = 10;
+        engine.AddActor(sprite);
+      }
+#else
+      auto timelineScale = AnimationCurve::Create({ { 0, 2}, { 1, 8 } });
+      auto timelineRotation = AnimationCurve::Create({ { 0, 0 }, { 1, 1.5f } });
+      auto timelineAlpha = AnimationCurve::Create({ { 0, 2 }, { 1, 0 } });
+      for (float i = 0; i < 8; ++i) {
+        glm::vec3 v;
+        v.x = std::cos(glm::radians(360.0f / 8.0f * i));
+        v.y = 0;
+        v.z = std::sin(glm::radians(360.0f / 8.0f * i));
+        glm::vec3 pos = position;
+        std::shared_ptr<Sprite> sprite = std::make_shared<Sprite>(pos + v + glm::vec3(0, 1, 0), texSmoke);
+        sprite->lifespan = 1.0f;
+        sprite->pixelsPerMeter = 50;
+        engine.AddActor(sprite);
+
+        AnimationClipPtr clip = AnimationClip::Create();
+        auto timelineX = AnimationCurve::Create({ { 0, v.x * 10.0f }, {1, -v.x} });
+        auto timelineY = AnimationCurve::Create({ { 0, v.y * 10.0f }, {1, -v.y} });
+        auto timelineZ = AnimationCurve::Create({ { 0, v.z * 10.0f }, {1, -v.z} });
+        clip->AddCurve(ANIMATION_TARGET(Actor, velocity.x), timelineX);
+        clip->AddCurve(ANIMATION_TARGET(Actor, velocity.y), timelineY);
+        clip->AddCurve(ANIMATION_TARGET(Actor, velocity.z), timelineZ);
+        clip->AddCurve(ANIMATION_TARGET(Actor, scale.x), timelineScale);
+        clip->AddCurve(ANIMATION_TARGET(Actor, scale.y), timelineScale);
+        clip->AddCurve(ANIMATION_TARGET(Actor, rotation), timelineRotation);
+        clip->AddCurve(ANIMATION_TARGET(Actor, color.a), timelineAlpha);
+
+        AnimatorPtr animator = Animator::Create();
+        animator->SetClip(clip);
+        animator->Play();
+        sprite->SetAnimator(animator);
+      }
+#endif
       // 爆発音を再生
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_EXPLOSION);
+#else
       Audio::Get().Play(1, CRI_SE_EXPLOSION);
+#endif // USE_EASY_AUDIO
     }
     contact.b->isDead = true; // 弾を消去する
   }

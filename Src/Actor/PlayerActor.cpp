@@ -4,7 +4,11 @@
 #include "PlayerActor.h"
 #include "../GameEngine.h"
 #include "../Audio.h"
+#ifdef USE_EASY_AUDIO
+#include "../EasyAudioSettings.h"
+#else
 #include "../Audio/MainWorkUnit/SE.h"
+#endif // USE_EASY_AUDIO
 #include <glm/gtc/matrix_transform.hpp>
 
 /**
@@ -79,11 +83,19 @@ void PlayerActor::OnUpdate(float deltaTime)
       }
   }
 
+#ifdef USE_EASY_AUDIO
+  if (playTankTruck) {
+    Audio::Play(1, SE_TANK_MOVE, 0.1f, true);
+  } else {
+    Audio::Stop(1);
+  }
+#else
   if (playTankTruck) {
     Audio::Get().Play(2, CRI_SE_TANK_MOVE, 0.1f);
   } else {
     Audio::Get().Stop(2);
   }
+#endif
 
   // マウス左ボタンの状態を取得する
   int shotButton = engine.GetMouseButton(GLFW_MOUSE_BUTTON_LEFT);
@@ -123,7 +135,11 @@ void PlayerActor::OnUpdate(float deltaTime)
 
     engine.AddActor(bullet);
 
+#ifdef USE_EASY_AUDIO
+    Audio::PlayOneShot(SE_PLAYER_SHOT);
+#else
     Audio::Get().Play(1, CRI_SE_SHOT);
+#endif // USE_EASY_AUDIO
   }
 
   // 「前回のショットボタンの状態」を更新する
@@ -140,7 +156,11 @@ void PlayerActor::OnCollision(const struct Contact& contact)
   if (contact.b->name == "EnemyBullet") {
     --health;
     if (health <= 0) {
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_EXPLOSION);
+#else
       Audio::Get().Play(1, CRI_SE_EXPLOSION);
+#endif // USE_EASY_AUDIO
       isDead = true;
     }
     contact.b->isDead = true;

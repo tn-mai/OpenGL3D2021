@@ -17,6 +17,8 @@ Texture::Texture(const char* filename)
   id = GLContext::CreateImage2D(filename);
   if (id) {
     name = filename;
+    glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_WIDTH, &width);
+    glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_HEIGHT, &height);
     std::cout << "[情報]" << __func__ << "テクスチャ" << name << "を作成.\n";
   }
 }
@@ -33,8 +35,9 @@ Texture::Texture(const char* name, const char** fileList, size_t count)
   }
 
   // テクスチャのピクセル形式、幅、高さを取得
-  GLint internalFormat, width, height;
-  glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
+  GLint internalFormat;
+  glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_INTERNAL_FORMAT,
+    &internalFormat);
   glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_WIDTH, &width);
   glGetTextureLevelParameteriv(texList[0], 0, GL_TEXTURE_HEIGHT, &height);
 
@@ -71,6 +74,8 @@ Texture::Texture(const char* name, GLsizei width, GLsizei height,
   id = GLContext::CreateImage2D(width, height, data, pixelFormat, type);
   if (id) {
     this->name = name;
+    this->width = width;
+    this->height = height;
     std::cout << "[情報]" << __func__ << "テクスチャ" << name << "を作成.\n";
   }
 }

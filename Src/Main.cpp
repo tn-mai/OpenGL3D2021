@@ -291,6 +291,7 @@ int main()
   std::shared_ptr<MapEditor> mapEditor;
   if (isEditMode) {
     mapEditor.reset(new MapEditor(MapEditor::SystemType::editor));
+    engine.ShowCollider(true);
   }
 
   // メインループ.
@@ -342,6 +343,7 @@ int main()
     // ゲーム状態を描画する
     //
     engine.RenderDefault();
+    engine.RenderSprite();
     engine.RenderUI();
     engine.PostRender();
     engine.SwapBuffers();

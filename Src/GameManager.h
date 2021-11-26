@@ -16,12 +16,13 @@ public:
   static void Finalize();
   static GameManager& Get();
 
+  // ゲームの動作状態
   enum class State {
-    initializeLevel,
-    start,
-    playing,
-    gameclear,
-    gameover,
+    title,     // タイトル画面(19bで実装. 19は未実装)
+    start,     // ゲーム開始
+    playing,   // ゲームプレイ中
+    gameclear, // ゲームクリア
+    gameover,  // ゲームオーバー
   };
   void SetState(State s);
 
@@ -43,10 +44,35 @@ private:
   void SpawnEnemies();
   void SpawnMap();
 
-  State state = State::initializeLevel;
+  // 19bで実装. 19は未実装.
+  void UpdateGameUI();
+  void UpdateTitle(float deltaTime);
+  void UpdateTitleUI();
+  // ここまで(19bで実装. 19は未実装)
+
+  State state = State::title; // 現在の動作状態
   std::shared_ptr<Actor> playerTank;
   std::vector<std::shared_ptr<Actor>> enemies;
   int score = 0;
+
+  // 19bで実装. 19は未実装.
+
+  // タイトル画面の動作状態
+  enum class TitleState {
+    init,       // タイトル画面の初期化
+    logoFadein, // ロゴフェードイン
+    bgFadein,   // 背景フェードイン
+    idle,       // ユーザーの入力待ち
+    fadeout,    // タイトル画面フェードアウト
+  };
+  TitleState titleState = TitleState::init;
+  float titleLogoAlpha = 0; // タイトルロゴの不透明度
+  float titleBgAlpha = 0;   // タイトル背景の不透明度
+  float titleEffectPosX[2] = { 0, 0 };
+  float fadeAlpha = 0;      // フェードイン・アウトの不透明度
+  bool startHovered = false;
+  bool exitHovered = false;
+  // ここまで(19bで実装. 19は未実装)
 };
 
 #endif // GAMEMANAGER_H_INCLUDED

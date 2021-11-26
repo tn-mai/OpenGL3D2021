@@ -2,6 +2,9 @@
 * @file Audio.cpp
 */
 #include "Audio.h"
+
+#ifndef USE_EASY_AUDIO
+
 #include <algorithm>
 #include <iostream>
 #pragma warning(disable : 26812)
@@ -322,11 +325,5 @@ void Audio::Stop(size_t playerId)
   criAtomExPlayer_Stop(players[playerId]);
 }
 
-
-
-
-
-
-
-
+#endif // USE_EASY_AUDIO
 

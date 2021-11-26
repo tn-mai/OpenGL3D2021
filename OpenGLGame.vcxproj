@@ -160,10 +160,12 @@
     <ClCompile Include="Src\Actor\PlayerActor.cpp" />
     <ClCompile Include="Src\Actor\RandomMovingEnemyActor.cpp" />
     <ClCompile Include="Src\Actor\T34TankActor.cpp" />
+    <ClCompile Include="Src\Animation.cpp" />
     <ClCompile Include="Src\AStar.cpp" />
     <ClCompile Include="Src\Audio.cpp" />
     <ClCompile Include="Src\Camera.cpp" />
     <ClCompile Include="Src\Collision.cpp" />
+    <ClCompile Include="Src\EasyAudio.cpp" />
     <ClCompile Include="Src\FramebufferObject.cpp" />
     <ClCompile Include="Src\GameEngine.cpp" />
     <ClCompile Include="Src\GameManager.cpp" />
@@ -182,6 +184,7 @@
     <ClCompile Include="Src\Primitive.cpp" />
     <ClCompile Include="Src\ProgramPipeline.cpp" />
     <ClCompile Include="Src\Sampler.cpp" />
+    <ClCompile Include="Src\Sprite.cpp" />
     <ClCompile Include="Src\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -201,10 +204,13 @@
     <ClInclude Include="Src\Actor\PlayerActor.h" />
     <ClInclude Include="Src\Actor\RandomMovingEnemyActor.h" />
     <ClInclude Include="Src\Actor\T34TankActor.h" />
+    <ClInclude Include="Src\Animation.h" />
     <ClInclude Include="Src\AStar.h" />
     <ClInclude Include="Src\Audio.h" />
     <ClInclude Include="Src\Camera.h" />
     <ClInclude Include="Src\Collision.h" />
+    <ClInclude Include="Src\EasyAudio.h" />
+    <ClInclude Include="Src\EasyAudioSettings.h" />
     <ClInclude Include="Src\FramebufferObject.h" />
     <ClInclude Include="Src\GameEngine.h" />
     <ClInclude Include="Src\GameManager.h" />
@@ -225,6 +231,7 @@
     <ClInclude Include="Src\Primitive.h" />
     <ClInclude Include="Src\ProgramPipeline.h" />
     <ClInclude Include="Src\Sampler.h" />
+    <ClInclude Include="Src\Sprite.h" />
     <ClInclude Include="Src\Texture.h" />
   </ItemGroup>
   <ItemGroup>
@@ -232,6 +239,8 @@
     <Image Include="Res\Building.tga" />
     <Image Include="Res\IconEnemy.tga" />
     <Image Include="Res\Ground.tga" />
+    <Image Include="Res\Sprite\Explosion.tga" />
+    <Image Include="Res\Sprite\smoke.tga" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Res\Ground.obj">
