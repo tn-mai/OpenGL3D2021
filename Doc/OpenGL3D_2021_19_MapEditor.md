@@ -98,6 +98,12 @@
 +  void UpdateGameUI();
 +  void UpdateTitle(float deltaTime);
 +  void UpdateTitleUI();
+
+-  State state = State::start; // 現在の動作状態
++  State state = State::title; // 現在の動作状態
+   std::shared_ptr<Actor> playerTank;
+   std::vector<std::shared_ptr<Actor>> enemies;
+   int score = 0;
 +
 +  // タイトル画面の動作状態
 +  enum class TitleState {
@@ -111,12 +117,9 @@
 +  float titleLogoAlpha = 0; // タイトルロゴの不透明度
 +  float titleBgAlpha = 0;   // タイトル背景の不透明度
 +  float fadeAlpha = 0;      // フェードイン・アウトの不透明度
+ }
 
--  State state = State::start; // 現在の動作状態
-+  State state = State::title; // 現在の動作状態
-   std::shared_ptr<Actor> playerTank;
-   std::vector<std::shared_ptr<Actor>> enemies;
-   int score = 0;
+ #endif // GAMEMANAGER_H_INCLUDED
 ```
 
 `UpdateTitleUI`(アップデート・タイトル・ユーアイ)メンバ関数は、タイトル画面のUI全般を管理します。
@@ -190,8 +193,8 @@ ImGuiでは、テクスチャIDを`ImTextureID`型に変換する必要があり
 それから、テクスチャクラスに幅と高さを取得する機能を追加します。これは、タイトルロゴの中心座標を調べるときに使います。`Texture.h`を開き、テクスチャクラスの定義に次のプログラムを追加してください。
 
 ```diff
-   // テクスチャIDを取得
-   GLuint GetId() const { return id; }
+   void Write(GLint x, GLint y, GLsizei width, GLsizei height,
+     const void* data, GLenum pixelFormat, GLenum type);
 +
 +  // テクスチャの幅、高さを取得
 +  GLint GetWidth() const { return width; }
@@ -459,7 +462,7 @@ void glfwSetWindowShouldClose(GLFWウィンドウのアドレス, 設定する�
 
 <pre class="tnmai_assignment">
 <strong>【課題05】</strong>
-ダウンロードしたZIPファイルには複数の<ruby>煙<rt>けむり</rt></ruby>テクスチャが入っています。好きなテクスチャを選んでTGAに変換し、<code>title_effect.tga</code>という名前を付けて、プロジェクトの<code>Res/title</code>フォルダに保存しなさい。
+ダウンロードしたZIPファイルには複数の<ruby>煙<rt>けむり</rt></ruby>テクスチャが入っています。好きなテクスチャをひとつ選んでTGAに変換し、<code>title_effect.tga</code>という名前を付けて、プロジェクトの<code>Res/title</code>フォルダに保存しなさい。
 </pre>
 
 次に、エフェクト用の変数を追加します。`GameManager.h`を開き、ゲームマネージャクラスに次のプライベートメンバを追加してください。
@@ -470,8 +473,9 @@ void glfwSetWindowShouldClose(GLFWウィンドウのアドレス, 設定する�
    float titleBgAlpha = 0;   // タイトル背景の不透明度
 +  float titleEffectPosX = 0;
    float fadeAlpha = 0;      // フェードイン・アウトの不透明度
+ }
 
-   State state = State::title; // 現在の動作状態
+ #endif // GAMEMANAGER_H_INCLUDED
 ```
 
 続いて`GameManager.cpp`を開き、アップデートタイトルユーアイ関数の定義に次のプログラムを追加してください。
@@ -556,8 +560,9 @@ void glfwSetWindowShouldClose(GLFWウィンドウのアドレス, 設定する�
 -  float titleEffectPosX = 0;
 +  float titleEffectPosX[2] = { 0, 0 };
    float fadeAlpha = 0;      // フェードイン・アウトの不透明度
+ }
 
-   State state = State::title; // 現在の動作状態
+ #endif // GAMEMANAGER_H_INCLUDED
 ```
 
 次に`GameManager.cpp`を開き、アップデート関数に次のプログラムを追加してください。
@@ -903,9 +908,9 @@ bool IsItemHovered();
    float fadeAlpha = 0;      // フェードイン・アウトの不透明度
 +  bool startHovered = false;
 +  bool exitHovered = false;
+ }
 
-   State state = State::title; // 現在の動作状態
-   std::shared_ptr<Actor> playerTank;
+ #endif // GAMEMANAGER_H_INCLUDED
 ```
 
 次に、`GameManager.cpp`を開き、マウスカーソルが乗ったときに音声を再生するプログラムを、次のように変更してください。
