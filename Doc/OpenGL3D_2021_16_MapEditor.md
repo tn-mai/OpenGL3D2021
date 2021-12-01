@@ -815,7 +815,7 @@
    }
 +
 +  // 攻撃対象を設定
-+  void SetTarget(std::shared_ptr<Actor> target) { this->target; }
++  void SetTarget(std::shared_ptr<Actor> target) { this->target = target; }
 +
    virtual void OnUpdate(float deltaTime) override;
    virtual void OnCollision(const struct Contact& contact) override;
