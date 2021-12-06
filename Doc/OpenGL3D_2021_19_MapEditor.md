@@ -462,7 +462,8 @@ void glfwSetWindowShouldClose(GLFWウィンドウのアドレス, 設定する�
 
 <pre class="tnmai_assignment">
 <strong>【課題05】</strong>
-ダウンロードしたZIPファイルには複数の<ruby>煙<rt>けむり</rt></ruby>テクスチャが入っています。好きなテクスチャをひとつ選んでTGAに変換し、<code>title_effect.tga</code>という名前を付けて、プロジェクトの<code>Res/title</code>フォルダに保存しなさい。
+ダウンロードしたZIPファイルには複数の<ruby>煙<rt>けむり</rt></ruby>テクスチャが入っています。
+好きなテクスチャをひとつ選んでTGAに変換し、<code>title_effect.tga</code>という名前を付けて、プロジェクトの<code>Res/title</code>フォルダに保存しなさい。
 </pre>
 
 次に、エフェクト用の変数を追加します。`GameManager.h`を開き、ゲームマネージャクラスに次のプライベートメンバを追加してください。
