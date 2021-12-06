@@ -20,15 +20,20 @@ public:
 
   // ユニフォーム変数の設定
   bool SetUniform(GLint, const glm::mat4&) const;
+  bool SetUniform(GLint, const glm::vec4&) const;
 
   // TODO: テキスト未追加
-  bool SetUniform(GLint, const glm::vec4&) const;
+  bool SetUniform(GLint, const glm::vec4*, size_t) const;
+  bool SetUniform(GLint, const glm::uint*, size_t) const;
+  bool SetUniform(GLint, const glm::mat4*, size_t) const;
 
   // バインド管理
   void Bind() const;
   void Unbind() const;
 
 private:
+  GLuint GetProgram(GLint location) const;
+
   GLuint vp = 0;       // プログラム・オブジェクト(頂点シェーダ)
   GLuint fp = 0;       // プログラム・オブジェクト(フラグメントシェーダ)
   GLuint pipeline = 0; // プログラム・パイプライン・オブジェクト

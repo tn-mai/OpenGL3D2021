@@ -42,9 +42,11 @@ GLuint CreateBuffer(GLsizeiptr size, const GLvoid* data)
 * @return 作成したVAO.
 */
 GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor,
-  GLuint vboTexcoord, GLuint vboNormal, GLuint ibo)
+  GLuint vboTexcoord, GLuint vboNormal, GLuint vboMaterialGroup,
+  GLuint ibo)
 {
-  if (!vboPosition || !vboColor || !vboTexcoord || !vboNormal || !ibo) {
+  if (!vboPosition || !vboColor || !vboTexcoord || !vboNormal ||
+    !vboMaterialGroup || !ibo) {
     std::cerr << "[エラー]" << __func__ << ":バッファオブジェクトが0です。\n";
     return 0;
   }
@@ -82,6 +84,14 @@ GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor,
   glVertexArrayAttribBinding(id,normalIndex, normalBindingIndex);
   glVertexArrayVertexBuffer(
     id, normalBindingIndex, vboNormal, 0, sizeof(glm::vec3));
+
+  const GLuint groupIndex = 4;
+  const GLuint groupBindingIndex = 4;
+  glEnableVertexArrayAttrib(id, groupIndex);
+  glVertexArrayAttribIFormat(id, groupIndex, 2, GL_UNSIGNED_BYTE, 0);
+  glVertexArrayAttribBinding(id,groupIndex, groupBindingIndex);
+  glVertexArrayVertexBuffer(
+    id, groupBindingIndex, vboMaterialGroup, 0, sizeof(glm::u8vec2));
 
   glVertexArrayElementBuffer(id, ibo);
 

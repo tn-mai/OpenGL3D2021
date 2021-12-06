@@ -20,8 +20,7 @@
 Boss01::Boss01(const glm::vec3& position, const glm::vec3& scale,
   float rotation, const std::shared_ptr<Actor>& target) :
   Actor("Boss01",
-    GameEngine::Get().GetPrimitive("Res/Black_Track.obj"),
-    GameEngine::Get().LoadTexture("Res/Black_Track.tga"),
+    GameEngine::Get().LoadMesh("Res/Black_Track.obj"),
     position, scale, rotation, glm::vec3(0)),
   target(target)
 {

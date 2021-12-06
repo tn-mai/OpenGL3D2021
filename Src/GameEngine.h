@@ -51,6 +51,7 @@ public:
   bool LoadPrimitive(const char* filename);
   const Primitive& GetPrimitive(const char* filename) const;
   const Primitive& GetPrimitive(int n) const { return primitiveBuffer->Get(n); }
+  const MeshPtr& LoadMesh(const char* name);
 
   std::shared_ptr<Texture> LoadTexture(const char* filename);
   std::shared_ptr<Texture> LoadTexture(const char* name, const char** fileList, size_t count);

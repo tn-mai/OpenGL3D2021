@@ -8,6 +8,7 @@
 #include "Texture.h"
 #include "ProgramPipeline.h"
 #include "Collision.h"
+#include "Renderer.h"
 #include "Animation.h"
 #include <string>
 #include <vector>
@@ -62,11 +63,22 @@ public:
     float rotation,
     const glm::vec3& adjustment);
 
+  Actor(
+    const std::string& name,
+    const MeshPtr& mesh,
+    const glm::vec3& position,
+    const glm::vec3& scale,
+    float rotation,
+    const glm::vec3& adjustment);
+
   virtual ~Actor() = default;
   virtual std::shared_ptr<Actor> Clone() const {
     std::shared_ptr<Actor> clone(new Actor(*this));
     if (collider) {
       clone->collider = collider->Clone();
+    }
+    if (renderer) {
+      clone->renderer = renderer->Clone();
     }
     return clone;
   }
@@ -74,8 +86,7 @@ public:
   virtual void OnCollision(const struct Contact& contact);
 
   std::string name;                // アクターの名前
-  Primitive prim;                  // 描画するプリミティブ
-  std::shared_ptr<Texture> tex;    // 描画に使うテクスチャ
+  RendererPtr renderer;            // 描画オブジェクト
   glm::vec3 position;              // 物体の位置
   glm::vec3 scale;                 // 物体の拡大縮小率
   float rotation;                  // 物体の回転角度
@@ -111,12 +122,6 @@ public:
   bool isBlock = true;             // false=通過できる true=通過できない
   bool isOnActor = false;
 };
-
-void Draw(
-  const Actor& actor,              // 物体の制御パラメータ
-  const ProgramPipeline& pipeline, // 描画に使うプログラムパイプライン
-  glm::mat4 matProj,               // 描画に使うプロジェクション行列
-  glm::mat4 matView);              // 描画に使うビュー行列  
 
 std::shared_ptr<Actor> Find(std::vector<std::shared_ptr<Actor>>& actors, const char* name);
 

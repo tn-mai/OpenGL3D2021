@@ -35,20 +35,78 @@ private:
 };
 
 /**
-* プリミティブ描画データ.
+* プリミティブ描画データ
 */
-class Model
+class Mesh
 {
 public:
-  Model() = default;
-  ~Model() = default;
+  /**
+  * マテリアル(材質)データ
+  */
+  struct Material
+  {
+    std::string name;               // マテリアル名
+    glm::vec4 color = glm::vec4(1); // ディフューズ色
+    std::shared_ptr<Texture> tex;   // テクスチャ
+  };
 
-  void Draw() const;
+  /**
+  * マテリアルの割り当て範囲
+  */
+  struct UseMaterial
+  {
+    int materialNo = -1; // 割り当てるマテリアルの番号
+    GLsizei indexCount = 0; // マテリアルを割り当てるインデックスデータの数
+  };
 
-  std::string name;
-  std::vector<Primitive> primitives;
-  std::vector<std::shared_ptr<Texture>> textures;
+  /**
+  * ポリゴンをグループ化するデータ
+  */
+  struct Group
+  {
+    std::string name; // グループ名
+    GLsizei indexCount = 0; // グループに含まれるインデックスデータの数
+
+    // TODO: テキスト未実装
+    int parent = -1;
+    glm::mat4 matBindPose = glm::mat4(1);
+    glm::mat4 matInverseBindPose = glm::mat4(1);
+  };
+
+  Mesh() = default;
+  ~Mesh() = default;
+  Mesh(const Mesh&) = default;
+  Mesh& operator=(const Mesh&) = default;
+
+  void CalcMatrix(int n, const glm::mat4* p, std::vector<glm::mat4>& m, std::vector<bool>& b) const
+  {
+    if (!b[n]) {
+      m[n] = groups[n].matBindPose * p[n] * groups[n].matInverseBindPose;
+      const int parent = groups[n].parent;
+      if (parent >= 0) {
+        CalcMatrix(parent, p, m, b);
+        m[n] = m[parent] * m[n];
+      }
+      b[n] = true;
+    }
+  }
+
+  std::vector<glm::mat4> CalcGroupMatirices(const glm::mat4* p) const 
+  {
+    std::vector<glm::mat4> m(groups.size());
+    std::vector<bool> calcFlags(groups.size(), false);
+    for (int i = 0; i < groups.size(); ++i) {
+      CalcMatrix(i, p, m, calcFlags);
+    }
+    return m;
+  }
+
+  Primitive primitive;
+  std::vector<Material> materials;
+  std::vector<UseMaterial> useMaterials;
+  std::vector<Group> groups;
 };
+using MeshPtr = std::shared_ptr<Mesh>;
 
 /**
 * 複数のプリミティブを管理するクラス.
@@ -59,15 +117,18 @@ public:
   PrimitiveBuffer(GLsizei maxVertexCount, GLsizei maxIndexCount);
   ~PrimitiveBuffer();
 
-  // プリミティブの追加.
+  // プリミティブの追加(20にてpGroupAndMaterial引数を追加)
   bool Add(size_t vertexCount, const glm::vec3* pPosition, const glm::vec4* pColor,
     const glm::vec2* pTexcoord, const glm::vec3* pNormal,
-    size_t indexCount, const GLushort* pIndex, const char* name = nullptr, GLenum type = GL_TRIANGLES);
+    const glm::u8vec2* pMaterialGroup,
+    size_t indexCount, const GLushort* pIndex, const char* name = nullptr,
+    GLenum type = GL_TRIANGLES);
   bool AddFromObjFile(const char* filename);
 
   // プリミティブの取得.
   const Primitive& Get(size_t n) const;
   const Primitive& Find(const char* name) const;
+  const MeshPtr& GetMesh(const char* name) const; // 20で実装. 20bは未実装.
 
   // VAOバインド管理.
   void BindVertexArray() const;
@@ -75,17 +136,17 @@ public:
 
   // TODO: テキスト未追加
   size_t GetCount() const { return primitives.size(); }
-  const Model& GetModel(const char* name) const;
 
 private:
   std::vector<Primitive> primitives;
-  std::vector<Model> models;
+  std::vector<MeshPtr> meshes;
 
   // バッファID.
   GLuint vboPosition = 0;
   GLuint vboColor = 0;
   GLuint vboTexcoord = 0;
   GLuint vboNormal = 0;
+  GLuint vboMaterialGroup = 0;
   GLuint ibo = 0;
   GLuint vao = 0;
 
@@ -97,5 +158,11 @@ private:
 
 bool CopyData(GLuint writeBuffer, GLsizei unitSize,
   GLsizei offsetCount, size_t count, const void* data);
+
+using TextureList = std::vector<std::shared_ptr<Texture>>;
+using TextureIndexList = std::vector<glm::uint>;
+TextureList GetTextureList(const std::vector<Mesh::Material>& materials);
+TextureIndexList GetTextureIndexList(const std::vector<Mesh::Material>& materials,
+  const TextureList& textures);
 
 #endif // PRIMITIVE_H_INCLUDED

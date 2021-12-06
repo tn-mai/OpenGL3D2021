@@ -4,6 +4,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "Primitive.h"
 #include "GLContext.h"
+#include "GameEngine.h"
 #include <fstream>
 #include <string>
 #include <stdio.h>
@@ -43,24 +44,123 @@ bool CopyData(GLuint writeBuffer, GLsizei unitSize,
 }
 
 /**
+* マテリアルで使われているテクスチャの一覧を取得する
+*/
+TextureList GetTextureList(
+  const std::vector<Mesh::Material>& materials)
+{
+  TextureList textures;
+  for (const auto& e : materials) {
+    if (!e.tex) {
+      continue;
+    }
+    const auto itr = std::find(textures.begin(), textures.end(), e.tex);
+    if (itr == textures.end()) {
+      textures.push_back(e.tex);
+    }
+  }
+  return textures;
+}
+
+/**
+* マテリアルが使うテクスチャの番号一覧を取得する
+*/
+TextureIndexList GetTextureIndexList(
+  const std::vector<Mesh::Material>& materials, const TextureList& textures)
+{
+  TextureIndexList indices(materials.size(), 0);
+  for (int m = 0; m < materials.size(); ++m) {
+    for (int i = 0; i < textures.size(); ++i) {
+      if (textures[i] == materials[m].tex) {
+        indices[m] = i;
+        break;
+      }
+    }
+  }
+  return indices;
+}
+
+/**
+* MTLファイルからマテリアルを読み込む
+*
+* @param  foldername ファイルのあるフォルダ名
+* @return filename   MTLファイル名
+*/
+std::vector<Mesh::Material> LoadMaterial(
+  const std::string& foldername, const std::string& filename)
+{
+  std::vector<Mesh::Material> materials;
+
+  const std::string mtlname = foldername + filename;
+  std::ifstream ifs(mtlname);
+  if (!ifs) {
+    return materials;
+  }
+
+  GameEngine& engine = GameEngine::Get();
+
+  Mesh::Material m; // データ読み取り用変数
+  size_t lineNo = 0; // 読み込んだ行数
+  while (!ifs.eof()) {
+    std::string line;
+    std::getline(ifs, line); // ファイルから1行読み込む
+    ++lineNo;
+
+    // 行の先頭にある空白を読み飛ばす
+    int n;
+    char ctype[64];
+    if (sscanf(line.c_str(), " %63s%n", ctype, &n) < 1) {
+      continue;
+    }
+    // コメント行なら無視して次の行へ進む
+    if (ctype[0] == '#') {
+      continue;
+    }
+
+    const char* p = line.c_str() + n; // 数値部分を指すポインタ
+
+    // タイプ別のデータ読み込み処理
+    if (strcmp(ctype, "newmtl") == 0) { // マテリアル名
+      // 読み取ったマテリアルを配列に追加
+      if (!m.name.empty()) {
+        materials.push_back(m);
+        m = Mesh::Material(); // マテリアルデータを初期化
+      }
+      for (; *p == ' ' || *p == '\t'; ++p) {} // 先頭の空白を除去
+      m.name = std::string(p);
+    }
+    else if (strcmp(ctype, "Kd") == 0) { // ディフューズカラー
+      if (sscanf(p, " %f %f %f", &m.color.x, &m.color.y, &m.color.z) != 3) {
+        std::cerr << "[警告]" << __func__ << ":ディフューズカラーの読み取りに失敗.\n" <<
+          "  " << mtlname << "(" << lineNo << "行目): " << line << "\n";
+      }
+    }
+    else if (strcmp(ctype, "d") == 0) { // アルファ値
+      if (sscanf(p, " %f", &m.color.w) != 1) {
+        std::cerr << "[警告]" << __func__ << ":アルファ値の読み取りに失敗.\n" <<
+          "  " << mtlname << "(" << lineNo << "行目): " << line << "\n";
+      }
+    }
+    else if (strcmp(ctype, "map_Kd") == 0) { // ディフューズテクスチャ
+      for (; *p == ' ' || *p == '\t'; ++p) {} // 先頭の空白を除去
+      const std::string textureName = foldername + p;
+      m.tex = engine.LoadTexture(textureName.c_str());
+    }
+  }
+
+  // 最後に読み取ったマテリアルを配列に追加
+  if (!m.name.empty()) {
+    materials.push_back(m);
+  }
+  return materials;
+}
+
+/**
 * プリミティブを描画する.
 */
 void Primitive::Draw() const
 {
   glDrawElementsBaseVertex(mode, count, GL_UNSIGNED_SHORT, indices, baseVertex);
-}
-
-/**
-* モデルを描画する.
-*/
-void Model::Draw() const
-{
-  for (size_t i = 0; i < primitives.size(); ++i) {
-    if (textures[i]) {
-      textures[i]->Bind(0);
-    }
-    primitives[i].Draw();
-  }
 }
 
 /**
@@ -74,14 +174,18 @@ PrimitiveBuffer::PrimitiveBuffer(GLsizei maxVertexCount, GLsizei maxIndexCount)
   vboPosition = GLContext::CreateBuffer(sizeof(glm::vec3) * maxVertexCount, nullptr);
   vboColor = GLContext::CreateBuffer(sizeof(glm::vec4) * maxVertexCount, nullptr);
   vboTexcoord = GLContext::CreateBuffer(sizeof(glm::vec2) * maxVertexCount, nullptr);
-  vboNormal = GLContext::CreateBuffer(sizeof(glm::vec2) * maxVertexCount, nullptr);
+  vboNormal = GLContext::CreateBuffer(sizeof(glm::vec3) * maxVertexCount, nullptr);
+  vboMaterialGroup =
+    GLContext::CreateBuffer(sizeof(glm::u8vec2) * maxVertexCount, nullptr);
   ibo = GLContext::CreateBuffer(sizeof(GLushort) * maxIndexCount, nullptr);
-  vao = GLContext::CreateVertexArray(vboPosition, vboColor, vboTexcoord, vboNormal, ibo);
+  vao = GLContext::CreateVertexArray(
+    vboPosition, vboColor, vboTexcoord, vboNormal, vboMaterialGroup, ibo);
   if (!vboPosition || !vboColor || !vboTexcoord || !vboNormal || !ibo || !vao) {
     std::cerr << "[エラー]" << __func__ << ": VAOの作成に失敗.\n";
   }
 
   primitives.reserve(1000);
+  meshes.reserve(1000);
 
   this->maxVertexCount = maxVertexCount;
   this->maxIndexCount = maxIndexCount;
@@ -94,6 +198,7 @@ PrimitiveBuffer::~PrimitiveBuffer()
 {
   glDeleteVertexArrays(1, &vao);
   glDeleteBuffers(1, &ibo);
+  glDeleteBuffers(1, &vboMaterialGroup);
   glDeleteBuffers(1, &vboNormal);
   glDeleteBuffers(1, &vboTexcoord);
   glDeleteBuffers(1, &vboColor);
@@ -116,6 +221,7 @@ PrimitiveBuffer::~PrimitiveBuffer()
 */
 bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
   const glm::vec4* pColor, const glm::vec2* pTexcoord, const glm::vec3* pNormal,
+  const glm::u8vec2* pMaterialGroup,
   size_t indexCount, const GLushort* pIndex, const char* name, GLenum type)
 {
   // エラーチェック.
@@ -155,6 +261,18 @@ bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
     return false;
   }
 
+  // GPUメモリにマテリアル番号・グループ番号をコピー
+  // データがない場合はダミーデータをコピーする
+  std::vector<glm::u8vec2> dummy;
+  if (!pMaterialGroup) {
+    dummy.resize(vertexCount, glm::u8vec2(0));
+    pMaterialGroup = dummy.data();
+  }
+  if (!CopyData(vboMaterialGroup, sizeof(glm::u8vec2), curVertexCount,
+    vertexCount, pMaterialGroup)) {
+    return false;
+  }
+
   // GPUメモリにインデックスデータをコピー.
   if (!CopyData(ibo, sizeof(GLushort), curIndexCount, indexCount, pIndex)) {
     return false;
@@ -172,101 +290,6 @@ bool PrimitiveBuffer::Add(size_t vertexCount, const glm::vec3* pPosition,
   curIndexCount += static_cast<GLsizei>(indexCount);
 
   return true;
-}
-
-/**
-* OBJファイルのマテリアルデータ
-*/
-struct Material
-{
-  std::string name;                 // マテリアル名
-  glm::vec4   color = glm::vec4(1); // ディフューズ色
-  std::string textureName;          // テクスチャ名
-};
-
-/**
-* OBJファイルのインデックス分割要素.
-*/
-struct Group
-{
-  std::string type;
-  std::string name;
-  int materialNo = -1;
-  GLsizei indexCount = 0;
-};
-
-/**
-* MTLファイルからマテリアルを読み込む.
-*
-* @param  
-* @return 
-*/
-std::vector<Material> LoadMaterial(const char* filename)
-{
-  std::vector<Material> materials;
-
-  std::ifstream ifs(filename);
-  if (!ifs) {
-    return materials;
-  }
-
-  // ファイルからマテリアルのデータを読み込む.
-  Material m;        // データ読み取り用変数.
-  size_t lineNo = 0; // 読み込んだ行数
-  while (!ifs.eof()) {
-    std::string line;
-    std::getline(ifs, line); // ファイルから1行読み込む
-    ++lineNo;
-
-    // 行の先頭にある空白を読み飛ばす.
-    const size_t posData = line.find_first_not_of(" \t");
-    if (posData != std::string::npos) {
-      line = line.substr(posData);
-    }
-
-    // 空行またはコメント行なら無視して次の行へ進む.
-    if (line.empty() || line[0] == '#') {
-      continue;
-    }
-
-    // データの種類を取得.
-    const size_t endOfType = line.find(' ');
-    const std::string type = line.substr(0, endOfType);
-    const char* p = line.c_str() + endOfType; // 数値部分を指すポインタ
-
-    // タイプ別のデータ読み込み処理.
-    if (type == "newmtl") { // マテリアル名
-      // 読み取ったマテリアルを配列に追加.
-      if (!m.name.empty()) {
-        materials.push_back(m);
-        m = Material(); // マテリアルデータを初期化.
-      }
-      for (; *p == ' ' || *p == '\t'; ++p) {} // 先頭の空白を除去
-      m.name = std::string(p);
-    }
-    else if (type == "Kd") { // ディフューズカラー
-      if (sscanf(p, "%f %f %f", &m.color.x, &m.color.y, &m.color.z) != 3) {
-        std::cerr << "[警告]" << __func__ << ":ディフューズカラーの読み取りに失敗.\n" <<
-          "  " << filename << "(" << lineNo << "行目): " << line << "\n";
-      }
-    }
-    else if (type == "d") { // アルファ値
-      if (sscanf(p, "%f", &m.color.w) != 1) {
-        std::cerr << "[警告]" << __func__ << ":アルファ値の読み取りに失敗.\n" <<
-          "  " << filename << "(" << lineNo << "行目): " << line << "\n";
-      }
-    }
-    else if (type == "map_Kd") { // ディフューズテクスチャ
-      for (; *p == ' ' || *p == '\t'; ++p) {} // 先頭の空白を除去
-      m.textureName = std::string(p);
-    }
-  }
-
-  // 読み取ったマテリアルを配列に追加.
-  if (!m.name.empty()) {
-    materials.push_back(m);
-  }
-  return materials;
 }
 
 // インデックス用
@@ -361,7 +384,7 @@ bool PrimitiveBuffer::AddFromObjFile(const char* filename)
 
   // フォルダ名を取り出す
   std::string foldername(filename);
-  const size_t lastSlashPos = foldername.find_last_of('/');
+  const size_t lastSlashPos = foldername.find_last_of("/\\");
   if (lastSlashPos == std::string::npos) {
     foldername.clear();
   } else {
@@ -374,10 +397,7 @@ bool PrimitiveBuffer::AddFromObjFile(const char* filename)
   std::vector<glm::vec3> objNormals;   // OBJファイルの法線
   std::vector<Index> objIndices; // OBJファイルのインデックス
 
-  std::vector<Material> materials; // MTLファイルのデータ
-
-  std::vector<Group> groups; // グループ分け用のデータ
-  groups.push_back(Group()); // デフォルトグループを追加.
+  Mesh mesh;
 
   // 容量を予約.
   objPositions.reserve(10'000);
@@ -459,57 +479,59 @@ bool PrimitiveBuffer::AddFromObjFile(const char* filename)
         if (false && f.size() > 3) {
           std::vector<Index> tmp = EarClipping(objPositions, f);
           objIndices.insert(objIndices.end(), tmp.begin(), tmp.end());
-          if (groups.size()) {
-            groups.back().indexCount += static_cast<GLsizei>(tmp.size());
+          // ユーズマテリアルとグループのインデックス数を更新する
+          if (!mesh.useMaterials.empty()) {
+            mesh.useMaterials.back().indexCount += static_cast<GLsizei>(tmp.size());
+          }
+          if (!mesh.groups.empty()) {
+            mesh.groups.back().indexCount += static_cast<GLsizei>(tmp.size());
           }
         } else {
           for (size_t i = 2; i < f.size(); ++i) {
             objIndices.push_back(f[0]);
             objIndices.push_back(f[i - 1]);
             objIndices.push_back(f[i]);
-            if (groups.size()) {
-              groups.back().indexCount += 3;
-            }
+          }
+
+          // インデックス数を更新する
+          const GLsizei triangleCount = static_cast<GLsizei>(f.size() - 2);
+          if (!mesh.useMaterials.empty()) {
+            mesh.useMaterials.back().indexCount += triangleCount * 3;
+          }
+          if (!mesh.groups.empty()) {
+            mesh.groups.back().indexCount += triangleCount * 3;
           }
         }
       } else {
         std::cerr << "[警告]" << __func__ << ":面データの読み取りに失敗.\n"
           "  " << filename << "(" << lineNo << "行目): " << line << "\n";
       }
-    } else if (type == "mtllib") {
+    }
+    else if (type == "mtllib") {
       for (; *p == ' '; ++p) {} // 先頭の空白を除去
-      const std::string mtlname = foldername + std::string(p);
-      std::vector<Material> m = LoadMaterial(mtlname.c_str());
-      materials.insert(materials.end(), m.begin(), m.end());
+      const std::vector<Mesh::Material> m = LoadMaterial(foldername, p);
+      mesh.materials.insert(mesh.materials.end(), m.begin(), m.end());
+    }
+    else if (type == "g" || type == "o") {
+      // 新しいグループを作成
+      for (; *p == ' '; ++p) {} // 先頭の空白を除去
+      mesh.groups.push_back(Mesh::Group());
+      mesh.groups.back().name = p;
+    }
+    else if (type == "usemtl") {
+      // 新しいユーズマテリアルを作成
+      for (; *p == ' '; ++p) {} // 先頭の空白を除去
+      mesh.useMaterials.push_back(Mesh::UseMaterial{});
 
-    // g, o, 有効なusemtlの場合は新しいグループを作成する必要がありうる.
-    // indexCountが0なら作成の必要はない.
-    // グループ名は上書きしない.
-    } else if (type == "usemtl") {
-      for (; *p == ' '; ++p) {} // 先頭の空白を除去
-      for (int i = 0; i < materials.size(); ++i) {
-        if (materials[i].name == p) {
-          if (groups.back().indexCount > 0) {
-            Group g = groups.back();
-            g.type = type;
-            g.name = p;
-            g.indexCount = 0;
-            groups.push_back(g);
-          }
-          groups.back().materialNo = i;
+      // 名前が一致するマテリアルの番号を設定
+      for (int i = 0; i < mesh.materials.size(); ++i) {
+        if (mesh.materials[i].name == p) {
+          mesh.useMaterials.back().materialNo = i;
           break;
         }
       }
-    } else if (type == "o") {
-      for (; *p == ' '; ++p) {} // 先頭の空白を除去
-      if (groups.back().indexCount > 0) {
-        Group g = groups.back();
-        g.type = type;
-        g.indexCount = 0;
-        groups.push_back(g);
-      }
-      groups.back().name = p;
-    } else {
+    }
+    else {
       std::cerr << "[警告]" << __func__ << ":未対応の形式です.\n" <<
         "  " << filename << "(" << lineNo << "行目): " << line << "\n";
     }
@@ -603,60 +625,46 @@ bool PrimitiveBuffer::AddFromObjFile(const char* filename)
   // 色データを設定.
   colors.resize(positions.size(), glm::vec4(1));
 
-  // テクスチャを読み込む
-  std::vector<std::shared_ptr<Texture>> textures;
-  for (size_t i = 0; i < materials.size(); ++i) {
-    if (materials[i].textureName.empty()) {
-      textures.push_back(nullptr);
-    } else {
-      const std::string textureName = foldername + materials[i].textureName;
-      std::shared_ptr<Texture> p(new Texture(textureName.c_str()));
-      textures.push_back(p);
+  // マテリアル番号を設定
+  std::vector<glm::u8vec2> materialGroups(positions.size(), glm::u8vec2(0));
+  GLsizei rangeFirst = 0;
+  for (int useNo = 0; useNo < mesh.useMaterials.size(); ++useNo) {
+    const Mesh::UseMaterial& m = mesh.useMaterials[useNo];
+    const int maxMaterialNo = 9; // シェーダで使えるマテリアルは最大10個
+    const int n = glm::clamp(m.materialNo, 0, maxMaterialNo);
+    for (int i = 0; i < m.indexCount; ++i) {
+      const int vertexNo = indices[rangeFirst + i];
+      materialGroups[vertexNo].x = n;
     }
+    rangeFirst += m.indexCount;
   }
 
-  // モデルを追加する
-  Model model;
-  model.name = filename;
-  GLsizei indexOffset = curIndexCount;
-  for (size_t i = 0; i < groups.size(); ++i) {
-    // 色データを更新.
-    if (groups[i].materialNo < materials.size()) {
-      const glm::vec4 color = materials[groups[i].materialNo].color;
-      for (int c = 0; c < groups[i].indexCount; ++c) {
-        const int ii = indexOffset - curIndexCount + c;
-        const int ic = indices[ii];
-        colors[ic] = color;
-      }
+  // グループ番号を設定
+  rangeFirst = 0;
+  for (int groupNo = 0; groupNo < mesh.groups.size(); ++groupNo) {
+    const Mesh::Group& g = mesh.groups[groupNo];
+    for (int i = 0; i < g.indexCount; ++i) {
+      const int vertexNo = indices[rangeFirst + i];
+      materialGroups[vertexNo].y = groupNo;
     }
-
-    // 描画データを作成
-    const Primitive prim(groups[i].name.c_str(), GL_TRIANGLES, groups[i].indexCount,
-      sizeof(GLushort) * indexOffset, curVertexCount);
-    // 描画データを配列に追加
-    model.primitives.push_back(prim);
-
-    if (groups[i].materialNo < textures.size()) {
-      model.textures.push_back(textures[groups[i].materialNo]);
-    } else {
-      model.textures.push_back(nullptr);
-    }
-
-    // インデックスを進める
-    indexOffset += groups[i].indexCount;
+    rangeFirst += g.indexCount;
   }
-  models.push_back(model);
 
   // 頂点データとインデックスデータをGPUメモリにコピーする.
   const bool result = Add(positions.size(), positions.data(), colors.data(),
-    texcoords.data(), normals.data(), indices.size(), indices.data(),
-    filename);
+    texcoords.data(), normals.data(), materialGroups.data(),
+    indices.size(), indices.data(), filename);
   if (result) {
     std::cout << "[情報]" << __func__ << ":" << filename << "(頂点数=" <<
       positions.size() << " インデックス数=" << indices.size() << ")\n";
   } else {
     std::cerr << "[エラー]" << __func__ << ":" << filename << "の読み込みに失敗.\n";
   }
+
+  // メッシュを追加する
+  mesh.primitive = primitives.back();
+  meshes.push_back(std::make_shared<Mesh>(mesh));
+
   return result;
 }
 
@@ -701,16 +709,16 @@ const Primitive& PrimitiveBuffer::Find(const char* name) const
 }
 
 /**
-*
+* メッシュを取得する
 */
-const Model& PrimitiveBuffer::GetModel(const char* name) const
+const MeshPtr& PrimitiveBuffer::GetMesh(const char* name) const
 {
-  for (size_t i = 0; i < models.size(); ++i) {
-    if (models[i].name == name) {
-      return models[i];
+  for (size_t i = 0; i < meshes.size(); ++i) {
+    if (meshes[i]->primitive.GetName() == name) {
+      return meshes[i];
     }
   }
-  static const Model dummy;
+  static const MeshPtr dummy;
   return dummy;
 }
 

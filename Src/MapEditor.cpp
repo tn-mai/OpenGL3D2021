@@ -275,9 +275,10 @@ void MapEditor::InitActorList()
     case ActorType::other:
       actor.reset(new Actor(
         e.name,
-        engine.GetPrimitive(e.primitiveFilename),
-        engine.LoadTexture(e.textureFilename),
+        engine.LoadMesh(e.primitiveFilename),
         glm::vec3(0), e.scale, e.rotation, e.adjustment));
+      static_cast<MeshRenderer&>(*actor->renderer).SetMaterial(0,
+        Mesh::Material{ "", glm::vec4(1),  engine.LoadTexture(e.textureFilename) });
       actor->collider = e.collider;
       actor->isStatic = true;
       break;

@@ -5,13 +5,15 @@ layout(location=0) in vec4 inColor;
 layout(location=1) in vec2 inTexcoord;
 layout(location=2) in vec3 inNormal;
 layout(location=3) in vec3 inPosition;
+layout(location=4) in flat uint inTextureNo;
 
 // 出力変数
 out vec4 fragColor;
 
 // ユニフォーム変数
-layout(binding=0) uniform sampler2D texColor;
+layout(binding=0) uniform sampler2D texColor0;
 layout(binding=1) uniform sampler2D texShadow;
+layout(binding=2) uniform sampler2D texColor1_7[7];
 
 layout(location=100) uniform mat4 matShadow;
 
@@ -116,7 +118,17 @@ const vec2 poissonDisk[sampleCount] = {
 // フラグメントシェーダプログラム
 void main()
 {
-  vec4 tc = texture(texColor, inTexcoord);
+  vec4 tc = vec4(1.0, 1.0, 1.0, 1.0);
+  switch (inTextureNo) {
+  case 0:  tc = texture(texColor0, inTexcoord); break;
+  case 1:  tc = texture(texColor1_7[0], inTexcoord); break;
+  case 2:  tc = texture(texColor1_7[1], inTexcoord); break;
+  case 3:  tc = texture(texColor1_7[2], inTexcoord); break;
+  case 4:  tc = texture(texColor1_7[3], inTexcoord); break;
+  case 5:  tc = texture(texColor1_7[4], inTexcoord); break;
+  case 6:  tc = texture(texColor1_7[5], inTexcoord); break;
+  case 7:  tc = texture(texColor1_7[6], inTexcoord); break;
+  }
   fragColor = inColor * tc * actorColor;
 
   // TODO: テキスト未実装

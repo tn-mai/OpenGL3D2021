@@ -169,7 +169,9 @@ void SpriteRenderer::Update(
   sortedSprites.resize(spriteCount);
 
   // 最初のプリミティブを作成
-  primitives.push_back(Primitive{ 0, 0, sortedSprites[0].sprite->tex });
+  const PrimitiveRenderer* renderer = static_cast<PrimitiveRenderer*>(
+    sortedSprites[0].sprite->renderer.get());
+  primitives.push_back(Primitive{ 0, 0, renderer->GetTexture() });
 #else
   // 最初のプリミティブを作成
   primitives.push_back(Primitive{ 0, 0, sprites[0]->tex });
@@ -190,10 +192,15 @@ void SpriteRenderer::Update(
 #else
     const Sprite& sprite = static_cast<Sprite&>(*sprites[i]);
 #endif
+    const PrimitiveRenderer* renderer = 
+      static_cast<PrimitiveRenderer*>(sprite.renderer.get());
+    std::shared_ptr<Texture> tex = renderer->GetTexture();
 
     // 表示サイズを計算
-    const float sx = sprite.scale.x * sprite.tex->GetWidth() / sprite.pixelsPerMeter;
-    const float sy = sprite.scale.y * sprite.tex->GetHeight() / sprite.pixelsPerMeter;
+    const float sx =
+      sprite.scale.x * tex->GetWidth() / sprite.pixelsPerMeter;
+    const float sy =
+      sprite.scale.y * tex->GetHeight() / sprite.pixelsPerMeter;
 
     // 座標変換行列を作成
     const glm::mat4 matT = glm::translate(glm::mat4(1), sprite.position);
@@ -237,11 +244,11 @@ void SpriteRenderer::Update(
     // インデックス数を更新する。そうでなければ新しいプリミティブを追加する。
     const int maxCountPerPrimitive = 65536 / 4 * 6;
     Primitive& prim = primitives.back();
-    if ((prim.texture == sprite.tex) &&
+    if ((prim.texture == tex) &&
       (prim.count + 6 < maxCountPerPrimitive)) {
       prim.count += 6;
     } else {
-      primitives.push_back(Primitive{ 6, i * 4, sprite.tex });
+      primitives.push_back(Primitive{ 6, i * 4, tex });
     }
   } // spriteCount
 

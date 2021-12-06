@@ -183,6 +183,7 @@
     <ClCompile Include="Src\MapEditor.cpp" />
     <ClCompile Include="Src\Primitive.cpp" />
     <ClCompile Include="Src\ProgramPipeline.cpp" />
+    <ClCompile Include="Src\Renderer.cpp" />
     <ClCompile Include="Src\Sampler.cpp" />
     <ClCompile Include="Src\Sprite.cpp" />
     <ClCompile Include="Src\Texture.cpp" />
@@ -230,6 +231,7 @@
     <ClInclude Include="Src\MapEditor.h" />
     <ClInclude Include="Src\Primitive.h" />
     <ClInclude Include="Src\ProgramPipeline.h" />
+    <ClInclude Include="Src\Renderer.h" />
     <ClInclude Include="Src\Sampler.h" />
     <ClInclude Include="Src\Sprite.h" />
     <ClInclude Include="Src\Texture.h" />

@@ -18,13 +18,36 @@ Actor::Actor(
   float rotation,
   const glm::vec3& adjustment) :
   name(name),
-  prim(prim),
-  tex(tex),
   position(position),
   scale(scale),
   rotation(rotation),
   adjustment(adjustment)
 {
+  PrimitiveRendererPtr p = std::make_shared<PrimitiveRenderer>();
+  p->SetPrimitive(prim);
+  p->SetTexture(tex);
+  renderer = p;
+}
+
+/**
+* メッシュ用コンストラクタ
+*/
+Actor::Actor(
+  const std::string& name,
+  const MeshPtr& mesh,
+  const glm::vec3& position,
+  const glm::vec3& scale,
+  float rotation,
+  const glm::vec3& adjustment) :
+  name(name),
+  position(position),
+  scale(scale),
+  rotation(rotation),
+  adjustment(adjustment)
+{
+  MeshRendererPtr p = std::make_shared<MeshRenderer>();
+  p->SetMesh(mesh);
+  renderer = p;
 }
 
 /**
@@ -48,44 +71,6 @@ void Actor::OnUpdate(float deltaTime)
 void Actor::OnCollision(const struct Contact& contact)
 {
   // 何もしない
-}
-
-/**
-* 物体を描画する.
-*/
-void Draw(
-  const Actor& actor,              // 物体の制御パラメータ
-  const ProgramPipeline& pipeline, // 描画に使うプログラムパイプライン
-  glm::mat4 matProj,               // 描画に使うプロジェクション行列
-  glm::mat4 matView)               // 描画に使うビュー行列  
-{
-  // モデル行列を計算する
-  glm::mat4 matT = glm::translate(glm::mat4(1), actor.position);
-  glm::mat4 matR = glm::rotate(glm::mat4(1), actor.rotation, glm::vec3(0, 1, 0));
-  glm::mat4 matS = glm::scale(glm::mat4(1), actor.scale);
-  glm::mat4 matA = glm::translate(glm::mat4(1), actor.adjustment);
-  glm::mat4 matModel = matT * matR * matS * matA;
-
-  // MVP行列を計算する
-  glm::mat4 matMVP = matProj * matView * matModel;
-
-  // モデル行列とMVP行列をGPUメモリにコピーする
-  const GLint locMatTRS = 0;
-  const GLint locMatModel = 1;
-  pipeline.SetUniform(locMatTRS, matMVP);
-  if (actor.layer == Layer::Default) {
-    pipeline.SetUniform(locMatModel, matModel);
-  }
-
-  // TODO: テキスト未追加
-  const GLint locColor = 200;
-  pipeline.SetUniform(locColor, actor.color);
-
-  if (actor.tex) {
-    actor.tex->Bind(0); // テクスチャを割り当てる
-  } else {
-  }
-  actor.prim.Draw();  // プリミティブを描画する
 }
 
 /**

@@ -73,7 +73,7 @@ void CreateBoxPrimitive(PrimitiveBuffer& buffer, const glm::vec3& min, const glm
 
   buffer.Add(positions.size(),
     positions.data(), colors.data(), texcoords.data(), normals.data(),
-    indices.size(), indices.data(), "Collider(Box)", GL_LINES);
+    nullptr, indices.size(), indices.data(), "Collider(Box)", GL_LINES);
 }
 
 /**
@@ -126,7 +126,7 @@ void CreateSpherePrimitive(PrimitiveBuffer& buffer, float radius, int longitude,
 
   buffer.Add(positions.size(),
     positions.data(), colors.data(), texcoords.data(), normals.data(),
-    indices.size(), indices.data(), "Collider(Sphere)", GL_LINES);
+    nullptr, indices.size(), indices.data(), "Collider(Sphere)", GL_LINES);
 }
 
 /**
@@ -163,7 +163,7 @@ void CreateCylinderPrimitive(PrimitiveBuffer& buffer, float top, float bottom, f
 
   buffer.Add(positions.size(),
     positions.data(), colors.data(), texcoords.data(), normals.data(),
-    indices.size(), indices.data(), "Collider(Cylinder)", GL_LINES);
+    nullptr, indices.size(), indices.data(), "Collider(Cylinder)", GL_LINES);
 }
 
 }
@@ -590,8 +590,11 @@ void GameEngine::RenderDefault()
 
     // アクターを描画
     const int layer = static_cast<int>(Layer::Default);
+    const glm::mat4 matVP = matShadowProj * matShadowView;
     for (auto& e : actors[layer]) {
-      Draw(*e, *pipeline, matShadowProj, matShadowView);
+      if (e->renderer) {
+        e->renderer->Draw(*e, *pipeline, matVP);
+      }
     }
 
     // デフォルトのフレームバッファに戻す
@@ -641,17 +644,21 @@ void GameEngine::RenderDefault()
   // アクターを描画する
   const int layer = static_cast<int>(Layer::Default);
   ActorList& defaultActors = actors[layer];
-  for (int i = 0; i < defaultActors.size(); ++i) {
-    switch (defaultActors[i]->shader) {
+  const glm::mat4 matVP = matProj * matView;
+  for (auto& actor : defaultActors) {
+    if (!actor->renderer) {
+      continue;
+    }
+    switch (actor->shader) {
     default:
     case Shader::FragmentLighting:
-      Draw(*defaultActors[i], *pipeline, matProj, matView);
+      actor->renderer->Draw(*actor, *pipeline, matVP);
       break;
 
     case Shader::Ground:
       pipelineGround->Bind();
       texMap->Bind(2);
-      Draw(*defaultActors[i], *pipelineGround, matProj, matView);
+      actor->renderer->Draw(*actor, *pipelineGround, matVP);
       texMap->Unbind(2);
       pipeline->Bind();
       break;
@@ -781,8 +788,11 @@ void GameEngine::RenderUI()
   std::sort(a.begin(), a.end(),
     [](std::shared_ptr<Actor>& a, std::shared_ptr<Actor>& b) {
       return a->position.z < b->position.z; });
-  for (int i = 0; i < a.size(); ++i) {
-    Draw(*a[i], *pipelineUI, matProj, matView);
+  const glm::mat4 matVP = matProj * matView;
+  for (auto& actor : a) {
+    if (actor->renderer) {
+      actor->renderer->Draw(*actor, *pipelineUI, matVP);
+    }
   }
 
   pipelineUI->Unbind();
@@ -830,6 +840,17 @@ bool GameEngine::LoadPrimitive(const char* filename)
 const Primitive& GameEngine::GetPrimitive(const char* filename) const
 {
   return primitiveBuffer->Find(filename);
+}
+
+/**
+* OBJファイルからメッシュとプリミティブを追加する
+*/
+const MeshPtr& GameEngine::LoadMesh(const char* filename)
+{
+  if (primitiveBuffer->Find(filename).GetName() != filename) {
+    primitiveBuffer->AddFromObjFile(filename);
+  }
+  return primitiveBuffer->GetMesh(filename);
 }
 
 /**

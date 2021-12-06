@@ -96,7 +96,6 @@ bool ProgramPipeline::SetUniform(GLint location, const glm::mat4& data) const
   return true;
 }
 
-  // TODO: テキスト未追加
 /**
 * ユニフォーム変数にデータをコピーする
 */
@@ -104,15 +103,61 @@ bool ProgramPipeline::SetUniform(GLint location, const glm::vec4& data) const
 {
   glGetError(); // エラー状態をリセット.
 
-  // ロケーション番号によってコピー先を変更する
-  // - 0～99: 頂点シェーダ
-  // - 100～: フラグメントシェーダ
-  GLuint program = vp;
-  if (location >= 100) {
-    program = fp;
-  }
-
+  const GLuint program = GetProgram(location);
   glProgramUniform4fv(program, location, 1, &data.x);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":ユニフォーム変数の設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
+// TODO: テキスト未追加
+/**
+* ユニフォーム変数にデータをコピーする
+*/
+bool ProgramPipeline::SetUniform(
+  GLint location, const glm::uint* data, size_t size) const
+{
+  glGetError(); // エラー状態をリセット
+
+  const GLuint program = GetProgram(location);
+  glProgramUniform1uiv(program, location, static_cast<GLsizei>(size), data);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":ユニフォーム変数の設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
+/**
+* ユニフォーム変数にデータをコピーする
+*/
+bool ProgramPipeline::SetUniform(
+  GLint location, const glm::vec4* data, size_t size) const
+{
+  glGetError(); // エラー状態をリセット
+
+  const GLuint program = GetProgram(location);
+  glProgramUniform4fv(program, location, static_cast<GLsizei>(size), &data->x);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":ユニフォーム変数の設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
+/**
+* ユニフォーム変数にデータをコピーする
+*/
+bool ProgramPipeline::SetUniform(GLint location, const glm::mat4* data,
+  size_t count) const
+{
+  glGetError(); // エラー状態をリセット
+
+  const GLuint program = GetProgram(location);
+  glProgramUniformMatrix4fv(program, location, static_cast<GLsizei>(count),
+    GL_FALSE, &data[0][0][0]);
   if (glGetError() != GL_NO_ERROR) {
     std::cerr << "[エラー]" << __func__ << ":ユニフォーム変数の設定に失敗.\n";
     return false;
@@ -144,5 +189,17 @@ void ProgramPipeline::Unbind() const
 #endif
 }
 
-
+/**
+* ロケーション番号に対応するプログラムIDを取得する
+*/
+GLuint ProgramPipeline::GetProgram(GLint location) const
+{
+  // ロケーション番号によってコピー先を変更する
+  // - 0～99: 頂点シェーダ
+  // - 100～: フラグメントシェーダ
+  if (location >= 100) {
+    return fp;
+  }
+  return vp;
+}
 

@@ -20,8 +20,7 @@ PlayerActor::PlayerActor(
   float rotation) :
   Actor(
     "Tiger-I",
-    GameEngine::Get().GetPrimitive("Res/tank/Tiger_I.obj"),
-    GameEngine::Get().LoadTexture("Res/tank/PzVl_Tiger_I.tga"),
+    GameEngine::Get().LoadMesh("Res/tank/Tiger_I.obj"),
     position, scale, rotation, glm::vec3(0))
 {
   health = 10;
@@ -40,6 +39,21 @@ PlayerActor::PlayerActor(
 void PlayerActor::OnUpdate(float deltaTime)
 {
   GameEngine& engine = GameEngine::Get();
+
+#if 0 // ターレット(と砲身)だけを回転させる実験
+  static float rotTurret = 0;
+  MeshPtr mesh = GetMesh();
+  if (mesh) {
+    for (int i = 0; i < mesh->groups.size(); ++i) {
+      if (mesh->groups[i].name == "Turret_Object_1.002" ||
+        mesh->groups[i].name == "Gun_Object_1.003") {
+        this->SetMatrix(i, glm::rotate(glm::mat4(1), rotTurret, glm::vec3(0, 1, 0)));
+      }
+    }
+    rotTurret += glm::radians(30.0f) * deltaTime;
+    rotTurret = fmod(rotTurret, glm::radians(360.0f));
+  }
+#endif
 
   bool playTankTruck = false;
 

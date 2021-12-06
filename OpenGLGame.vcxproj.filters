@@ -126,6 +126,9 @@
     <ClCompile Include="Src\EasyAudio.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Renderer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -255,6 +258,9 @@
       <Filter>ソース ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Src\EasyAudioSettings.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Renderer.h">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
   </ItemGroup>
