@@ -83,7 +83,7 @@
 +    SameLine();
 +    SetNextItemWidth(-1); // 次に表示する部品の横幅をウィンドウに合わせる
 +    SliderInt("##mapSizeY", &newMapSize.y, 9, 101, "%d", ImGuiSliderFlags_AlwaysClamp);
-+    newMapSize.x = newMapSize.x | 1; // マップサイズを奇数にする
++    newMapSize.y = newMapSize.y | 1; // マップサイズを奇数にする
 +    if (Button(u8"このサイズで作成")) {
 +      // マップデータを作りなおす
 +      mapSize = newMapSize;
