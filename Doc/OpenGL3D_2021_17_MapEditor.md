@@ -763,7 +763,6 @@ FBXやDAEファイルには、XYZの軸の方向をファイルごとに変え�
 +      newActor->collider.max = glm::max(a, b);
 +    }
      tmpMap[x + y * tmpMapSize.x] = newActor;
-     tmpGameMap[x + y * tmpMapSize.x] = actorNo;
    }
 ```
 
