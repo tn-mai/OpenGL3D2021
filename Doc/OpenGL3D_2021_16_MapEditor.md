@@ -660,6 +660,7 @@
          engine.LoadTexture(e.textureFilename),
          glm::vec3(0), e.scale, e.rotation, e.adjustment));
        actor->collider = e.collider;
++      actor->isStatic = true;
 +      break;
 +
 +    // プレイヤーが操作するアクターの場合
