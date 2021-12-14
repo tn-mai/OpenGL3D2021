@@ -165,7 +165,7 @@ Visual Studioを開き、`Black Track.FBX`という名前のファイルをVisua
 +  void Missle(float deltaTime);
 +
 +  using ModeFunc = void(Boss01::*)(float); // メンバ関数ポインタ型
-+  ModeFunc mode &Boss01::Idle; // 現在の動作モード
++  ModeFunc mode = &Boss01::Idle; // 現在の動作モード
 +
 +  std::shared_ptr<Actor> target;   // 攻撃対象
 +  float modeTimer = 0;   // 現在の動作モードが終了するまでの秒数
@@ -215,7 +215,7 @@ Visual Studioを開き、`Black Track.FBX`という名前のファイルをVisua
 +{
 +  health = 50;
 +  mass = 200'000;
-+  collider = Box::Create(glm::vec3(-3, 0, -3), glm::vec3(3, 2.5f, 3));
++  collider = Box{ glm::vec3(-3, 0, -3), glm::vec3(3, 2.5f, 3) };
 +}
 ```
 
