@@ -3,6 +3,7 @@
 */
 #include "T34TankActor.h"
 #include "BulletActor.h"
+#include "ExplosionActor.h"
 #include "../GameEngine.h"
 #include "../GameManager.h"
 #include "../Audio.h"
@@ -147,6 +148,9 @@ void T34TankActor::OnCollision(const struct Contact& contact)
       GameManager::Get().AddScore(200);
 
       GameEngine& engine = GameEngine::Get();
+#if 1
+      engine.AddActor(std::make_shared<ExplosionActor>(position, 4.0f));
+#else
       const auto tex0 = engine.LoadTexture("Res/Sprite/Explosion.tga");
       std::shared_ptr<Sprite> sprExprosion =
         std::make_shared<Sprite>(position + glm::vec3(0, 1, 0), tex0);
@@ -212,6 +216,7 @@ void T34TankActor::OnCollision(const struct Contact& contact)
         animator->Play();
         sprite->SetAnimator(animator);
       }
+#endif
 #endif
       // îöî≠âπÇçƒê∂
 #ifdef USE_EASY_AUDIO

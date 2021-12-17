@@ -156,9 +156,12 @@
     <ClCompile Include="Src\Actor.cpp" />
     <ClCompile Include="Src\Actor\Boss01.cpp" />
     <ClCompile Include="Src\Actor\BulletActor.cpp" />
+    <ClCompile Include="Src\Actor\FortressActor.cpp" />
     <ClCompile Include="Src\Actor\ElevatorActor.cpp" />
+    <ClCompile Include="Src\Actor\ExplosionActor.cpp" />
     <ClCompile Include="Src\Actor\PlayerActor.cpp" />
     <ClCompile Include="Src\Actor\RandomMovingEnemyActor.cpp" />
+    <ClCompile Include="Src\Actor\RepairItem.cpp" />
     <ClCompile Include="Src\Actor\T34TankActor.cpp" />
     <ClCompile Include="Src\Animation.cpp" />
     <ClCompile Include="Src\AStar.cpp" />
@@ -201,9 +204,12 @@
     <ClInclude Include="Src\Actor.h" />
     <ClInclude Include="Src\Actor\Boss01.h" />
     <ClInclude Include="Src\Actor\BulletActor.h" />
+    <ClInclude Include="Src\Actor\FortressActor.h" />
     <ClInclude Include="Src\Actor\ElevatorActor.h" />
+    <ClInclude Include="Src\Actor\ExplosionActor.h" />
     <ClInclude Include="Src\Actor\PlayerActor.h" />
     <ClInclude Include="Src\Actor\RandomMovingEnemyActor.h" />
+    <ClInclude Include="Src\Actor\RepairItem.h" />
     <ClInclude Include="Src\Actor\T34TankActor.h" />
     <ClInclude Include="Src\Animation.h" />
     <ClInclude Include="Src\AStar.h" />
@@ -237,7 +243,6 @@
     <ClInclude Include="Src\Texture.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="hp_bar.tga" />
     <Image Include="Res\Building.tga" />
     <Image Include="Res\IconEnemy.tga" />
     <Image Include="Res\Ground.tga" />

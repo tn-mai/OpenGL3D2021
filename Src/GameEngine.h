@@ -93,6 +93,13 @@ public:
   }
 
   /**
+  * マウス座標を取得
+  *
+  * 21で実装. 21bは未実装
+  */
+  glm::vec2 GetMousePosition() const;
+
+  /**
   * ウィンドウサイズを返す
   */
   glm::vec2 GetWindowSize() const
@@ -115,6 +122,24 @@ public:
   double GetTime() const
   {
     return glfwGetTime();
+  }
+
+  /**
+  * 乱数を取得する
+  *
+  * 21bで実装. 21は未実装.
+  */
+  int GetRandomInt(int min, int max)
+  {
+    return std::uniform_int_distribution<>(min, max)(random);
+  }
+  float GetRandomFloat(float min, float max)
+  {
+    return std::uniform_real_distribution<float>(min, max)(random);
+  }
+  float GetRandomNormal(float a, float b = 1.0f)
+  {
+    return std::normal_distribution<float>(a, b)(random);
   }
 
   /**
@@ -172,6 +197,8 @@ private:
   TextureBuffer textureBuffer;                      // テクスチャ配列
   Camera mainCamera;
 
+  std::mt19937 random; // 21bで実装. 21は未実装.
+
   // コライダー表示用変数(デバッグ用)
   bool showCollider = false; // コライダー表示フラグ
   std::shared_ptr<ProgramPipeline> pipelineCollider;
@@ -181,7 +208,6 @@ private:
   SpriteRenderer spriteRenderer;
 
   // TODO: テキスト未追加
-  std::mt19937 rg;
   std::shared_ptr<FramebufferObject> fbo;
   std::shared_ptr<ProgramPipeline> pipelineShadow;
   std::shared_ptr<Sampler> samplerShadow;

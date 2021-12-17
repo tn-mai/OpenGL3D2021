@@ -32,6 +32,7 @@ public:
   virtual std::shared_ptr<Collider> Clone() const = 0;
   ShapeType GetShapeType() const { return shapeType; }
   virtual void RotateY(float radians) {}
+  virtual void Scale(const glm::vec3& scale) {}
 
 private:
   ShapeType shapeType;
@@ -62,6 +63,10 @@ public:
     return std::make_shared<Box>(*this);
   }
   virtual void RotateY(float radians) override;
+  virtual void Scale(const glm::vec3& scale) override {
+    min *= scale;
+    max *= scale;
+  }
 
   glm::vec3 min = glm::vec3(0);
   glm::vec3 max = glm::vec3(0);
@@ -93,6 +98,11 @@ public:
     return std::make_shared<Cylinder>(*this);
   }
 
+  virtual void Scale(const glm::vec3& scale) override {
+    bottom *= scale.y;
+    radius *= std::min(scale.x, scale.z);
+    height *= scale.y;
+  }
   glm::vec3 bottom = glm::vec3(0); // â∫í[ÇÃç¿ïW
   float radius = 1.0f; // îºåa
   float height = 1.0f; // çÇÇ≥
@@ -146,5 +156,12 @@ bool CollisionSphereBox(Actor& a, Actor& b, Contact& contact);
 bool CollisionSphereCylinder(Actor& a, Actor& b, Contact& contact);
 bool CollisionCylinderBox(Actor& a, Actor& b, Contact& contact);
 bool CollisionCylinderSphere(Actor& a, Actor& b, Contact& contact);
+
+// 21Ç≈é¿ëï. 21bÇÕñ¢é¿ëï.
+void ScreenPosToLine(const glm::vec2& screenPos, const glm::mat4& matVP,
+  glm::vec3& start, glm::vec3& end);
+
+bool Intersect(const glm::vec3& start, const glm::vec3& end,
+  const glm::vec3& q, const glm::vec3& normal, glm::vec3& p);
 
 #endif // COLLISION_H_INCLUDED

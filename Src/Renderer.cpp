@@ -43,7 +43,7 @@ void PrimitiveRenderer::Draw(const Actor& actor,
 
     // TODO: テキスト未追加
     // グループ行列を設定
-    pipeline.SetUniform(locMatGroups, glm::mat4(1));
+    pipeline.SetUniform(locMatGroupModels, glm::mat4(1));
   }
 
   // TODO: テキスト未追加
@@ -107,8 +107,8 @@ void MeshRenderer::Draw(const Actor& actor,
 
     // TODO: テキスト未追加
     // グループ行列を設定
-    const std::vector<glm::mat4> m = mesh->CalcGroupMatirices(matGroups.data());
-    pipeline.SetUniform(locMatGroups, m.data(), m.size());
+    const std::vector<glm::mat4> m = CalcGroupMatirices();
+    pipeline.SetUniform(locMatGroupModels, m.data(), m.size());
   }
 
   // TODO: テキスト未追加
@@ -130,12 +130,60 @@ void MeshRenderer::SetMesh(const MeshPtr& p)
 {
   mesh = p;
   if (mesh) {
-    matGroups.resize(mesh->groups.size(), glm::mat4(1));
     materials = mesh->materials;
+    // マテリアルが存在しないメッシュの場合、マテリアルが最低1つある状態にする
     if (materials.empty()) {
       materials.push_back(Mesh::Material{});
     }
+    matGroupModels.resize(mesh->groups.size(), glm::mat4(1));
+    matGroupModels.shrink_to_fit();
     materialChanged = true;
   }
+}
+
+/**
+* 親子関係を考慮してN番目のグループ行列を計算する
+*/
+void MeshRenderer::CalcNthGroupMatrix(int n,
+  std::vector<glm::mat4>& m, std::vector<bool>& calculated) const
+{
+  // 計算済みなら何もしない
+  if (calculated[n]) {
+    return;
+  }
+
+  // N番目の行列を設定
+  m[n] = mesh->groups[n].matBindPose *  // 本来の位置に戻す
+    matGroupModels[n] *                 // 座標変換を行う
+    mesh->groups[n].matInverseBindPose; // 原点に移動させる
+
+  // 親がいる場合、親のグループ行列を乗算
+  const int parent = mesh->groups[n].parent;
+  if (parent != Mesh::Group::noParent) {
+    CalcNthGroupMatrix(parent, m, calculated);
+    m[n] = m[parent] * m[n];
+  }
+
+  // 計算が完了したので計算済みフラグを立てる
+  calculated[n] = true;
+}
+
+/**
+* 親子関係を考慮してすべてのグループ行列を計算する
+*/
+std::vector<glm::mat4> MeshRenderer::CalcGroupMatirices() const 
+{
+  // メッシュが設定されていなければ空の配列を返す
+  if (!mesh) {
+    return std::vector<glm::mat4>();
+  }
+
+  // グループ行列を計算する
+  std::vector<glm::mat4> m(mesh->groups.size());
+  std::vector<bool> calculated(m.size(), false);
+  for (int n = 0; n < m.size(); ++n) {
+    CalcNthGroupMatrix(n, m, calculated);
+  }
+  return m;
 }
 

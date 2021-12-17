@@ -23,12 +23,12 @@ layout(location=0) uniform mat4 matTRS;
 layout(location=1) uniform mat4 matModel;
 layout(location=10) uniform vec4 materialColor[10];
 layout(location=20) uniform uint materialTextureNo[10];
-layout(location=30) uniform mat4 matGroupList[16];
+layout(location=30) uniform mat4 matGroupModels[32];
 
 // 頂点シェーダプログラム
 void main()
 {
-  mat4 matGroup = matGroupList[vMaterialGroup.y];
+  mat4 matGroup = matGroupModels[vMaterialGroup.y];
   mat4 matGM = matModel * matGroup;
 
   // 回転行列を取り出す.

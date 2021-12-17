@@ -25,6 +25,11 @@ public:
 
 private:
   int oldShotButton = 0;               // 前回のショットボタンの状態
+
+  // 21で実装. 21bは未実装.
+  float rotTurret = 0;              // 砲塔の回転角度
+  static const int gunGroup    = 0; // 砲身のグループ番号
+  static const int turretGroup = 1; // 砲塔のグループ番号
 };
 
 #endif // PLAYERACTOR_H_INCLUDED

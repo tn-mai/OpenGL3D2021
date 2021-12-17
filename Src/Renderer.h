@@ -30,7 +30,7 @@ public:
   static const GLint locMatModel = 1;
   static const GLint locMaterialColor = 10;
   static const GLint locMaterialTexture = 20;
-  static const GLint locMatGroups = 30;
+  static const GLint locMatGroupModels = 30;
 
   Renderer() = default;
   virtual ~Renderer() = default;
@@ -87,11 +87,20 @@ public:
   size_t GetMaterialCount() const { return materials.size(); }
 
   // TODO: テキスト未追加
-  void SetMatrix(size_t i, const glm::mat4& m) { matGroups[i] = m; }
-  const glm::mat4& GetMatrix(size_t i) const { return matGroups[i]; }
-  size_t GetMatrixCount() const { return matGroups.size(); }
+  // グループ行列を設定する
+  void SetGroupMatrix(size_t i, const glm::mat4& m) { matGroupModels[i] = m; }
+
+  // グループ行列を取得する
+  const glm::mat4& GetGroupMatrix(size_t i) const { return matGroupModels[i]; }
+
+  // グループ数を取得する
+  size_t GetGroupCount() const { return matGroupModels.size(); }
 
 private:
+  void CalcNthGroupMatrix(int n, std::vector<glm::mat4>& m,
+    std::vector<bool>& b) const;
+  std::vector<glm::mat4> CalcGroupMatirices() const;
+
   MeshPtr mesh;
   std::vector<Mesh::Material> materials;
 
@@ -101,7 +110,7 @@ private:
   std::vector<glm::vec4> colors;
 
   // TODO: テキスト未追加
-  std::vector<glm::mat4> matGroups;// モデルのグループごとの行列
+  std::vector<glm::mat4> matGroupModels;
 };
 
 #endif // RENDERER_H_INCLUDED

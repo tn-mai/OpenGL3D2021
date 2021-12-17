@@ -25,7 +25,6 @@ public:
   void UpdateCamera(float deltaTime);
   void UpdateUI();
   void Save(const char* filename);
-
   bool Load(const char* filename);
   std::shared_ptr<Actor> GetActor(const char* name, int* no = nullptr) const;
 
@@ -35,6 +34,9 @@ private:
   void InitActorList();
   void InitEditor();
   void Resize(const glm::ivec2& newMapSize);
+
+  // 21bで実装. 21は未実装.
+  bool ShowFileListBox(std::string& filename);
 
   const SystemType systemType;             // 動作タイプ
   glm::vec2 gridSize = glm::vec2(4.0f);    // マス目のサイズ(m)
@@ -49,6 +51,10 @@ private:
   std::vector<std::shared_ptr<Texture>> groundTiles; // 地面用テクスチャ
   std::vector<uint32_t> groundMap;
   uint8_t currentTileNo = 0;
+
+  // 21bで実装. 21は未実装.
+  bool randomRotationFlag = false;
+  bool randomScaleFlag = false;
 
   // マップ操作モード
   enum class Mode {

@@ -5,7 +5,9 @@
 #include "MapEditor.h"
 #include "Actor/PlayerActor.h"
 #include "Actor/T34TankActor.h"
+#include "Actor/RepairItem.h"
 #include "Actor/Boss01.h"
+#include "Actor/FortressActor.h"
 #include "GameEngine.h"
 #include <imgui.h>
 #include <glm/glm.hpp>
@@ -13,66 +15,7 @@
 #include <math.h>
 #include <fstream>
 #include <iostream>
-
-/**
-* スクリーン座標を始点とし、画面の奥へ向かう線分を計算する
-*
-* @param screenPos スクリーン座標
-* @param matVP     ビュープロジェクション行列
-* @param start     視線の始点が代入される
-* @param end       視線の終点が代入される
-*/
-void ScreenPosToLine(const ImVec2& screenPos, const glm::mat4& matVP, glm::vec3& start, glm::vec3& end)
-{
-  // スクリーン座標をNDC座標に変換
-  const glm::vec2 windowSize = GameEngine::Get().GetWindowSize();
-  glm::vec4 ndcPos(screenPos.x / windowSize.x * 2.0f - 1.0f,
-    1.0f - screenPos.y / windowSize.y * 2.0f, -1, 1);
-
-  // 視線の始点座標を計算
-  const glm::mat4 matInvVP = glm::inverse(matVP);
-  glm::vec4 worldPos0 = matInvVP * ndcPos;
-  start = worldPos0 / worldPos0.w;
-
-  // 視線の終点座標を計算
-  ndcPos.z = 1;
-  glm::vec4 worldPos1 = matInvVP * ndcPos;
-  end = worldPos1 / worldPos1.w;
-}
-
-/**
-* 線分と平面が交差する座標を求める
-*
-* @param start  線分の始点
-* @param end    線分の終点
-* @param q      平面上の任意の点
-* @param normal 平面の法線
-* @param p      交点の座標が代入される
-*
-* @retval true  交差している
-* @retval false 交差していない
-*/
-bool Intersect(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& q, const glm::vec3& normal, glm::vec3& p)
-{
-  const float distance = glm::dot(normal, q - p0);
-  const glm::vec3 v = p1 - p0;
-
-  // 分母がほぼ0の場合、線分は平面と平行なので交差しない.
-  const float denom = glm::dot(normal, v);
-  if (std::abs(denom) < 0.0001f) {
-    return false;
-  }
-
-  // 交点までの距離tが0未満または1より大きい場合、交点は線分の外側にあるので実際には交差しない.
-  const float t = distance / denom;
-  if (t < 0 || t > 1) {
-    return false;
-  }
-
-  // 交点は線分上にある.
-  p = p0 + v * t;
-  return true;
-}
+#include <filesystem>
 
 /**
 * コンストラクタ
@@ -101,6 +44,7 @@ void MapEditor::LoadCommonPrimitive()
 
   engine.LoadPrimitive("Res/Plane.obj");
   engine.LoadPrimitive("Res/Bullet.obj");
+  engine.LoadPrimitive("Res/Explosion.obj");
 }
 
 /**
@@ -117,6 +61,11 @@ void MapEditor::InitGroundActor()
     "Res/Green.tga",
     "Res/Road.tga",
     "Res/RoadTiles.tga",
+    "Res/soil.tga",
+    "Res/soil_LT.tga",
+    "Res/soil_LB.tga",
+    "Res/soil_RT.tga",
+    "Res/soil_RB.tga",
   };
 
   // 地面用アクターを作成
@@ -158,6 +107,7 @@ void MapEditor::InitActorList()
     player,
     t34tank,
     boss01,
+    fortress,
     other,
   };
 
@@ -190,9 +140,17 @@ void MapEditor::InitActorList()
       "Res/tree/LowPolyTree.obj", "Res/tree/LowPolyLeaves.tga",
       Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
     {
-      ActorType::other, "Tree4",
-      "Res/tree/Tree_Conifer_1.obj", "Res/tree/Fantasy_conifer_1.tga",
-      Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)), glm::vec3(0.02f) },
+      ActorType::other, "MobleTree1",
+      "Res/mobile_trees/baum hd med.obj", "Res/mobile_trees/ast4.tga",
+      Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)), glm::vec3(0.5) },
+    {
+      ActorType::other, "MobleTree2",
+      "Res/mobile_trees/baum hd pine.obj", "Res/mobile_trees/ast5.tga",
+      Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)), glm::vec3(0.5) },
+    {
+      ActorType::other, "MobleTree3",
+      "Res/mobile_trees/baum hd.obj", "Res/mobile_trees/ast3.tga",
+      Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)), glm::vec3(0.5) },
     {
       ActorType::other, "House-1-5(2)",
       "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 2.tga",
@@ -225,6 +183,22 @@ void MapEditor::InitActorList()
       ActorType::other, "Warehouse",
       "Res/Warehouse.obj", "Res/Building.tga",
       Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
+    {
+      ActorType::other, "Fortress0",
+      "Res/sci-fi-rts/Structure_v1.obj", "Res/sci-fi-rts/Structure_v1.tga",
+      Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
+    {
+      ActorType::other, "Fortress1",
+      "Res/sci-fi-rts/Structure_v2.obj", "Res/sci-fi-rts/Structure_v2.tga",
+      Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
+    {
+      ActorType::fortress, "Fortress2",
+      "Res/sci-fi-rts/Structure_v3.obj", "Res/sci-fi-rts/Structure_v3.tga",
+      Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
+    {
+      ActorType::other, "RocketLauncher",
+      "Res/sci-fi-rts/SciFi-Tower_Rocket Launcher.obj", "Res/sci-fi-rts/SciFi_Props-Pack03-diffuse.tga",
+      Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(0.5f) },
 
     { ActorType::other, "BrickHouse",
       "Res/house/HouseRender.obj", "Res/house/House38UVTexture.tga",
@@ -272,6 +246,17 @@ void MapEditor::InitActorList()
       actor->collider = e.collider;
       break;
 
+    case ActorType::fortress:
+      actor.reset(new FortressActor(
+        e.name,
+        engine.LoadMesh(e.primitiveFilename),
+        glm::vec3(0), e.scale, e.rotation, e.adjustment));
+      static_cast<MeshRenderer&>(*actor->renderer).SetMaterial(0,
+        Mesh::Material{ "", glm::vec4(1),  engine.LoadTexture(e.textureFilename) });
+      actor->collider = e.collider;
+      actor->isStatic = true;
+      break;
+
     case ActorType::other:
       actor.reset(new Actor(
         e.name,
@@ -285,6 +270,7 @@ void MapEditor::InitActorList()
     }
     actors.push_back(actor);
   }
+  actors.push_back(std::make_shared<RepairItem>(glm::vec3(0)));
 }
 
 /**
@@ -298,6 +284,8 @@ void MapEditor::InitEditor()
   cursor.reset(new Actor(*actors[0]));
   cursor->color = glm::vec4(0.2f, 0.5f, 1.0f, 0.5f);
   engine.AddActor(cursor);
+
+  cursorBase = actors[0];
 
   // カメラを設定
   Camera& camera = engine.GetCamera();
@@ -359,6 +347,40 @@ void MapEditor::Resize(const  glm::ivec2& newMapSize)
 }
 
 /**
+* ファイル選択リストボックスを表示
+*/
+bool MapEditor::ShowFileListBox(std::string& filename)
+{
+  using namespace ImGui;
+
+  // 拡張子が".txt"のファイルをリストアップ
+  std::vector<std::string> files;
+  files.reserve(100);
+  for (const std::filesystem::directory_entry& e : std::filesystem::directory_iterator(".")) {
+    if (e.path().extension() == ".txt" && e.is_regular_file()) {
+      files.push_back(e.path().filename().string());
+    }
+  }
+
+  bool selected = false;
+
+  const ImVec2 listBoxSize(GetWindowContentRegionWidth(),
+    GetTextLineHeightWithSpacing() * files.size() + GetStyle().FramePadding.y * 2);
+  if (BeginListBox("##FileListBox", listBoxSize)) {
+    for (const std::string& e : files) {
+      const bool isSelected = e == filename;
+      if (Selectable(e.c_str(), isSelected)) {
+        selected = true;
+        filename = e;
+      }
+    }
+    EndListBox();
+  }
+
+  return selected;
+}
+
+/**
 * マップエディタの状態を更新する
 */
 void MapEditor::Update(float deltaTime)
@@ -389,9 +411,30 @@ void MapEditor::Update(float deltaTime)
 
     switch (mode) {
     case Mode::set:
+      cursor->collider = cursorBase->collider->Clone();
+
+      // ランダムスケールありの場合、ランダムなスケールを設定する
+      if (randomScaleFlag) {
+        glm::vec3 scale;
+        scale.x = glm::clamp(engine.GetRandomNormal(1.0f, 0.2f), 0.75f, 1.5f);
+        scale.y = glm::clamp(engine.GetRandomNormal(1.0f, 0.2f), 0.75f, 1.5f);
+        scale.z = scale.x;
+        cursor->scale = cursorBase->scale * scale;
+        cursor->collider->Scale(scale);
+      }
+
+      // ランダム回転ありの場合、ランダムな方向に回転させる
+      if (randomRotationFlag) {
+        const int rotation = engine.GetRandomInt(0, 3);
+        cursor->rotation = glm::radians(static_cast<float>(rotation) * 90.0f);
+        cursor->collider->RotateY(cursor->rotation);
+      }
+
       // 選択アクターと種類が同じ場合は配置しない
       if (target && target->name == cursor->name) {
         target->rotation = cursor->rotation;
+        target->scale = cursor->scale;
+        target->collider = cursor->collider->Clone();
         break;
       }
       // 既存のアクターがあれば削除する
@@ -444,12 +487,25 @@ void MapEditor::UpdateCamera(float deltaTime)
   } else if (engine.GetKey(GLFW_KEY_D)) {
     camera.target.x += cursorSpeed * deltaTime;
   }
+
+  // カメラ位置を操作する
+  ImGuiIO& io = ImGui::GetIO();
+  if (!io.WantCaptureMouse) {
+    if (io.MouseWheel >= 1) {
+      if (cameraOffset.y >= 10) {
+        cameraOffset -= glm::vec3(0, 3, 3);
+      }
+    } else if (io.MouseWheel <= -1) {
+      cameraOffset += glm::vec3(0, 3, 3);
+    }
+  }
   camera.position = camera.target + cameraOffset;
 
   // カーソル位置を設定
   const glm::mat4 matVP = camera.GetProjectionMatrix() * camera.GetViewMatrix();
   glm::vec3 start, end, p;
-  ScreenPosToLine(ImGui::GetMousePos(), matVP, start, end);
+  const ImVec2 mousePos = ImGui::GetMousePos();
+  ScreenPosToLine(glm::vec2(mousePos.x, mousePos.y), matVP, start, end);
   if (Intersect(start, end, glm::vec3(0), glm::vec3(0, 1, 0), p)) {
     cursor->position = glm::round(p / 4.0f) * 4.0f;
   }
@@ -474,16 +530,53 @@ void MapEditor::UpdateUI()
       mode = modeList[i];
     }
   }
+
   SameLine();
   if (Button(u8"セーブ")) {
-    Save(u8"mapdata.txt");
+    OpenPopup(u8"セーブファイル選択");
   }
+  SetNextWindowSize(ImVec2(400, -1), ImGuiCond_Once);
+  if (BeginPopupModal(u8"セーブファイル選択")) {
+    static std::string buf(256, '\0');
+    static std::string filename;
+    if (ShowFileListBox(filename)) {
+      buf = filename;
+      buf.resize(256);
+    }
+    Text(u8"ファイル名");
+    SameLine();
+    InputText("##filename", buf.data(), buf.size());
+    if (Button(u8"セーブ")) {
+      Save(buf.c_str());
+      CloseCurrentPopup();
+    }
+    SameLine();
+    if (Button(u8"キャンセル")) {
+      CloseCurrentPopup();
+    }
+    EndPopup();
+  }
+
   SameLine();
   if (Button(u8"ロード")) {
-    Load("mapdata.txt");
+    OpenPopup(u8"ロードファイル選択");
   }
-  SameLine();
+  SetNextWindowSize(ImVec2(400, -1), ImGuiCond_Once);
+  if (BeginPopupModal(u8"ロードファイル選択")) {
+    static std::string filename;
+    ShowFileListBox(filename);
+    if (Button(u8"ロード") && !filename.empty()) {
+      Load(filename.c_str());
+      CloseCurrentPopup();
+    }
+    SameLine();
+    if (Button(u8"キャンセル")) {
+      CloseCurrentPopup();
+    }
+    EndPopup();
+  }
 
+  SameLine();
   static glm::ivec2 newMapSize;
   if (Button(u8"新規作成")) {
     OpenPopup(u8"新しいマップの広さ");
@@ -545,6 +638,10 @@ void MapEditor::UpdateUI()
   }
 
   Text(toolName[static_cast<int>(mode)]);
+  SameLine(GetWindowWidth() - 140);
+  Text(u8"カーソル座標(%d, %d)",
+    static_cast<int>(cursor->position.x / 4),
+    static_cast<int>(cursor->position.z / 4));
   End();
 
   SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
@@ -568,21 +665,44 @@ void MapEditor::UpdateUI()
   }
   End();
 
+  SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Once);
   Begin(u8"アクター情報");
   Text(u8"名前: %s", cursor->name.c_str());
   Text(u8"回転:");
   SameLine();
   static int rotation = 0;
+  static glm::vec3 scale(1);
   static const char* strRotation[] = { "0", "90", "180", "270" };
-  SliderInt("rotation", &rotation,
+  SetNextItemWidth(GetWindowContentRegionWidth() - 150);
+  SliderInt("##rotation", &rotation,
     0, static_cast<int>(std::size(strRotation)) - 1,
     strRotation[rotation], ImGuiSliderFlags_NoInput);
   const float radians = glm::radians(static_cast<float>(rotation) * 90.0f);
   if (radians != cursor->rotation) {
     cursor->rotation = radians;
     cursor->collider = cursorBase->collider->Clone();
+    cursor->collider->Scale(scale);
     cursor->collider->RotateY(radians);
   }
+  SameLine();
+  Text(u8"ランダム:");
+  SameLine();
+  Checkbox("##randomRotation", &randomRotationFlag);
+
+  Text(u8"スケール:");
+  SameLine();
+  SetNextItemWidth(GetWindowContentRegionWidth() - 150);
+  SliderFloat3("##scale", &scale.x, 0.5f, 5.0f);
+  if (cursor->scale != cursorBase->scale * scale) {
+    cursor->scale = cursorBase->scale * scale;
+    cursor->collider = cursorBase->collider->Clone();
+    cursor->collider->Scale(scale);
+    cursor->collider->RotateY(radians);
+  }
+  SameLine();
+  Text(u8"ランダム:");
+  SameLine();
+  Checkbox("##randomScale", &randomScaleFlag);
   End();
 
   if (mode == Mode::groundPaint) {
@@ -897,6 +1017,7 @@ bool MapEditor::Load(const char* filename)
     newActor->position = position;
     newActor->scale = scale;
     newActor->rotation = rotation;
+
     if (rotation) {
       // 衝突判定を回転させる
       newActor->collider->RotateY(rotation);

@@ -129,6 +129,15 @@
     <ClCompile Include="Src\Renderer.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Actor\RepairItem.cpp">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Actor\ExplosionActor.cpp">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Actor\FortressActor.cpp">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -263,15 +272,21 @@
     <ClInclude Include="Src\Renderer.h">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Actor\RepairItem.h">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Actor\ExplosionActor.h">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Actor\FortressActor.h">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Res\Ground.tga">
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="Res\Building.tga">
-      <Filter>リソース ファイル</Filter>
-    </Image>
-    <Image Include="hp_bar.tga">
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="Res\IconEnemy.tga">

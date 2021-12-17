@@ -50,10 +50,14 @@ private:
   void UpdateTitleUI();
   // ここまで(19bで実装. 19は未実装)
 
+  // TODO: テキスト未実装
+  void UpdateStage2(float deltaTime);
+
   State state = State::title; // 現在の動作状態
   std::shared_ptr<Actor> playerTank;
   std::vector<std::shared_ptr<Actor>> enemies;
   int score = 0;
+  size_t stageNo = 0; // 21bで実装. 21は未実装
 
   // 19bで実装. 19は未実装.
 

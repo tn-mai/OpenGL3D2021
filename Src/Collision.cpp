@@ -3,6 +3,7 @@
 */
 #include "Collision.h"
 #include "Actor.h"
+#include "GameEngine.h"
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -69,14 +70,11 @@ bool CollisionBoxBox(Actor& actorA, Actor& actorB, Contact& contact)
     return false;
   }
 
-  // どちらか、または両方のアクターが「ブロックしない」場合、接触処理を行わない
-  if (!actorA.isBlock || !actorB.isBlock) {
+  // ブロックしないアクターが含まれる場合、接触処理を行わない
+  if (actorA.collisionType != CollisionType::block ||
+    actorB.collisionType != CollisionType::block) {
     return true;
   }
-
-#if 0
-  return true;
-#endif
 
   // XYZの各軸について重なっている距離が短い方向を選択する
   glm::vec3 normal;  // 衝突面(アクターBのいずれかの面)の法線
@@ -247,8 +245,9 @@ bool CollisionSphereSphere(Actor& actorA, Actor& actorB, Contact& contact)
     return false;
   }
   
-  // どちらか、または両方のアクターが「ブロックしない」場合、接触処理を行わない
-  if (!actorA.isBlock || !actorB.isBlock) {
+  // ブロックしないアクターが含まれる場合、接触処理を行わない
+  if (actorA.collisionType != CollisionType::block ||
+    actorB.collisionType != CollisionType::block) {
     return true;
   }
 
@@ -317,8 +316,9 @@ bool CollisionBoxSphere(Actor& actorA, Actor& actorB, Contact& contact)
     return false;
   }
 
-  // どちらか、または両方のアクターが「ブロックしない」場合、接触処理を行わない
-  if (!actorA.isBlock || !actorB.isBlock) {
+  // ブロックしないアクターが含まれる場合、接触処理を行わない
+  if (actorA.collisionType != CollisionType::block ||
+    actorB.collisionType != CollisionType::block) {
     return true;
   }
 
@@ -448,8 +448,9 @@ bool CollisionCylinderCylinder(Actor& actorA, Actor& actorB, Contact& contact)
     return false;
   }
 
-  // どちらか、または両方のアクターが「ブロックしない」場合、接触処理を行わない
-  if (!actorA.isBlock || !actorB.isBlock) {
+  // ブロックしないアクターが含まれる場合、接触処理を行わない
+  if (actorA.collisionType != CollisionType::block ||
+    actorB.collisionType != CollisionType::block) {
     return true;
   }
 
@@ -579,8 +580,9 @@ bool CollisionBoxCylinder(Actor& actorA, Actor& actorB, Contact& contact)
     return false;
   }
 
-  // どちらか、または両方のアクターが「ブロックしない」場合、接触処理を行わない
-  if (!actorA.isBlock || !actorB.isBlock) {
+  // ブロックしないアクターが含まれる場合、接触処理を行わない
+  if (actorA.collisionType != CollisionType::block ||
+    actorB.collisionType != CollisionType::block) {
     return true;
   }
 
@@ -625,7 +627,8 @@ bool CollisionBoxCylinder(Actor& actorA, Actor& actorB, Contact& contact)
       }
     }
     // XZ方向の法線を正規化
-    const float invD = 1.0f / std::sqrt(normal.x * normal.x + normal.z * normal.z);
+    const float invD =
+      1.0f / std::sqrt(normal.x * normal.x + normal.z * normal.z);
     normal.x *= invD;
     normal.z *= invD;
   } else {
@@ -741,5 +744,67 @@ bool CollisionBoxCylinder(Actor& actorA, Actor& actorB, Contact& contact)
 bool CollisionCylinderBox(Actor& actorA, Actor& actorB, Contact& contact)
 {
   return CollisionBoxCylinder(actorB, actorA, contact);
+}
+
+/**
+* スクリーン座標を始点とし、画面の奥へ向かう線分を計算する
+*
+* @param screenPos スクリーン座標
+* @param matVP     ビュープロジェクション行列
+* @param start     視線の始点が代入される
+* @param end       視線の終点が代入される
+*/
+void ScreenPosToLine(const glm::vec2& screenPos, const glm::mat4& matVP,
+  glm::vec3& start, glm::vec3& end)
+{
+  // スクリーン座標をNDC座標に変換
+  const glm::vec2 windowSize = GameEngine::Get().GetWindowSize();
+  glm::vec4 ndcPos(screenPos.x / windowSize.x * 2.0f - 1.0f,
+    1.0f - screenPos.y / windowSize.y * 2.0f, -1, 1);
+
+  // 視線の始点座標を計算
+  const glm::mat4 matInvVP = glm::inverse(matVP);
+  glm::vec4 worldPos0 = matInvVP * ndcPos;
+  start = worldPos0 / worldPos0.w;
+
+  // 視線の終点座標を計算
+  ndcPos.z = 1;
+  glm::vec4 worldPos1 = matInvVP * ndcPos;
+  end = worldPos1 / worldPos1.w;
+}
+
+/**
+* 線分と平面が交差する座標を求める
+*
+* @param start  線分の始点
+* @param end    線分の終点
+* @param q      平面上の任意の点
+* @param normal 平面の法線
+* @param p      交点の座標が代入される
+*
+* @retval true  交差している
+* @retval false 交差していない
+*/
+bool Intersect(const glm::vec3& start, const glm::vec3& end,
+  const glm::vec3& q, const glm::vec3& normal, glm::vec3& p)
+{
+  const float distance = glm::dot(normal, q - start);
+  const glm::vec3 v = end - start;
+
+  // 分母がほぼ0の場合、線分は平面と平行なので交差しない
+  const float denom = glm::dot(normal, v);
+  if (std::abs(denom) < 0.0001f) {
+    return false;
+  }
+
+  // 交点までの距離tが0未満または1より大きい場合、交点は線分の外側にあるので実際には交差しない
+  const float t = distance / denom;
+  if (t < 0 || t > 1) {
+    return false;
+  }
+
+  // 交点は線分上にある
+  p = start + v * t;
+  return true;
 }
 

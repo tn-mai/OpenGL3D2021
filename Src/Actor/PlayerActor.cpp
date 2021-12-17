@@ -29,6 +29,21 @@ PlayerActor::PlayerActor(
   mass = 57'000;
   //cor = 0.1f;
   //friction = 1.0f;
+
+  MeshRenderer& meshRenderer = static_cast<MeshRenderer&>(*renderer);
+  MeshPtr mesh = meshRenderer.GetMesh();
+  if (mesh) {
+    // 親子関係を設定
+    Mesh::Group& gun = mesh->groups[gunGroup];
+    gun.parent = turretGroup;
+
+    // 逆バインドポーズ行列を設定
+    gun.matInverseBindPose =
+      glm::translate(glm::mat4(1), glm::vec3(0, -2.2f, -1.1f));
+
+    // 逆バインドポーズ行列からバインドポーズ行列を計算
+    gun.matBindPose = glm::inverse(gun.matInverseBindPose);
+  }
 }
 
 /**
@@ -40,20 +55,40 @@ void PlayerActor::OnUpdate(float deltaTime)
 {
   GameEngine& engine = GameEngine::Get();
 
-#if 0 // ターレット(と砲身)だけを回転させる実験
-  static float rotTurret = 0;
-  MeshPtr mesh = GetMesh();
+  // ターレット(と砲身)をマウスカーソルの方向に向ける
+  MeshRenderer& meshRenderer = static_cast<MeshRenderer&>(*renderer);
+  MeshPtr mesh = meshRenderer.GetMesh();
   if (mesh) {
-    for (int i = 0; i < mesh->groups.size(); ++i) {
-      if (mesh->groups[i].name == "Turret_Object_1.002" ||
-        mesh->groups[i].name == "Gun_Object_1.003") {
-        this->SetMatrix(i, glm::rotate(glm::mat4(1), rotTurret, glm::vec3(0, 1, 0)));
-      }
+    // マウスカーソル座標と交差する平面の座標と法線
+    const float gunY = mesh->groups[gunGroup].matBindPose[3][1];
+    const glm::vec3 gunPlanePos = position + glm::vec3(0, gunY, 0); // 平面の座標
+    const glm::vec3 gunPlaneNormal = glm::vec3(0, 1, 0); // 平面の法線
+
+    // 砲塔をマウスカーソルの方向に向ける
+    Camera& camera = engine.GetCamera();
+    const glm::mat4 matVP = camera.GetProjectionMatrix() * camera.GetViewMatrix();
+    glm::vec3 start, end, p;
+    ScreenPosToLine(engine.GetMousePosition(), matVP, start, end);
+    if (Intersect(start, end, gunPlanePos, gunPlaneNormal, p)) {
+      // アクターからマウスカーソルへ向かう方向ベクトルを計算
+      const glm::vec3 d = p - position;
+
+      // アークタンジェント関数で向きベクトルを角度に変換
+      // 0度のときの砲塔の向きは下向きで、数学的な0度(右向き)から-90度の位置にある
+      // 計算で得られた角度に90度を足せば、回転角度とモデルの向きが一致するはず
+      rotTurret = std::atan2(-d.z, d.x) + glm::radians(90.0f);
+
+      // アクターの回転を打ち消す
+      rotTurret -= rotation;
     }
-    rotTurret += glm::radians(30.0f) * deltaTime;
-    rotTurret = fmod(rotTurret, glm::radians(360.0f));
+
+    // 砲塔をY軸回転させる行列を作成
+    const glm::mat4 matRot =
+      glm::rotate(glm::mat4(1), rotTurret, glm::vec3(0, 1, 0));
+
+    // 回転行列を砲塔のグループ行列に設定
+    meshRenderer.SetGroupMatrix(turretGroup, matRot);
   }
-#endif
 
   bool playTankTruck = false;
 
@@ -124,8 +159,12 @@ void PlayerActor::OnUpdate(float deltaTime)
     }
   }
   if (isShot) {
+    // 発射方向を計算
+    const float rot = rotTurret - glm::radians(90.0f) + rotation;
+    const glm::vec3 direction(std::cos(rot), 0, -std::sin(rot));
+
     // 発射位置を砲の先端に設定
-    glm::vec3 position = this->position + tankFront * 6.0f;
+    glm::vec3 position = this->position + direction * 6.0f;
     position.y += 2.0f;
 
     std::shared_ptr<Actor> bullet(new Actor{
@@ -138,7 +177,7 @@ void PlayerActor::OnUpdate(float deltaTime)
     bullet->lifespan = 1.5f;
 
     // 戦車の向いている方向に、30m/sの速度で移動させる
-    bullet->velocity = tankFront * 30.0f;
+    bullet->velocity = direction * 30.0f;
 
     // 弾に衝突判定を付ける
     //bullet->collider = Box::Create(glm::vec3(-0.25f), glm::vec3(0.25f));

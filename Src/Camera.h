@@ -23,8 +23,8 @@ public:
   glm::vec3 target = glm::vec3(0, 0, -1);
   float aspectRatio = 1.0f;
   float fovy = glm::radians(45.0f);
-  float zNear = 0.1f;
-  float zFar = 200.0f;
+  float zNear = 1.0f; // 21b‚Å0.1f‚©‚ç•ÏX.
+  float zFar = 400.0f; // 21b‚Å200.0f‚©‚ç•ÏX.
 
 private:
   glm::mat4 matView = glm::mat4(1);

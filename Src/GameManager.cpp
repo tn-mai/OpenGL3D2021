@@ -24,6 +24,11 @@ namespace {
 
 GameManager* manager = nullptr;
 
+const char* const mapFiles[] = {
+  "mapdata00.txt",
+  "mapdata01.txt",
+};
+
 /// マップデータ.
 int mapData[16][16] = {
   { 2,2,2,2,2,2,2,2,0,0,1,1,0,0,2,2},
@@ -129,12 +134,13 @@ void GameManager::Update(float deltaTime)
     // ※テストが終わったら消すこと
     AStar::Test();
 
-    score = 0;
+    //score = 0;
     //SpawnPlayer();
     //SpawnEnemies();
 
     // マップデータをロードする
-    MapEditor(MapEditor::SystemType::game).Load("mapdata.txt");
+    stageNo = std::min(stageNo, std::size(mapFiles) - 1);
+    MapEditor(MapEditor::SystemType::game).Load(mapFiles[stageNo]);
 
     // プレイヤーが操作するアクターを取得する
     playerTank = engine.FindActor("Tiger-I");
@@ -192,28 +198,32 @@ void GameManager::Update(float deltaTime)
       SetState(State::gameover);
     }
     else {
-      bool allKill = true;
-      for (int i = 0; i < enemies.size(); ++i) {
-        if (!enemies[i]->isDead) {
-          allKill = false;
-          break;
+      if (stageNo == 0) {
+        bool allKill = true;
+        for (int i = 0; i < enemies.size(); ++i) {
+          if (!enemies[i]->isDead) {
+            allKill = false;
+            break;
+          }
         }
-      }
-      if (allKill) {
-        std::shared_ptr<Actor> gameclear(new Actor{ "GameClear",
-          engine.GetPrimitive("Res/Plane.obj"),
-          engine.LoadTexture("Res/GameClear.tga"),
-          glm::vec3(0), glm::vec3(700, 200, 1), 0.0f, glm::vec3(0) });
-        gameclear->isStatic = true;
-        gameclear->layer = Layer::UI;
-        engine.AddActor(gameclear);
+        if (allKill) {
+          std::shared_ptr<Actor> gameclear(new Actor{ "GameClear",
+            engine.GetPrimitive("Res/Plane.obj"),
+            engine.LoadTexture("Res/GameClear.tga"),
+            glm::vec3(0), glm::vec3(700, 200, 1), 0.0f, glm::vec3(0) });
+          gameclear->isStatic = true;
+          gameclear->layer = Layer::UI;
+          engine.AddActor(gameclear);
 
 #ifdef USE_EASY_AUDIO
-        Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_GAMECLEAR);
+          Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_GAMECLEAR);
 #else
-        Audio::Get().Play(0, CRI_BGM_GAMECLEAR);
+          Audio::Get().Play(0, CRI_BGM_GAMECLEAR);
 #endif // USE_EASY_AUDIO
-        SetState(State::gameclear);
+          SetState(State::gameclear);
+        }
+      } else if (stageNo == 1) {
+        UpdateStage2(deltaTime);
       }
     }
     break;
@@ -229,6 +239,7 @@ void GameManager::Update(float deltaTime)
       if (gameclear) {
         gameclear->isDead = true;
       }
+      stageNo = std::min(stageNo + 1, std::size(mapFiles) - 1);
       SetState(State::start);
     }
     break;
@@ -395,6 +406,38 @@ void GameManager::UpdateGameUI()
     ImGui::End();
   }
 
+  if (state == State::gameclear) {
+    const ImVec2 screenMin(0, 0);
+    const ImVec2 screenMax(engine.GetWindowSize().x, engine.GetWindowSize().y);
+    const float cx = (screenMin.x + screenMax.x) * 0.5f;
+    const ImVec2 buttonSize(320, 64);
+    ImGui::SetNextWindowPos(ImVec2(cx - buttonSize.x * 0.5f, 500));
+    ImGui::Begin("NextStage", nullptr,
+      ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration);
+
+    style.Colors[ImGuiCol_Button] = ImVec4(0.5f, 0.5f, 0.55f, 0.8f);
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.7f, 0.7f, 0.75f, 0.8f);
+    style.Colors[ImGuiCol_Text] = ImVec4(0, 0, 0, 1);
+    style.FrameRounding = 12;
+    style.FrameBorderSize = 4;
+    ImGui::SetWindowFontScale(4.0f);
+    if (ImGui::Button("Next Stage", buttonSize)) {
+#ifdef USE_EASY_AUDIO
+      Audio::PlayOneShot(SE_OK);
+#else
+      Audio::Get().Play(1, CRI_SE_UI_OK);
+#endif // USE_EASY_AUDIO
+      std::shared_ptr<Actor> gameclear = engine.FindActor("GameClear");
+      if (gameclear) {
+        gameclear->isDead = true;
+      }
+      stageNo = std::min(stageNo + 1, std::size(mapFiles) - 1);
+      SetState(State::start);
+    }
+    style = styleBackup; // スタイルを元に戻す
+    ImGui::End();
+  }
+
 #if 0
   ImGui::Begin("SCORE", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
   ImGui::SetWindowFontScale(4);
@@ -486,6 +529,9 @@ void GameManager::UpdateTitle(float deltaTime)
 #endif
     fadeAlpha += deltaTime;
     if (fadeAlpha > 1) {
+      // スコアを初期化
+      score = 0;
+
       titleState = TitleState::init;
 
 #ifdef USE_EASY_AUDIO
@@ -605,6 +651,58 @@ void GameManager::UpdateTitleUI()
   // フェードアウト用の黒い平面
   GetForegroundDrawList()->AddRectFilled(screenMin, screenMax,
     ImColor(0.0f, 0.0f, 0.0f, fadeAlpha));
+}
+
+/**
+* ステージ2の更新
+*/
+void GameManager::UpdateStage2(float deltaTime)
+{
+  GameEngine& engine = GameEngine::Get();
+ 
+  // 破壊対象を検索
+  std::vector<std::shared_ptr<Actor>> targets;
+  for (auto& e : engine.GetActors()) {
+    if (e->name == "Fortress2") {
+      targets.push_back(e);
+    }
+  }
+
+  // すべての対象が破壊されていたらゲームクリア
+  if (targets.empty()) {
+    std::shared_ptr<Actor> gameclear(new Actor{ "GameClear",
+      engine.GetPrimitive("Res/Plane.obj"),
+      engine.LoadTexture("Res/GameClear.tga"),
+      glm::vec3(0), glm::vec3(700, 200, 1), 0.0f, glm::vec3(0) });
+    gameclear->isStatic = true;
+    gameclear->layer = Layer::UI;
+    engine.AddActor(gameclear);
+
+#ifdef USE_EASY_AUDIO
+    Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_GAMECLEAR);
+#else
+    Audio::Get().Play(0, CRI_BGM_GAMECLEAR);
+#endif // USE_EASY_AUDIO
+
+    SetState(State::gameclear);
+    return;
+  }
+
+  // ゲートを検索
+  std::vector<std::shared_ptr<Actor>> gates;
+  for (auto& e : engine.GetActors()) {
+    if (e->name == "Fortress1") {
+      gates.push_back(e);
+    }
+  }
+
+  // 破壊対象が破壊されたらゲートを下に移動
+  if (targets.size() == 2) {
+    gates[1]->position.y = -100;
+  }
+  if (targets.size() == 1) {
+    gates[0]->position.y = -100;
+  }
 }
 
 /**

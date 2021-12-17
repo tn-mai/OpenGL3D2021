@@ -49,6 +49,18 @@ enum class Shader
 };
 
 /**
+* 衝突判定の種類
+*
+* 20bで実装. 20は未実装.
+*/
+enum class CollisionType
+{
+  block,       // 衝突判定を行う(通過させない)
+  trigger,     // 交差していることを通知するだけ
+  noCollision, // 衝突判定を行わない
+};
+
+/**
 * 物体を制御するパラメータ.
 */
 class Actor
@@ -84,6 +96,7 @@ public:
   }
   virtual void OnUpdate(float deltaTime);
   virtual void OnCollision(const struct Contact& contact);
+  virtual void OnTrigger(std::shared_ptr<Actor> other) {}
 
   std::string name;                // アクターの名前
   RendererPtr renderer;            // 描画オブジェクト
@@ -101,6 +114,7 @@ public:
   float health = 10;               // 耐久値
   bool isDead = false;             // false=死亡(削除待ち) true=生存中
 
+  CollisionType collisionType = CollisionType::block;
   std::shared_ptr<Collider> collider; // 衝突判定
   //float contactCount = 1;         // 接触点の数
   float mass = 1;                  // 質量(kg)
@@ -119,7 +133,6 @@ public:
   AnimatorPtr animator;
 
   glm::vec3 oldVelocity = glm::vec3(0); // 以前の速度(メートル毎秒)
-  bool isBlock = true;             // false=通過できる true=通過できない
   bool isOnActor = false;
 };
 

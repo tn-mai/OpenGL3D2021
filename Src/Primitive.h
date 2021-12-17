@@ -67,8 +67,9 @@ public:
     std::string name; // グループ名
     GLsizei indexCount = 0; // グループに含まれるインデックスデータの数
 
-    // TODO: テキスト未実装
-    int parent = -1;
+    // 21で実装. 21bは未実装.
+    static const int noParent = -1; // 親がいないことを示す定数
+    int parent = noParent; // 親グループ番号
     glm::mat4 matBindPose = glm::mat4(1);
     glm::mat4 matInverseBindPose = glm::mat4(1);
   };
@@ -77,29 +78,6 @@ public:
   ~Mesh() = default;
   Mesh(const Mesh&) = default;
   Mesh& operator=(const Mesh&) = default;
-
-  void CalcMatrix(int n, const glm::mat4* p, std::vector<glm::mat4>& m, std::vector<bool>& b) const
-  {
-    if (!b[n]) {
-      m[n] = groups[n].matBindPose * p[n] * groups[n].matInverseBindPose;
-      const int parent = groups[n].parent;
-      if (parent >= 0) {
-        CalcMatrix(parent, p, m, b);
-        m[n] = m[parent] * m[n];
-      }
-      b[n] = true;
-    }
-  }
-
-  std::vector<glm::mat4> CalcGroupMatirices(const glm::mat4* p) const 
-  {
-    std::vector<glm::mat4> m(groups.size());
-    std::vector<bool> calcFlags(groups.size(), false);
-    for (int i = 0; i < groups.size(); ++i) {
-      CalcMatrix(i, p, m, calcFlags);
-    }
-    return m;
-  }
 
   Primitive primitive;
   std::vector<Material> materials;

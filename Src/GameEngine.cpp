@@ -211,6 +211,10 @@ bool GameEngine::Initialize()
     glfwGetWindowSize(window, &w, &h);
     engine->windowSize = glm::vec2(w, h);
 
+    // 乱数を初期化する
+    std::random_device rd;
+    engine->random.seed(rd());
+
     engine->pipeline.reset(new ProgramPipeline(
       "Res/FragmentLighting.vert", "Res/FragmentLighting.frag"));
     engine->pipelineUI.reset(new ProgramPipeline("Res/Simple.vert", "Res/Simple.frag"));
@@ -296,9 +300,6 @@ bool GameEngine::Initialize()
     audio.Load(0, "Res/Audio/MainWorkUnit/SE.acb", nullptr);
     audio.Load(1, "Res/Audio/MainWorkUnit/BGM.acb", "Res/Audio/MainWorkUnit/BGM.awb");
 #endif // USE_EASY_AUDIO
-
-    std::random_device rd;
-    engine->rg.seed(rd());
   }
   return true;
 }
@@ -445,8 +446,14 @@ void GameEngine::UpdatePhysics(float deltaTime)
   contacts.reserve(actors.size());
   for (auto itrA = partitionedActors.begin(); itrA != itrEndA; ++itrA) {
     std::shared_ptr<Actor>& a = *itrA;
+    if (a->collisionType == CollisionType::noCollision) {
+      continue;
+    }
     for (auto itrB = itrA + 1; itrB != itrEndB; ++itrB) {
       std::shared_ptr<Actor>& b = *itrB;
+      if (b->collisionType == CollisionType::noCollision) {
+        continue;
+      }
 
       // 削除待ちアクターは衝突しない
       if (a->isDead) {
@@ -457,6 +464,14 @@ void GameEngine::UpdatePhysics(float deltaTime)
 
       Contact contact;
       if (DetectCollision(*a, *b, contact)) {
+        // ブロックしないアクターが含まれる場合、接触処理を行わない
+        if (a->collisionType != CollisionType::block ||
+          b->collisionType != CollisionType::block) {
+          a->OnTrigger(b);
+          b->OnTrigger(a);
+          continue; // 以降の処理をスキップ
+        }
+
         // 配列の中に、作成したコンタクト構造体と似ているものがあるか調べる
         auto itr = std::find_if(contacts.begin(), contacts.end(),
           [&contact](const Contact& c) { return Equal(contact, c); });
@@ -904,6 +919,19 @@ void GameEngine::ResizeGroundMap(int width, int height, const void* data)
   pipelineGround->SetUniform(locMapSize, glm::vec4(mapSize, 0, 0));
 }
 
+
+// TODO: 以下はテキスト未実装の関数
+
+/**
+* マウス座標を取得
+*/
+glm::vec2 GameEngine::GetMousePosition() const
+{
+  double x, y;
+  glfwGetCursorPos(window, &x, &y);
+  return glm::vec2(x, y);
+}
+
 /**
 * テクスチャを取得する
 *
@@ -926,6 +954,6 @@ std::shared_ptr<Texture> GameEngine::GetTexture(const char* filename) const
 */
 unsigned int GameEngine::GetRandom()
 {
-  return rg();
+  return random();
 }
 
