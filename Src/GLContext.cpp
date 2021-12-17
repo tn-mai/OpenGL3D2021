@@ -277,8 +277,10 @@ GLuint CreateSampler(GLenum wrapMode)
     return 0;
   }
 
-  glSamplerParameteri(id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-  glSamplerParameteri(id, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+  // NOTE: AMDドライバでGL_PROGRAM_SEPARATABLEを有効にした場合、コンペアモード指定が無視されるバグがある
+  //       このため、本テキストではハードウェアPCFを使っていない
+  //glSamplerParameteri(id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+  //glSamplerParameteri(id, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
   return id;
 }
