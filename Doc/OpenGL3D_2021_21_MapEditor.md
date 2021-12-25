@@ -430,7 +430,21 @@
    std::vector<std::shared_ptr<Texture>> groundTiles; // 地面用テクスチャ
 ```
 
-次に`MapEditor.cpp`を開き、アップデートユーアイ関数のアクター選択プログラムに、次のプログラムを追加してください。
+次に`MapEditor.cpp`を開き、イニットエディタ関数に次のプログラムを追加してください。
+
+```diff
+   // 位置表示アクターを作成
+   cursor.reset(new Actor(*actors[0]));
+   engine.AddActor(cursor);
++
++  cursorOriginal = actors[0];
+
+   // カメラを設定
+   Camera& camera = engine.GetCamera();
+   camera.target = glm::vec3(0, 0, 0);
+```
+
+さらに、アップデートユーアイ関数のアクター選択プログラムに、次のプログラムを追加してください。
 
 ```diff
      for (int i = 0; i < actors.size(); ++i) {
@@ -440,6 +454,8 @@
          *cursor = *actors[i];
        }
 ```
+
+これで`cursorOriginal`(カーソル・オリジナル)変数が、「カーソルに割り当てられているアクターの元になったアクター」を指すようになりました。
 
 それでは、大きさを変更するUIを追加しましょう。アップデートユーアイ関数のアクター情報を表示するプログラムに、次のプログラムを追加してください。
 
