@@ -14,6 +14,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <memory>
+#include <functional>
 
 /**
 * 第11回テキスト実装方針:
@@ -61,6 +62,28 @@ enum class CollisionType
 };
 
 /**
+* アクターの種類を識別するタグ
+*
+* [重要]
+* メンバ名の変更・追加・削除、または順番の入れ替えを行った場合、
+* ActorTagToString関数の定義も修正すること。
+*/
+enum class ActorTag
+{
+  other,     // その他
+  player,    // プレイヤーが操作するアクター
+  friendly,  // 味方
+  enemy,     // 敵
+  boss,      // ボス敵
+  item,      // アイテム
+  destructionTarget, // 破壊対象
+};
+static const size_t actorTagCount = 7; // タグ数
+
+const char* ActorTagToString(ActorTag tag);
+ActorTag StringToActorTag(const char* str);
+
+/**
 * 物体を制御するパラメータ.
 */
 class Actor
@@ -97,6 +120,7 @@ public:
   virtual void OnUpdate(float deltaTime);
   virtual void OnCollision(const struct Contact& contact);
   virtual void OnTrigger(std::shared_ptr<Actor> other) {}
+  void SetAnimation(AnimationPtr a);
 
   std::string name;                // アクターの名前
   RendererPtr renderer;            // 描画オブジェクト
@@ -104,6 +128,8 @@ public:
   glm::vec3 scale;                 // 物体の拡大縮小率
   float rotation;                  // 物体の回転角度
   glm::vec3 adjustment;            // 物体を原点に移動するための距離
+
+  ActorTag tag = ActorTag::other;
 
   // 19で追加. 19bは未追加.
   glm::vec4 color = glm::vec4(1);  // テクスチャに合成する色
@@ -125,12 +151,8 @@ public:
   Layer layer = Layer::Default;    // 表示レイヤー
   Shader shader = Shader::FragmentLighting;
 
-  // TODO: テキスト未追加
-  void SetAnimator(AnimatorPtr a) { 
-    animator = a;
-    a->SetActor(this);
-  }
-  AnimatorPtr animator;
+  // アニメーションを設定するときはSetAnimationを使うこと
+  AnimationPtr animation;          // アニメーション
 
   glm::vec3 oldVelocity = glm::vec3(0); // 以前の速度(メートル毎秒)
   bool isOnActor = false;

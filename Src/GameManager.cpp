@@ -9,6 +9,7 @@
 #include "Actor/T34TankActor.h"
 #include "Actor/ElevatorActor.h"
 #include "Actor/Boss01.h"
+#include "Actor/HumanActor.h"
 #include "Audio.h"
 #ifdef USE_EASY_AUDIO
 #include "EasyAudioSettings.h"
@@ -145,6 +146,10 @@ void GameManager::Update(float deltaTime)
     // プレイヤーが操作するアクターを取得する
     playerTank = engine.FindActor("Tiger-I");
 
+    // 人間アクターを配置
+    engine.AddActor(std::make_shared<HumanActor>(
+      playerTank->position + glm::vec3(0, 0, -5), glm::vec3(3), glm::radians(-60.0f)));
+
     // 敵アクターのポインタを配列にコピーする
     enemies.clear();
     for (auto& e : engine.GetNewActors()) {
@@ -156,6 +161,14 @@ void GameManager::Update(float deltaTime)
         Boss01& enemy = static_cast<Boss01&>(*e);
         enemy.SetTarget(playerTank);
         enemies.push_back(e);
+      }
+    }
+
+    // 破壊対象アクターのポインタを配列にコピーする
+    targets.clear();
+    for (auto& e : engine.GetNewActors()) {
+      if (targetTagFlags[static_cast<int>(e->tag)]) {
+        targets.push_back(e);
       }
     }
     
@@ -198,32 +211,28 @@ void GameManager::Update(float deltaTime)
       SetState(State::gameover);
     }
     else {
-      if (stageNo == 0) {
-        bool allKill = true;
-        for (int i = 0; i < enemies.size(); ++i) {
-          if (!enemies[i]->isDead) {
-            allKill = false;
-            break;
-          }
+      bool allKill = true;
+      for (int i = 0; i < targets.size(); ++i) {
+        if (!targets[i]->isDead) {
+          allKill = false;
+          break;
         }
-        if (allKill) {
-          std::shared_ptr<Actor> gameclear(new Actor{ "GameClear",
-            engine.GetPrimitive("Res/Plane.obj"),
-            engine.LoadTexture("Res/GameClear.tga"),
-            glm::vec3(0), glm::vec3(700, 200, 1), 0.0f, glm::vec3(0) });
-          gameclear->isStatic = true;
-          gameclear->layer = Layer::UI;
-          engine.AddActor(gameclear);
+      }
+      if (allKill) {
+        std::shared_ptr<Actor> gameclear(new Actor{ "GameClear",
+          engine.GetPrimitive("Res/Plane.obj"),
+          engine.LoadTexture("Res/GameClear.tga"),
+          glm::vec3(0), glm::vec3(700, 200, 1), 0.0f, glm::vec3(0) });
+        gameclear->isStatic = true;
+        gameclear->layer = Layer::UI;
+        engine.AddActor(gameclear);
 
 #ifdef USE_EASY_AUDIO
-          Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_GAMECLEAR);
+        Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_GAMECLEAR);
 #else
-          Audio::Get().Play(0, CRI_BGM_GAMECLEAR);
+        Audio::Get().Play(0, CRI_BGM_GAMECLEAR);
 #endif // USE_EASY_AUDIO
-          SetState(State::gameclear);
-        }
-      } else if (stageNo == 1) {
-        UpdateStage2(deltaTime);
+        SetState(State::gameclear);
       }
     }
     break;
@@ -342,14 +351,14 @@ void GameManager::UpdateGameUI()
     ImGui::End();
   }
 
-  // 敵の数を表示
+  // 破壊対象の数を表示
   {
     ImGui::SetNextWindowSize(ImVec2(600, 0));
     ImGui::SetNextWindowPos(ImVec2(16, 720 - 16 - 40));
     ImGui::Begin("EnemyCount", nullptr, ImGuiWindowFlags_NoTitleBar);
     std::shared_ptr<Texture> tex = engine.LoadTexture("Res/IconEnemy.tga");
     const ImTextureID texId = reinterpret_cast<ImTextureID>(tex->GetId());
-    for (const std::shared_ptr<Actor>& e : enemies) {
+    for (const std::shared_ptr<Actor>& e : targets) {
       if (e->health > 0 && !e->isDead) {
         ImGui::SameLine();
         ImGui::Image(texId, ImVec2(40, 40), ImVec2(0, 1), ImVec2(1, 0));
@@ -654,54 +663,96 @@ void GameManager::UpdateTitleUI()
 }
 
 /**
-* ステージ2の更新
+* フラグの総数を取得する
 */
-void GameManager::UpdateStage2(float deltaTime)
+size_t GameManager::GetGameFlagCount() const
 {
-  GameEngine& engine = GameEngine::Get();
- 
-  // 破壊対象を検索
-  std::vector<std::shared_ptr<Actor>> targets;
-  for (auto& e : engine.GetActors()) {
-    if (e->name == "Fortress2") {
-      targets.push_back(e);
-    }
+  return gameFlags.size();
+}
+
+/**
+* フラグの総数を設定する
+*/
+void GameManager::SetGameFlagCount(size_t size)
+{
+  gameFlags.resize(size);
+}
+
+/**
+* フラグの値を取得する
+*/
+bool GameManager::GetGameFlag(size_t no) const
+{
+  if (no >= gameFlags.size()) {
+    std::cerr << "[警告]" << __func__ << "添字" << no <<
+      "は範囲" << gameFlags.size() << "を超えています\n";
+    return false;
   }
+  return gameFlags[no].value;
+}
 
-  // すべての対象が破壊されていたらゲームクリア
-  if (targets.empty()) {
-    std::shared_ptr<Actor> gameclear(new Actor{ "GameClear",
-      engine.GetPrimitive("Res/Plane.obj"),
-      engine.LoadTexture("Res/GameClear.tga"),
-      glm::vec3(0), glm::vec3(700, 200, 1), 0.0f, glm::vec3(0) });
-    gameclear->isStatic = true;
-    gameclear->layer = Layer::UI;
-    engine.AddActor(gameclear);
-
-#ifdef USE_EASY_AUDIO
-    Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_GAMECLEAR);
-#else
-    Audio::Get().Play(0, CRI_BGM_GAMECLEAR);
-#endif // USE_EASY_AUDIO
-
-    SetState(State::gameclear);
+/**
+* フラグに値を設定する
+*/
+void GameManager::SetGameFlag(size_t no, bool value)
+{
+  if (no >= gameFlags.size()) {
+    std::cerr << "[警告]" << __func__ << "添字" << no <<
+      "は範囲" << gameFlags.size() << "を超えています\n";
     return;
   }
+  gameFlags[no].value = value;
+}
 
-  // ゲートを検索
-  std::vector<std::shared_ptr<Actor>> gates;
-  for (auto& e : engine.GetActors()) {
-    if (e->name == "Fortress1") {
-      gates.push_back(e);
-    }
+/**
+* フラグの説明を取得する
+*/
+std::string GameManager::GetGameFlagDesc(size_t no) const
+{
+  if (no >= gameFlags.size()) {
+    std::cerr << "[警告]" << __func__ << "添字" << no <<
+      "は範囲" << gameFlags.size() << "を超えています\n";
+    return "";
   }
+  return gameFlags[no].description;
+}
 
-  // 破壊対象が破壊されたらゲートを下に移動
-  if (targets.size() == 2) {
-    gates[1]->position.y = -100;
+/**
+* フラグの説明を設定する
+*/
+void GameManager::SetGameFlagDesc(size_t no, std::string desc)
+{
+  if (no >= gameFlags.size()) {
+    std::cerr << "[警告]" << __func__ << "添字" << no <<
+      "は範囲" << gameFlags.size() << "を超えています\n";
+    return;
   }
-  if (targets.size() == 1) {
-    gates[0]->position.y = -100;
+  gameFlags[no].description = desc;
+}
+
+/**
+* タグが「ステージクリアに必要な破壊対象」かどうかを取得する
+*/
+bool GameManager::GetTargetFlag(ActorTag tag) const
+{
+  return targetTagFlags[static_cast<int>(tag)];
+}
+
+/**
+* タグが「ステージクリアに必要な破壊対象」かどうかを設定する
+*/
+void GameManager::SetTargetFlag(ActorTag tag, bool flag)
+{
+  targetTagFlags[static_cast<int>(tag)] = flag;
+}
+
+/**
+* 全てのタグを「ステージクリアに必要な破壊対象」から除外する
+*/
+void GameManager::ClearAllTargetFlags()
+{
+  for (auto& e : targetTagFlags) {
+    e = false;
   }
 }
 

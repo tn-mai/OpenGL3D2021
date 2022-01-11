@@ -394,6 +394,11 @@ void GameEngine::UpdateActors(float deltaTime)
 
       actors[i]->OnUpdate(deltaTime);
 
+      // TODO: テキスト未実装
+      if (actors[i]->animation) {
+        actors[i]->animation->Update(deltaTime);
+      }
+
       // 速度に重力加速度を加える
       if (!actors[i]->isStatic) {
         actors[i]->velocity.y += -9.8f * deltaTime * actors[i]->gravityScale;

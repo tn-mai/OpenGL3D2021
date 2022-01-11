@@ -33,10 +33,14 @@ private:
   void InitGroundActor();
   void InitActorList();
   void InitEditor();
-  void Resize(const glm::ivec2& newMapSize);
+  void Resize(const glm::ivec2& newMapSize); // 未実装
 
   // 21bで実装. 21は未実装.
   bool ShowFileListBox(std::string& filename);
+
+  void ShowActorInfo(std::shared_ptr<Actor>);
+  void ShowGameFlag();
+  void ShowGameRule();
 
   const SystemType systemType;             // 動作タイプ
   glm::vec2 gridSize = glm::vec2(4.0f);    // マス目のサイズ(m)
@@ -44,8 +48,11 @@ private:
   std::vector<std::shared_ptr<Actor>> map; // アクター配置マップ(エディタ用)
   std::vector<int> gameMap;                // アクター配置マップ(ゲーム用)
   std::vector<std::shared_ptr<Actor>> actors; // 配置可能なアクター
+
+  std::shared_ptr<Actor> select; // 選択中のアクター
   std::shared_ptr<Actor> cursor; // マップ操作カーソル
-  std::shared_ptr<Actor> cursorBase; // マップ操作カーソルの元になったアクター
+  std::shared_ptr<Actor> cursorOriginal; // マップ操作カーソルのオリジナル
+
   glm::vec3 cameraOffset = glm::vec3(0, 30, 30); // カメラの位置
 
   std::vector<std::shared_ptr<Texture>> groundTiles; // 地面用テクスチャ
@@ -55,6 +62,11 @@ private:
   // 21bで実装. 21は未実装.
   bool randomRotationFlag = false;
   bool randomScaleFlag = false;
+
+  struct {
+    int rotation = 0;
+    glm::vec3 scale = glm::vec3(1);
+  } gui;
 
   // マップ操作モード
   enum class Mode {

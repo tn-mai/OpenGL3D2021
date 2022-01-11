@@ -138,6 +138,15 @@
     <ClCompile Include="Src\Actor\FortressActor.cpp">
       <Filter>ソース ファイル\Actor</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Actor\MoveIfFlagged.cpp">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Actor\FlagIfDied.cpp">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Actor\HumanActor.cpp">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -279,6 +288,18 @@
       <Filter>ソース ファイル\Actor</Filter>
     </ClInclude>
     <ClInclude Include="Src\Actor\FortressActor.h">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Actor\MoveIfFlagged.h">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Actor\FlagIfDied.h">
+      <Filter>ソース ファイル\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\ActorComponent.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Actor\HumanActor.h">
       <Filter>ソース ファイル\Actor</Filter>
     </ClInclude>
   </ItemGroup>

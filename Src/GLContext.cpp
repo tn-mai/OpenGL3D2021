@@ -88,7 +88,15 @@ GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor,
   const GLuint groupIndex = 4;
   const GLuint groupBindingIndex = 4;
   glEnableVertexArrayAttrib(id, groupIndex);
+#if 0 // NOTE: インテルドライバではglVertexArrayAttribIFormatが正しく動作しない
   glVertexArrayAttribIFormat(id, groupIndex, 2, GL_UNSIGNED_BYTE, 0);
+#else
+  glBindBuffer(GL_ARRAY_BUFFER, vboMaterialGroup);
+  glBindVertexArray(id);
+  glVertexAttribIPointer(groupIndex, 2, GL_UNSIGNED_BYTE, sizeof(glm::u8vec2), 0);
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+#endif
   glVertexArrayAttribBinding(id,groupIndex, groupBindingIndex);
   glVertexArrayVertexBuffer(
     id, groupBindingIndex, vboMaterialGroup, 0, sizeof(glm::u8vec2));

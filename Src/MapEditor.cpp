@@ -7,8 +7,10 @@
 #include "Actor/T34TankActor.h"
 #include "Actor/RepairItem.h"
 #include "Actor/Boss01.h"
-#include "Actor/FortressActor.h"
+#include "Actor/FlagIfDied.h"
+#include "Actor/MoveIfFlagged.h"
 #include "GameEngine.h"
+#include "GameManager.h"
 #include <imgui.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -104,11 +106,12 @@ void MapEditor::InitActorList()
 
   // アクターの型
   enum class ActorType {
+    actor,
     player,
     t34tank,
     boss01,
-    fortress,
-    other,
+    flagIfDied,
+    moveIfFlagged,
   };
 
   // 配置用アクターを作成
@@ -124,88 +127,88 @@ void MapEditor::InitActorList()
   };
   const ObjectData objectList[] = {
     {
-      ActorType::other, "Cube",
+      ActorType::actor, "Cube",
       "Res/Cube.obj", "Res/Triangle.tga",
       Box::Create(glm::vec3(0, 0, 0), glm::vec3(2, 2, 2)) },
     {
-      ActorType::other, "Tree",
+      ActorType::actor, "Tree",
       "Res/Tree.obj", "Res/Tree.tga",
       Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
     {
-      ActorType::other, "Tree2",
+      ActorType::actor, "Tree2",
       "Res/tree/fir.obj", "Res/tree/branch.tga",
       Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
     {
-      ActorType::other, "Tree3",
+      ActorType::actor, "Tree3",
       "Res/tree/LowPolyTree.obj", "Res/tree/LowPolyLeaves.tga",
       Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)) },
     {
-      ActorType::other, "MobleTree1",
+      ActorType::actor, "MobleTree1",
       "Res/mobile_trees/baum hd med.obj", "Res/mobile_trees/ast4.tga",
       Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)), glm::vec3(0.5) },
     {
-      ActorType::other, "MobleTree2",
+      ActorType::actor, "MobleTree2",
       "Res/mobile_trees/baum hd pine.obj", "Res/mobile_trees/ast5.tga",
       Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)), glm::vec3(0.5) },
     {
-      ActorType::other, "MobleTree3",
+      ActorType::actor, "MobleTree3",
       "Res/mobile_trees/baum hd.obj", "Res/mobile_trees/ast3.tga",
       Box::Create(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2, 1.5f)), glm::vec3(0.5) },
     {
-      ActorType::other, "House-1-5(2)",
+      ActorType::actor, "House-1-5(2)",
       "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 2.tga",
       Box::Create(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
     {
-      ActorType::other, "House-1-5(3)",
+      ActorType::actor, "House-1-5(3)",
       "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 3.tga",
       Box::Create(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
     {
-      ActorType::other, "House-1-5(4)",
+      ActorType::actor, "House-1-5(4)",
       "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 4.tga",
       Box::Create(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
     {
-      ActorType::other, "House-1-5(5)",
+      ActorType::actor, "House-1-5(5)",
       "Res/house/test/House-1-5.obj", "Res/house/test/Houses Colorscheme 5.tga",
       Box::Create(glm::vec3(-3, 0, -5), glm::vec3(3, 8, 5)) },
     {
-      ActorType::other, "Lamppost",
+      ActorType::actor, "Lamppost",
       "Res/house/test/Lamppost.obj", "Res/house/test/Houses Colorscheme.tga",
       Box::Create(glm::vec3(-0.5f, 0, -0.5f), glm::vec3(0.5f, 2, 0.5f)) },
     {
-      ActorType::other, "Bench",
+      ActorType::actor, "Bench",
       "Res/house/test/Bench.obj", "Res/house/test/Houses Colorscheme.tga",
       Box::Create(glm::vec3(-0.5f, 0, -0.5f), glm::vec3(0.5f, 0.5f, 0.5f)) },
     {
-      ActorType::other, "Chair",
+      ActorType::actor, "Chair",
       "Res/house/test/Chair.obj", "Res/house/test/Houses Colorscheme.tga",
       Box::Create(glm::vec3(-0.5f, 0, -0.5f), glm::vec3(0.5f, 0.5f, 0.5f)) },
     {
-      ActorType::other, "Warehouse",
+      ActorType::actor, "Warehouse",
       "Res/Warehouse.obj", "Res/Building.tga",
       Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
     {
-      ActorType::other, "Fortress0",
+      ActorType::actor, "Fortress0",
       "Res/sci-fi-rts/Structure_v1.obj", "Res/sci-fi-rts/Structure_v1.tga",
       Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
     {
-      ActorType::other, "Fortress1",
+      ActorType::moveIfFlagged, "Gate",
       "Res/sci-fi-rts/Structure_v2.obj", "Res/sci-fi-rts/Structure_v2.tga",
-      Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
+      Box::Create(glm::vec3(-1, 0, -1.75f), glm::vec3(2, 3, 1.75f)), glm::vec3(1.0f) },
     {
-      ActorType::fortress, "Fortress2",
+      ActorType::flagIfDied, "TargetObject",
       "Res/sci-fi-rts/Structure_v3.obj", "Res/sci-fi-rts/Structure_v3.tga",
-      Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(1.0f) },
+      Box::Create(glm::vec3(-5, 0, -3), glm::vec3(5, 6, 3)), glm::vec3(1.0f) },
     {
-      ActorType::other, "RocketLauncher",
+      ActorType::actor, "RocketLauncher",
       "Res/sci-fi-rts/SciFi-Tower_Rocket Launcher.obj", "Res/sci-fi-rts/SciFi_Props-Pack03-diffuse.tga",
       Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 3, 2)), glm::vec3(0.5f) },
 
-    { ActorType::other, "BrickHouse",
+    { ActorType::actor, "BrickHouse",
       "Res/house/HouseRender.obj", "Res/house/House38UVTexture.tga",
       Box::Create(glm::vec3(-3, 0, -2), glm::vec3(3, 3, 2)),
       glm::vec3(2.0f), 0, glm::vec3(-2.6f, 2.0f, 0.8f) },
 
-    { ActorType::other, "BrokenHouse",
+    { ActorType::actor, "BrokenHouse",
       "Res/house/broken-house.obj", "Res/house/broken-house.tga",
       Box::Create(glm::vec3(-2, 0, -2), glm::vec3(2, 2, 2)),
       glm::vec3(1.00f) },
@@ -228,6 +231,7 @@ void MapEditor::InitActorList()
     switch (e.type) {
     case ActorType::player:
       actor.reset(new PlayerActor(glm::vec3(0), e.scale, e.rotation));
+      actor->tag = ActorTag::player;
       break;
 
     case ActorType::t34tank:
@@ -237,6 +241,7 @@ void MapEditor::InitActorList()
         engine.LoadTexture(e.textureFilename),
         glm::vec3(0), e.scale, e.rotation, e.adjustment, nullptr));
       actor->collider = e.collider;
+      actor->tag = ActorTag::enemy;
       actor->mass = 36'000;
       break;
 
@@ -244,10 +249,11 @@ void MapEditor::InitActorList()
       actor.reset(new Boss01(
         glm::vec3(0), e.scale, e.rotation, nullptr));
       actor->collider = e.collider;
+      actor->tag = ActorTag::boss;
       break;
 
-    case ActorType::fortress:
-      actor.reset(new FortressActor(
+    case ActorType::flagIfDied:
+      actor.reset(new FlagIfDied(
         e.name,
         engine.LoadMesh(e.primitiveFilename),
         glm::vec3(0), e.scale, e.rotation, e.adjustment));
@@ -257,7 +263,18 @@ void MapEditor::InitActorList()
       actor->isStatic = true;
       break;
 
-    case ActorType::other:
+    case ActorType::moveIfFlagged:
+      actor.reset(new MoveIfFlagged(
+        e.name,
+        engine.LoadMesh(e.primitiveFilename),
+        glm::vec3(0), e.scale, e.rotation, e.adjustment));
+      static_cast<MeshRenderer&>(*actor->renderer).SetMaterial(0,
+        Mesh::Material{ "", glm::vec4(1),  engine.LoadTexture(e.textureFilename) });
+      actor->collider = e.collider;
+      actor->isStatic = true;
+      break;
+
+    case ActorType::actor:
       actor.reset(new Actor(
         e.name,
         engine.LoadMesh(e.primitiveFilename),
@@ -285,7 +302,11 @@ void MapEditor::InitEditor()
   cursor->color = glm::vec4(0.2f, 0.5f, 1.0f, 0.5f);
   engine.AddActor(cursor);
 
-  cursorBase = actors[0];
+  cursorOriginal = actors[0];
+
+  // デフォルトのゲームフラグ数は20個とする
+  const size_t defaultGameFlagCount = 20;
+  GameManager::Get().SetGameFlagCount(defaultGameFlagCount);
 
   // カメラを設定
   Camera& camera = engine.GetCamera();
@@ -381,6 +402,217 @@ bool MapEditor::ShowFileListBox(std::string& filename)
 }
 
 /**
+* アクターの情報を表示する
+*/
+void MapEditor::ShowActorInfo(std::shared_ptr<Actor> actor)
+{
+  using namespace ImGui;
+
+  SetNextWindowSize(ImVec2(400, GetFrameHeightWithSpacing() * 6), ImGuiCond_Once);
+
+  Begin(u8"アクター情報");
+  Text(u8"名前: %s", actor->name.c_str());
+
+  Text(u8"ヘルス:");
+  SameLine();
+  InputFloat("##health", &actor->health);
+
+  Text(u8"タグ:");
+  SameLine();
+  char previewTag[256];
+  snprintf(previewTag, 255, "%s", ActorTagToString(actor->tag));
+  if (BeginCombo("##actorTag", previewTag)) {
+    for (int i = 0; i < actorTagCount; ++i) {
+      const ActorTag tag = static_cast<ActorTag>(i);
+      char label[256];
+      snprintf(label, 255, "%s", ActorTagToString(tag));
+      const bool isSelected = actor->tag == tag;
+      if (ImGui::Selectable(label, isSelected)) {
+        actor->tag = tag;
+      }
+      if (isSelected) {
+        SetItemDefaultFocus();
+      }
+    }
+    EndCombo();
+  }
+
+  Text(u8"回転:");
+  SameLine();
+  static const char* strRotation[] = { "0", "90", "180", "270" };
+  SetNextItemWidth(GetWindowContentRegionWidth() - 150);
+  SliderInt("##rotation", &gui.rotation,
+    0, static_cast<int>(std::size(strRotation)) - 1,
+    strRotation[gui.rotation], ImGuiSliderFlags_NoInput);
+  const float radians = glm::radians(static_cast<float>(gui.rotation) * 90.0f);
+  if (radians != actor->rotation) {
+    actor->rotation = radians;
+    actor->collider = cursorOriginal->collider->Clone();
+    actor->collider->Scale(gui.scale);
+    actor->collider->RotateY(radians);
+  }
+  SameLine();
+  Text(u8"ランダム:");
+  SameLine();
+  Checkbox("##randomRotation", &randomRotationFlag);
+
+  Text(u8"スケール:");
+  SameLine();
+  SetNextItemWidth(GetWindowContentRegionWidth() - 150);
+  SliderFloat3("##scale", &gui.scale.x, 0.5f, 5.0f);
+  if (actor->scale != cursorOriginal->scale * gui.scale) {
+    actor->scale = cursorOriginal->scale * gui.scale;
+    actor->collider = cursorOriginal->collider->Clone();
+    actor->collider->Scale(gui.scale);
+    actor->collider->RotateY(radians);
+  }
+  SameLine();
+  Text(u8"ランダム:");
+  SameLine();
+  Checkbox("##randomScale", &randomScaleFlag);
+
+  // フラグアクターのフラグメンバを表示する
+  std::function<int()> getFlagNo;
+  std::function<void(int)> setFlagNo;
+  {
+    FlagIfDied* p = dynamic_cast<FlagIfDied*>(actor.get());
+    if (p) {
+      Text(u8"操作するフラグ:");
+      getFlagNo = [p]() { return p->GetFlagNo(); };
+      setFlagNo = [p](int no) { p->SetFlagNo(no); };
+    }
+  }
+  {
+    MoveIfFlagged* p = dynamic_cast<MoveIfFlagged*>(actor.get());
+    if (p) {
+      Text(u8"ゲートを開くフラグ:");
+      getFlagNo = [p]() { return p->GetFlagNo(); };
+      setFlagNo = [p](int no) { p->SetFlagNo(no); };
+    }
+  }
+
+  // フラグ選択コンボボックスを表示
+  if (getFlagNo && setFlagNo) {
+    GameManager& manager = GameManager::Get();
+    SameLine();
+    const int flagNo = getFlagNo();
+    char preview[256];
+    snprintf(preview, 255, "%04d: %s", flagNo, manager.GetGameFlagDesc(flagNo).c_str());
+    if (BeginCombo("##flag", preview)) {
+      const size_t size = manager.GetGameFlagCount();
+      for (int i = 0; i < size; ++i) {
+        char label[256];
+        snprintf(label, 255, "%04d: %s", i, manager.GetGameFlagDesc(i).c_str());
+        const bool isSelected = flagNo == i;
+        if (ImGui::Selectable(label, isSelected)) {
+          setFlagNo(i);
+        }
+        if (isSelected) {
+          SetItemDefaultFocus();
+        }
+      }
+      EndCombo();
+    }
+  }
+
+  End();
+}
+
+/**
+* フラグ設定GUIを表示する
+*/
+void MapEditor::ShowGameFlag()
+{
+  using namespace ImGui;
+  GameManager& manager = GameManager::Get();
+  static std::string gameFlagDesc;
+  static int gameFlagNo = 0;
+  static int gameFlagCount =
+    static_cast<int>(manager.GetGameFlagCount());
+
+  SetNextWindowPos(ImVec2(1000, 30), ImGuiCond_Once);
+  SetNextWindowSize(ImVec2(250, 200), ImGuiCond_Once);
+  Begin(u8"ゲームフラグ");
+
+  // ゲームフラグの選択
+  const float windowHeight =
+    GetWindowContentRegionMax().y - GetWindowContentRegionMin().y;
+  const float itemHeight = GetFrameHeightWithSpacing();
+  const ImVec2 listBoxSize(-1, windowHeight - itemHeight * 2);
+  if (BeginListBox("##gameFlags", listBoxSize)) {
+    const size_t size = manager.GetGameFlagCount();
+    for (int i = 0; i < size; ++i) {
+      const std::string desc = manager.GetGameFlagDesc(i);
+      char label[256];
+      snprintf(label, 255, "%04d: %s", i, desc.c_str());
+      const bool isSelected = i == gameFlagNo;
+      if (Selectable(label, isSelected)) {
+        gameFlagNo = i;
+        gameFlagDesc = desc;
+      }
+    }
+    EndListBox();
+  }
+
+  // 説明文の設定
+  Text(u8"説明:");
+  SameLine();
+  SetNextItemWidth(-1);
+  gameFlagDesc.resize(255); // 入力用に長さを確保
+  if (InputText("##desc", gameFlagDesc.data(), gameFlagDesc.size())) {
+    gameFlagDesc.resize(gameFlagDesc.find_first_of('\0')); // 長さを戻す
+    manager.SetGameFlagDesc(gameFlagNo, gameFlagDesc);
+  }
+
+  // フラグ数の変更(ボタン)
+  if (Button(u8"フラグ数の変更")) {
+    gameFlagCount = static_cast<int>(manager.GetGameFlagCount());
+    OpenPopup(u8"フラグ数の変更##popup");
+  }
+
+  // フラグ数の変更(ポップアップウィンドウ)
+  SetNextWindowSize(ImVec2(-1, -1));
+  if (BeginPopupModal(u8"フラグ数の変更##popup")) {
+    InputInt("##gameFlagCount", &gameFlagCount);
+    if (Button(u8"決定")) {
+      gameFlagNo = std::min(gameFlagNo, gameFlagCount - 1);
+      manager.SetGameFlagCount(gameFlagCount);
+      CloseCurrentPopup();
+    }
+    if (Button(u8"キャンセル")) {
+      CloseCurrentPopup();
+    }
+    EndPopup();
+  }
+
+  End();
+}
+
+/**
+*
+*/
+void MapEditor::ShowGameRule()
+{
+  using namespace ImGui;
+  GameManager& manager = GameManager::Get();
+
+  Begin(u8"ゲームルール");
+  Text(u8"破壊対象:");
+  static const ActorTag tags[] = {
+    ActorTag::enemy,
+    ActorTag::boss,
+    ActorTag::destructionTarget,
+  };
+  for (auto tag : tags) {
+    bool flag = manager.GetTargetFlag(tag);
+    if (Checkbox(ActorTagToString(tag), &flag)) {
+      manager.SetTargetFlag(tag, flag);
+    }
+  }
+  End();
+}
+
+/**
 * マップエディタの状態を更新する
 */
 void MapEditor::Update(float deltaTime)
@@ -410,8 +642,22 @@ void MapEditor::Update(float deltaTime)
     std::shared_ptr<Actor>& target = map[x + y * mapSize.x];
 
     switch (mode) {
+    case Mode::select:
+      if (select) {
+        select->color = glm::vec4(1);
+      }
+      select = target;
+      if (select) {
+        select->color = glm::vec4(1.0f, 0.5f, 0.2f, 0.5f);
+        gui.rotation = static_cast<int>(select->rotation / glm::radians(90.0f) + 0.5f);
+        gui.scale = select->scale;
+      }
+      break;
+
     case Mode::set:
-      cursor->collider = cursorBase->collider->Clone();
+      if (randomScaleFlag || randomRotationFlag) {
+        cursor->collider = cursorOriginal->collider->Clone();
+      }
 
       // ランダムスケールありの場合、ランダムなスケールを設定する
       if (randomScaleFlag) {
@@ -419,7 +665,7 @@ void MapEditor::Update(float deltaTime)
         scale.x = glm::clamp(engine.GetRandomNormal(1.0f, 0.2f), 0.75f, 1.5f);
         scale.y = glm::clamp(engine.GetRandomNormal(1.0f, 0.2f), 0.75f, 1.5f);
         scale.z = scale.x;
-        cursor->scale = cursorBase->scale * scale;
+        cursor->scale = cursorOriginal->scale * scale;
         cursor->collider->Scale(scale);
       }
 
@@ -442,7 +688,8 @@ void MapEditor::Update(float deltaTime)
         target->isDead = true;
       }
       // 選択中のアクターを配置する
-      target.reset(new Actor(*cursor));
+      target = cursor->Clone();
+      target->collider = cursor->collider->Clone();
       target->color = glm::vec4(1);
       engine.AddActor(target);
       break;
@@ -469,7 +716,11 @@ void MapEditor::Update(float deltaTime)
 * カメラ状態を更新する
 */
 void MapEditor::UpdateCamera(float deltaTime)
-{
+{ 
+  if (ImGui::GetIO().WantCaptureKeyboard) {
+    return;
+  }
+
   GameEngine& engine = GameEngine::Get();
   Camera& camera = engine.GetCamera();
 
@@ -527,6 +778,13 @@ void MapEditor::UpdateUI()
   for (int i = 0; i < std::size(toolName); ++i) {
     SameLine();
     if (Button(toolName[i])) {
+      // ツールが変更されたら選択状態を解除する
+      if (mode != modeList[i]) {
+        if (select) {
+          select->color = glm::vec4(1);
+          select.reset();
+        }
+      }
       mode = modeList[i];
     }
   }
@@ -644,7 +902,7 @@ void MapEditor::UpdateUI()
     static_cast<int>(cursor->position.z / 4));
   End();
 
-  SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
+  SetNextWindowSize(ImVec2(200, 0), ImGuiCond_Once);
   Begin(u8"アクター選択");
   const ImVec2 actorListBoxSize(-1,
     GetTextLineHeightWithSpacing() * actors.size() + GetStyle().FramePadding.y * 2);
@@ -652,10 +910,13 @@ void MapEditor::UpdateUI()
     for (int i = 0; i < actors.size(); ++i) {
       const bool isSelected = cursor == actors[i];
       if (Selectable(actors[i]->name.c_str(), isSelected)) {
-        // エディタ上でコライダーの回転を可能にするため、クローンを作る
-        cursorBase = actors[i];
-        *cursor = *actors[i]->Clone();
+        cursorOriginal = actors[i]; // 元になったアクターを記録しておく
+        // 型情報を維持するために新しいクローンを作る
+        cursor->isDead = true; // 古いクローンは削除する
+        cursor = actors[i]->Clone();
+        cursor->collider = cursor->collider->Clone();
         cursor->color = glm::vec4(0.2f, 0.5f, 1.0f, 0.5f);
+        engine.AddActor(cursor);
       }
       if (isSelected) {
         SetItemDefaultFocus();
@@ -665,45 +926,13 @@ void MapEditor::UpdateUI()
   }
   End();
 
-  SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Once);
-  Begin(u8"アクター情報");
-  Text(u8"名前: %s", cursor->name.c_str());
-  Text(u8"回転:");
-  SameLine();
-  static int rotation = 0;
-  static glm::vec3 scale(1);
-  static const char* strRotation[] = { "0", "90", "180", "270" };
-  SetNextItemWidth(GetWindowContentRegionWidth() - 150);
-  SliderInt("##rotation", &rotation,
-    0, static_cast<int>(std::size(strRotation)) - 1,
-    strRotation[rotation], ImGuiSliderFlags_NoInput);
-  const float radians = glm::radians(static_cast<float>(rotation) * 90.0f);
-  if (radians != cursor->rotation) {
-    cursor->rotation = radians;
-    cursor->collider = cursorBase->collider->Clone();
-    cursor->collider->Scale(scale);
-    cursor->collider->RotateY(radians);
+  if (mode == Mode::select && select) {
+    ShowActorInfo(select);
+  } else {
+    ShowActorInfo(cursor);
   }
-  SameLine();
-  Text(u8"ランダム:");
-  SameLine();
-  Checkbox("##randomRotation", &randomRotationFlag);
-
-  Text(u8"スケール:");
-  SameLine();
-  SetNextItemWidth(GetWindowContentRegionWidth() - 150);
-  SliderFloat3("##scale", &scale.x, 0.5f, 5.0f);
-  if (cursor->scale != cursorBase->scale * scale) {
-    cursor->scale = cursorBase->scale * scale;
-    cursor->collider = cursorBase->collider->Clone();
-    cursor->collider->Scale(scale);
-    cursor->collider->RotateY(radians);
-  }
-  SameLine();
-  Text(u8"ランダム:");
-  SameLine();
-  Checkbox("##randomScale", &randomScaleFlag);
-  End();
+  ShowGameFlag();
+  ShowGameRule();
 
   if (mode == Mode::groundPaint) {
     SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
@@ -901,10 +1130,27 @@ void MapEditor::Save(const char* filename)
     }
     char tmp[256];
     snprintf(tmp, std::size(tmp),
-      "  [ %s, %.03f, %.03f, %.03f, %.03f, %.03f, %.03f, %.03f ],\n",
+      "  [ %s, %.03f, %.03f, %.03f, %.03f, %.03f, %.03f, %.03f",
       e->name.c_str(), e->position.x, e->position.y, e->position.z,
       e->scale.x, e->scale.y, e->scale.z, glm::degrees(e->rotation));
     ofs << tmp;
+
+    snprintf(tmp, std::size(tmp), ", { health: %.03f }", e->health);
+    ofs << tmp;
+
+    snprintf(tmp, std::size(tmp), ", { actorTag: %s }", ActorTagToString(e->tag));
+    ofs << tmp;
+
+    // フラグ番号を書き出す
+    FlagIfDied* p0 = dynamic_cast<FlagIfDied*>(e.get());
+    if (p0) {
+      ofs << ", { flagNo: " << p0->GetFlagNo() << " }";
+    }
+    MoveIfFlagged* p1 = dynamic_cast<MoveIfFlagged*>(e.get());
+    if (p1) {
+      ofs << ", { flagNo: " << p1->GetFlagNo() << " }";
+    }
+    ofs << " ],\n";
   }
   ofs << "],\n";
 
@@ -917,6 +1163,25 @@ void MapEditor::Save(const char* filename)
     ofs << '\n';
   }
   ofs << "]\n";
+
+  ofs << "gameFlags: {\n";
+  GameManager& manager = GameManager::Get();
+  const size_t gameFlagCount = manager.GetGameFlagCount();
+  for (int i = 0; i < gameFlagCount; ++i) {
+    char tmp[256];
+    snprintf(tmp, 255, "  %d: \"%s\",\n", i,
+      manager.GetGameFlagDesc(i).c_str());
+    ofs << tmp;
+  }
+  ofs << "}\n";
+
+  ofs << "targetFlags: {\n";
+  for (int i = 0; i < actorTagCount; ++i) {
+    const ActorTag tag = static_cast<ActorTag>(i);
+    ofs << "  " << ActorTagToString(tag) << ": " <<
+      std::boolalpha << manager.GetTargetFlag(tag) << ",\n";
+  }
+  ofs << "}\n";
 }
 
 /**
@@ -985,14 +1250,41 @@ bool MapEditor::Load(const char* filename)
     glm::vec3 position(0);
     glm::vec3 scale(1);
     float rotation = 0;
-    if (sscanf(line.data(), " [ %255[^,], %f, %f, %f, %f, %f, %f, %f ], ",
+    int n = 0; // 読み込んだバイト数
+    if (sscanf(line.data(), " [ %255[^,], %f, %f, %f, %f, %f, %f, %f%n",
       name, &position.x, &position.y, &position.z,
-      &scale.x, &scale.y, &scale.z, &rotation) < 4) {
+      &scale.x, &scale.y, &scale.z, &rotation, &n) < 4) {
       std::cerr << "[警告]" << __func__ << ": 配置データの読み込みに失敗\n" <<
         "  " << line << "\n";
     }
     rotation = glm::radians(rotation);
     name[255] = '\0';
+
+    const char* p = line.data() + n;
+    float health = -1;
+    int flagNo = 0;
+    int tag = -1;
+    for (;;) {
+      char dataName[100];
+      char data[100];
+      if (sscanf(p, " , { %99[^: ] : %99[^} ] }%n", dataName, &data, &n) < 2) {
+        break;
+      }
+
+      dataName[99] = '\0';
+      data[99] = '\0';
+      p += n;
+
+      if (strcmp("health", dataName) == 0) {
+        health = std::stof(data);
+      }
+      else if (strcmp("flagNo", dataName) == 0) {
+        flagNo = std::stoi(data);
+      }
+      else if (strcmp("actorTag", dataName) == 0) {
+        tag = static_cast<int>(StringToActorTag(data));
+      }
+    }
 
     // アクターを取得
     int actorNo = 0;
@@ -1014,14 +1306,29 @@ bool MapEditor::Load(const char* filename)
 
     // アクターをマップに配置
     std::shared_ptr<Actor> newActor = actor->Clone();
+    newActor->collider = actor->collider->Clone();
+    newActor->collider->Scale(scale / actor->scale);
+    newActor->collider->RotateY(rotation);
+    if (health >= 0) {
+      newActor->health = health;
+    }
+    if (tag >= 0) {
+      newActor->tag = static_cast<ActorTag>(tag);
+    }
     newActor->position = position;
     newActor->scale = scale;
     newActor->rotation = rotation;
-
-    if (rotation) {
-      // 衝突判定を回転させる
-      newActor->collider->RotateY(rotation);
+    FlagIfDied* p0 = dynamic_cast<FlagIfDied*>(newActor.get());
+    if (p0) {
+      p0->SetFlagNo(flagNo);
     }
+    MoveIfFlagged* p1 = dynamic_cast<MoveIfFlagged*>(newActor.get());
+    if (p1) {
+      p1->SetFlagNo(flagNo);
+      p1->SetPosition(false, position);
+      p1->SetPosition(true, position + glm::vec3(0, -100, 0));
+    }
+
     tmpMap[x + y * tmpMapSize.x] = newActor;
     tmpGameMap[x + y * tmpMapSize.x] = actorNo;
   }
@@ -1054,6 +1361,63 @@ bool MapEditor::Load(const char* filename)
   }
   tmpGroundMap.resize(tmpMapSize.x * tmpMapSize.y, 0);
 
+  // ゲームフラグを読み込む
+  std::vector<std::string> tmpGameFlags;
+  tmpGameFlags.reserve(20);
+  std::getline(ifs, line);
+  if (line == "gameFlags: {") {
+    while (!ifs.eof()) {
+      std::getline(ifs, line);
+
+      // データの終了チェック
+      if (line[0] == '}') {
+        break;
+      }
+      // 行を解析
+      char* p = line.data();
+      int no = 0; // いまのところ未使用
+      char name[256];
+      name[0] = '\0';
+      if (sscanf(p, " %d : \"%255[^\"]\" ,", &no, name) < 1) {
+        std::cerr << "[警告]" << __func__ << ": " <<
+          tmpGameFlags.size() << "番目のゲームフラグを正しく読み込めませんでした\n";
+      }
+      name[255] = '\0';
+      tmpGameFlags.push_back(name);
+    }
+  }
+
+  // 破壊対象フラグを読み込む
+  bool tmpTargetFlags[actorTagCount] = {};
+  bool hasTargetFlags = false;
+  std::getline(ifs, line);
+  if (line == "targetFlags: {") {
+    hasTargetFlags = true;
+    while (!ifs.eof()) {
+      std::getline(ifs, line);
+
+      // データの終了チェック
+      if (line[0] == '}') {
+        break;
+      }
+
+      // 行を解析
+      char name[256];
+      char flag[10];
+      if (sscanf(line.data(), " %255[^: ] : %9[^, ] ,", name, flag) < 2) {
+        std::cerr << "[警告]" << __func__ << ": " <<
+          "ターゲットタグを正しく読み込めませんでした\n";
+        continue;
+      }
+      name[255] = '\0';
+      flag[9] = '\0';
+      const ActorTag tag = StringToActorTag(name);
+      if (strcmp(flag, "true") == 0) {
+        tmpTargetFlags[static_cast<int>(tag)] = true;
+      }
+    }
+  }
+
   // 読み込んだデータをメンバ変数に反映する
   mapSize = tmpMapSize;
   map.swap(tmpMap);
@@ -1062,6 +1426,25 @@ bool MapEditor::Load(const char* filename)
 
   GameEngine& engine = GameEngine::Get();
   engine.ResizeGroundMap(mapSize.x, mapSize.y, groundMap.data());
+
+  // ゲームフラグを設定
+  GameManager& manager = GameManager::Get();
+  manager.SetGameFlagCount(tmpGameFlags.size());
+  for (int i = 0; i < tmpGameFlags.size(); ++i) {
+    manager.SetGameFlagDesc(i, tmpGameFlags[i]);
+  }
+
+  // 破壊対象フラグを設定
+  manager.ClearAllTargetFlags();
+  if (hasTargetFlags) {
+    for (int i = 0; i < actorTagCount; ++i) {
+      manager.SetTargetFlag(static_cast<ActorTag>(i), tmpTargetFlags[i]);
+    }
+  } else {
+    // 破壊対象フラグ情報のないセーブデータの場合、敵とボスを破壊対象にする
+    manager.SetTargetFlag(ActorTag::enemy, true);
+    manager.SetTargetFlag(ActorTag::boss, true);
+  }
 
   // ゲームエンジンのアクターを更新
   engine.ClearAllActors();

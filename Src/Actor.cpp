@@ -57,10 +57,7 @@ Actor::Actor(
 */
 void Actor::OnUpdate(float deltaTime)
 {
-  // TODO: テキスト未実装
-  if (animator) {
-    animator->Update(deltaTime);
-  }
+  // 何もしない
 }
 
 /**
@@ -71,6 +68,15 @@ void Actor::OnUpdate(float deltaTime)
 void Actor::OnCollision(const struct Contact& contact)
 {
   // 何もしない
+}
+
+/**
+* アニメーションを設定する
+*/
+void Actor::SetAnimation(AnimationPtr a)
+{ 
+  animation = a;
+  a->SetActor(this);
 }
 
 /**
@@ -427,5 +433,37 @@ bool Equal2(const Contact& ca, const Contact& cb)
     return false;
   }
   return true;
+}
+
+/**
+* タグを文字列に変換する
+*/
+const char* ActorTagToString(ActorTag tag)
+{
+  static const char* const tagNames[actorTagCount] = {
+    "other",
+    "player",
+    "friendly",
+    "enemy",
+    "boss",
+    "item",
+    "destructionTarget",
+  };
+  return tagNames[static_cast<int>(tag)];
+};
+
+/**
+* 文字列をタグに変換する
+*/
+ActorTag StringToActorTag(const char* str)
+{
+  for (int i = 0; i < actorTagCount; ++i) {
+    const ActorTag tag = static_cast<ActorTag>(i);
+    if (strcmp(ActorTagToString(tag), str) == 0) {
+      return tag;
+    }
+  }
+  // 一致するタグが見つからない場合、とりあえずotherを返す
+  return ActorTag::other;
 }
 

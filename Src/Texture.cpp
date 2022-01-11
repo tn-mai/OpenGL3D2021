@@ -137,7 +137,7 @@ void Texture::Unbind(GLuint unit) const
   // 自分のオブジェクトIDが割り当てられていたらバインド解除する.
   if (textureBindingArray[unit] == id) {
     textureBindingArray[unit] = 0;
-    glBindTextureUnit(unit, 0);
+    glBindTextures(unit, 1, nullptr);
   }
 }
 

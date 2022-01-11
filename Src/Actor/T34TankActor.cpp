@@ -148,7 +148,7 @@ void T34TankActor::OnCollision(const struct Contact& contact)
       GameManager::Get().AddScore(200);
 
       GameEngine& engine = GameEngine::Get();
-#if 1
+#if 0
       engine.AddActor(std::make_shared<ExplosionActor>(position, 4.0f));
 #else
       const auto tex0 = engine.LoadTexture("Res/Sprite/Explosion.tga");
@@ -156,22 +156,22 @@ void T34TankActor::OnCollision(const struct Contact& contact)
         std::make_shared<Sprite>(position + glm::vec3(0, 1, 0), tex0);
       sprExprosion->lifespan = 0.5f;
 
-//      AnimatorPtr animator = std::make_shared<Animator>();
-//      animator->AddClip<glm::vec3>(
+//      AnimationPtr animation = std::make_shared<Animation>();
+//      animation->AddClip<glm::vec3>(
 //          &sprExprosion->scale, 0, 0.5f, glm::vec3(2), glm::vec3(8));
-//      animator->AddClip<float>(
+//      animation->AddClip<float>(
 //          &sprExprosion->rotation, 0, 0.5f, 0.0f, 1.5f);
-//      animator->AddClip<float>(
+//      animation->AddClip<float>(
 //          &sprExprosion->color.a, 0, 0.5f, 8, 0);
-//      animator->Play();
-//      sprExprosion->animator = animator;
+//      animation->Play();
+//      sprExprosion->animation = animation;
 
       engine.AddActor(sprExprosion);
 
       // 煙エフェクトを発生
       const std::shared_ptr<Texture> texSmoke =
         engine.LoadTexture("Res/Sprite/smoke.tga");
-#if 1
+#if 0
       const float smokeCount = 12;
       for (float i = 0; i < smokeCount; ++i) {
         const float r = glm::radians(360.0f / smokeCount * i);
@@ -185,9 +185,12 @@ void T34TankActor::OnCollision(const struct Contact& contact)
         engine.AddActor(sprite);
       }
 #else
-      auto timelineScale = AnimationCurve::Create({ { 0, 2}, { 1, 8 } });
-      auto timelineRotation = AnimationCurve::Create({ { 0, 0 }, { 1, 1.5f } });
-      auto timelineAlpha = AnimationCurve::Create({ { 0, 2 }, { 1, 0 } });
+      auto curveScale = AnimationCurve::Create({ { 0, 2}, { 1, 8 } });
+      AnimationCurvePtr curveRotation = AnimationCurve::Create();
+      curveRotation->SetKey(KeyFrame{ 0, 0 });
+      curveRotation->SetKey(KeyFrame{ 1, glm::radians(180.0f) });
+
+      auto curveAlpha = AnimationCurve::Create({ { 0, 1 }, { 0.66f, 0.9f }, { 1, 0 } });
       for (float i = 0; i < 8; ++i) {
         glm::vec3 v;
         v.x = std::cos(glm::radians(360.0f / 8.0f * i));
@@ -200,21 +203,21 @@ void T34TankActor::OnCollision(const struct Contact& contact)
         engine.AddActor(sprite);
 
         AnimationClipPtr clip = AnimationClip::Create();
-        auto timelineX = AnimationCurve::Create({ { 0, v.x * 10.0f }, {1, -v.x} });
-        auto timelineY = AnimationCurve::Create({ { 0, v.y * 10.0f }, {1, -v.y} });
-        auto timelineZ = AnimationCurve::Create({ { 0, v.z * 10.0f }, {1, -v.z} });
-        clip->AddCurve(ANIMATION_TARGET(Actor, velocity.x), timelineX);
-        clip->AddCurve(ANIMATION_TARGET(Actor, velocity.y), timelineY);
-        clip->AddCurve(ANIMATION_TARGET(Actor, velocity.z), timelineZ);
-        clip->AddCurve(ANIMATION_TARGET(Actor, scale.x), timelineScale);
-        clip->AddCurve(ANIMATION_TARGET(Actor, scale.y), timelineScale);
-        clip->AddCurve(ANIMATION_TARGET(Actor, rotation), timelineRotation);
-        clip->AddCurve(ANIMATION_TARGET(Actor, color.a), timelineAlpha);
+        auto curveX = AnimationCurve::Create({ { 0, v.x * 10.0f }, {1, -v.x} });
+        auto curveY = AnimationCurve::Create({ { 0, v.y * 10.0f }, {1, -v.y} });
+        auto curveZ = AnimationCurve::Create({ { 0, v.z * 10.0f }, {1, -v.z} });
+        clip->SetCurve(ANIMATION_TARGET(Actor, velocity.x), curveX);
+        clip->SetCurve(ANIMATION_TARGET(Actor, velocity.y), curveY);
+        clip->SetCurve(ANIMATION_TARGET(Actor, velocity.z), curveZ);
+        clip->SetCurve(ANIMATION_TARGET(Actor, scale.x), curveScale);
+        clip->SetCurve(ANIMATION_TARGET(Actor, scale.y), curveScale);
+        clip->SetCurve([](Actor& a, float v) { a.rotation = v; }, curveRotation);
+        clip->SetCurve(ANIMATION_TARGET(Actor, color.a), curveAlpha);
 
-        AnimatorPtr animator = Animator::Create();
-        animator->SetClip(clip);
-        animator->Play();
-        sprite->SetAnimator(animator);
+        AnimationPtr animation = Animation::Create();
+        animation->SetClip(clip);
+        animation->Play();
+        sprite->SetAnimation(animation);
       }
 #endif
 #endif

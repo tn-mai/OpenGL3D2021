@@ -32,6 +32,19 @@ public:
 
   void AddScore(int n) { score += n; }
 
+  // ゲームフラグの操作
+  void SetGameFlagCount(size_t size);
+  size_t GetGameFlagCount() const;
+  void SetGameFlag(size_t no, bool value);
+  bool GetGameFlag(size_t no) const;
+  void SetGameFlagDesc(size_t no, std::string desc);
+  std::string GetGameFlagDesc(size_t no) const;
+
+  // 破壊対象フラグの操作
+  bool GetTargetFlag(ActorTag tag) const;
+  void SetTargetFlag(ActorTag tag, bool flag);
+  void ClearAllTargetFlags();
+
 private:
   GameManager() = default;
   ~GameManager() = default;
@@ -50,14 +63,22 @@ private:
   void UpdateTitleUI();
   // ここまで(19bで実装. 19は未実装)
 
-  // TODO: テキスト未実装
-  void UpdateStage2(float deltaTime);
-
   State state = State::title; // 現在の動作状態
   std::shared_ptr<Actor> playerTank;
   std::vector<std::shared_ptr<Actor>> enemies;
   int score = 0;
   size_t stageNo = 0; // 21bで実装. 21は未実装
+
+  // ゲームフラグ
+  struct GameFlag
+  {
+    std::string description; // 説明文
+    bool value = false; // フラグの値
+  };
+  std::vector<GameFlag> gameFlags;
+
+  bool targetTagFlags[actorTagCount] = {}; // 破壊対象となるタグ
+  std::vector<std::shared_ptr<Actor>> targets; // 破壊対象アクター
 
   // 19bで実装. 19は未実装.
 

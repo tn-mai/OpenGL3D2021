@@ -156,9 +156,12 @@
     <ClCompile Include="Src\Actor.cpp" />
     <ClCompile Include="Src\Actor\Boss01.cpp" />
     <ClCompile Include="Src\Actor\BulletActor.cpp" />
+    <ClCompile Include="Src\Actor\FlagIfDied.cpp" />
     <ClCompile Include="Src\Actor\FortressActor.cpp" />
     <ClCompile Include="Src\Actor\ElevatorActor.cpp" />
     <ClCompile Include="Src\Actor\ExplosionActor.cpp" />
+    <ClCompile Include="Src\Actor\HumanActor.cpp" />
+    <ClCompile Include="Src\Actor\MoveIfFlagged.cpp" />
     <ClCompile Include="Src\Actor\PlayerActor.cpp" />
     <ClCompile Include="Src\Actor\RandomMovingEnemyActor.cpp" />
     <ClCompile Include="Src\Actor\RepairItem.cpp" />
@@ -202,11 +205,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\Actor.h" />
+    <ClInclude Include="Src\ActorComponent.h" />
     <ClInclude Include="Src\Actor\Boss01.h" />
     <ClInclude Include="Src\Actor\BulletActor.h" />
+    <ClInclude Include="Src\Actor\FlagIfDied.h" />
     <ClInclude Include="Src\Actor\FortressActor.h" />
     <ClInclude Include="Src\Actor\ElevatorActor.h" />
     <ClInclude Include="Src\Actor\ExplosionActor.h" />
+    <ClInclude Include="Src\Actor\HumanActor.h" />
+    <ClInclude Include="Src\Actor\MoveIfFlagged.h" />
     <ClInclude Include="Src\Actor\PlayerActor.h" />
     <ClInclude Include="Src\Actor\RandomMovingEnemyActor.h" />
     <ClInclude Include="Src\Actor\RepairItem.h" />
