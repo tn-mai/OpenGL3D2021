@@ -638,7 +638,7 @@ public:
 +    // 地面マップ用データを作成
 +    engine->pipelineGround.reset(new ProgramPipeline(
 +      "Res/FragmentLighting.vert", "Res/GroundMap.frag"));
-+    std::vector<uint32_t> mapData(mapSize.x * mapSize.y, 0);
++    std::vector<uint32_t> mapData(engine->mapSize.x * engine->mapSize.y, 0);
 +    engine->texMap.reset(new Texture("GroundMap",
 +      engine->mapSize.x, engine->mapSize.y,
 +      mapData.data(), GL_RGBA, GL_UNSIGNED_BYTE));
