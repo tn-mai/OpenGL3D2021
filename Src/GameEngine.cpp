@@ -218,10 +218,11 @@ bool GameEngine::Initialize()
     engine->pipeline.reset(new ProgramPipeline(
       "Res/FragmentLighting.vert", "Res/FragmentLighting.frag"));
     engine->pipelineUI.reset(new ProgramPipeline("Res/Simple.vert", "Res/Simple.frag"));
+    engine->pipelineDoF.reset(new ProgramPipeline("Res/DepthOfField.vert", "Res/DepthOfField.frag"));
     engine->sampler = std::shared_ptr<Sampler>(new Sampler(GL_REPEAT));
     engine->samplerUI.reset(new Sampler(GL_CLAMP_TO_EDGE));
+    engine->samplerDoF.reset(new Sampler(GL_CLAMP_TO_EDGE));
 
-    engine->pipelineShadow.reset(new ProgramPipeline("Res/Simple.vert", "Res/Simple.frag"));
     engine->samplerShadow.reset(new Sampler(GL_CLAMP_TO_EDGE));
 
     // 地面マップ用データを作成
@@ -255,15 +256,19 @@ bool GameEngine::Initialize()
     // カメラのアスペクト比を設定
     Camera& camera = engine->GetCamera();
     camera.aspectRatio = engine->windowSize.x / engine->windowSize.y;
+    
+    // 画面のピクセル数を設定
+    camera.screenSize = engine->windowSize;
 
     // FBOを初期化する
+    engine->fboColor0.reset(new FramebufferObject(w, h, FboType::colorDepth));
+    engine->fboColor1.reset(new FramebufferObject(w / 2, h / 2, FboType::color));
     engine->fboShadow.reset(new FramebufferObject(1024, 1024, FboType::depth));
-    if (!engine->fboShadow || !engine->fboShadow->GetId()) {
-      return false;
-    }
-    engine->fbo.reset(new FramebufferObject(w, h));
-    if (!engine->fbo|| !engine->fbo->GetId()) {
-      return false;
+    for (auto p : { engine->fboColor0.get(),
+      engine->fboColor1.get(), engine->fboShadow.get() }) {
+      if (!p || !p->GetId()) {
+        return false;
+      }
     }
 
     // ImGuiの初期化
@@ -622,10 +627,12 @@ void GameEngine::RenderDefault()
   }
 
   // デフォルトフレームバッファのビューポートを設定
-  glViewport(0, 0, static_cast<GLsizei>(windowSize.x), static_cast<GLsizei>(windowSize.y));
+  glViewport(0, 0,
+    static_cast<GLsizei>(windowSize.x),
+    static_cast<GLsizei>(windowSize.y));
 
   // 描画先をフレームバッファオブジェクトに変更.
-  fbo->Bind();
+  fboColor0->Bind();
 
   glEnable(GL_DEPTH_TEST); // 深度バッファを有効にする.
 
@@ -743,7 +750,7 @@ void GameEngine::RenderDefault()
 */
 void GameEngine::RenderSprite()
 {
-  fbo->Bind();
+  fboColor0->Bind();
 
   const glm::mat4& matProj = mainCamera.GetProjectionMatrix();
   const glm::mat4 matView = mainCamera.GetViewMatrix();
@@ -757,15 +764,67 @@ void GameEngine::RenderSprite()
 */
 void GameEngine::RenderUI()
 {
-  // 描画先をデフォルトのフレームバッファに戻す.
-  fbo->Unbind();
+  const Primitive& primPlane = GetPrimitive("Res/Plane.obj");
 
-  // デフォルトフレームバッファのビューポートを設定
-  glViewport(0, 0, static_cast<GLsizei>(windowSize.x), static_cast<GLsizei>(windowSize.y));
+  // 縮小画像を作成
+  {
+    fboColor1->Bind();
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
+
+    primitiveBuffer->BindVertexArray();
+    pipelineUI->Bind();
+    samplerUI->Bind(0);
+
+    // Plane.objの半径は-0.5～+0.5なので、2倍して-1～+1にする
+    glm::mat4 m = glm::mat4(1);
+    m[0][0] = m[1][1] = 2;
+    pipelineUI->SetUniform(Renderer::locMatTRS, m);
+    pipelineUI->SetUniform(Renderer::locColor, glm::vec4(1));
+
+    fboColor0->BindColorTexture(0);
+    primPlane.Draw();
+  }
+
+  // 描画先をデフォルトのフレームバッファに戻す
+  fboColor0->Unbind();
+  glViewport(0, 0,
+    static_cast<GLsizei>(windowSize.x),
+    static_cast<GLsizei>(windowSize.y));
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
+
+  // FBOの内容を描画.
+  {
+    glDisable(GL_BLEND);
+
+    pipelineDoF->Bind();
+    samplerDoF->Bind(0);
+    samplerDoF->Bind(1);
+    samplerDoF->Bind(2);
+    fboColor0->BindColorTexture(0);
+    fboColor1->BindColorTexture(1);
+    fboColor0->BindDepthTexture(2);
+
+    glm::mat4 m = glm::mat4(1);
+    m[0][0] = m[1][1] = 2;
+    pipelineDoF->SetUniform(Renderer::locMatTRS, m);
+    pipelineDoF->SetUniform(Renderer::locCamera, mainCamera.GetShaderParameter());
+    primPlane.Draw();
+
+    fboColor0->UnbindColorTexture(0);
+    fboColor1->UnbindColorTexture(1);
+    fboColor0->UnbindDepthTexture(2);
+    samplerDoF->Unbind(2);
+    samplerDoF->Unbind(1);
+    samplerDoF->Unbind(0);
+    pipelineDoF->Unbind();
+  }
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -783,25 +842,6 @@ void GameEngine::RenderUI()
   const glm::mat4 matView =
     glm::lookAt(glm::vec3(0, 0, 100), glm::vec3(0), glm::vec3(0, 1, 0));
 
-  // FBOの内容を描画.
-  {
-    glDisable(GL_BLEND);
-    fbo->BindColorTexture(0);
-    const Primitive& prim = GetPrimitive("Res/Plane.obj");
-
-    const glm::mat4 matModelS = glm::scale(glm::mat4(1), glm::vec3(windowSize.x, windowSize.y, 1));
-    const glm::mat4 matModelT = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
-    const glm::mat4 matModel = matModelT * matModelS;
-
-    const GLint locMatTRS = 0;
-    const GLint locColor = 200;
-    pipelineUI->SetUniform(locMatTRS, matProj * matView * matModel);
-    pipelineUI->SetUniform(locColor, glm::vec4(1));
-    prim.Draw();
-
-    fbo->UnbindColorTexture(0);
-    glEnable(GL_BLEND);
-  }
 
   // Z座標の降順で2Dアクターを描画する
   ActorList a = actors[static_cast<int>(Layer::UI)];

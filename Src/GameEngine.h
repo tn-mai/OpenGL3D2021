@@ -181,9 +181,13 @@ private:
   // パイプライン・オブジェクトを作成する.
   std::shared_ptr<ProgramPipeline> pipeline;
   std::shared_ptr<ProgramPipeline> pipelineUI;
+  std::shared_ptr<ProgramPipeline> pipelineDoF;
   std::shared_ptr<Sampler> sampler;
   std::shared_ptr<Sampler> samplerUI;
+  std::shared_ptr<Sampler> samplerDoF;
 
+  std::shared_ptr<FramebufferObject> fboColor0; // 等倍FBO
+  std::shared_ptr<FramebufferObject> fboColor1; // 縮小用FBO
   std::shared_ptr<FramebufferObject> fboShadow; // 影描画用FBO
 
   // 地面描画用
@@ -208,8 +212,6 @@ private:
   SpriteRenderer spriteRenderer;
 
   // TODO: テキスト未追加
-  std::shared_ptr<FramebufferObject> fbo;
-  std::shared_ptr<ProgramPipeline> pipelineShadow;
   std::shared_ptr<Sampler> samplerShadow;
 };
 

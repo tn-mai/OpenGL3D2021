@@ -286,6 +286,9 @@ void GameManager::UpdateCamera()
     Camera& camera = engine.GetCamera();
     camera.position = target->position + glm::vec3(0, 20, 20);
     camera.target = target->position;
+
+    // ボケ量を設定(小さいほどボケる)
+    camera.fNumber = 0.02f;
   }
 }
 

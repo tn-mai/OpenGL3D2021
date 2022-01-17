@@ -31,6 +31,10 @@ public:
   static const GLint locMaterialColor = 10;
   static const GLint locMaterialTexture = 20;
   static const GLint locMatGroupModels = 30;
+  static const GLint locMatShadow = 100;
+  static const GLint locMapSize = 101;
+  static const GLint locCamera = 102;
+  static const GLint locColor = 200;
 
   Renderer() = default;
   virtual ~Renderer() = default;

@@ -41,9 +41,14 @@ void PrimitiveRenderer::Draw(const Actor& actor,
     pipeline.SetUniform(locMaterialColor, glm::vec4(1));
     pipeline.SetUniform(locMaterialTexture, &texture, 1);
 
-    // TODO: テキスト未追加
     // グループ行列を設定
-    pipeline.SetUniform(locMatGroupModels, glm::mat4(1));
+    constexpr glm::mat4 m[32] = {
+      glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1),
+      glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1),
+      glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1),
+      glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1), glm::mat4(1),
+    };
+    pipeline.SetUniform(locMatGroupModels, m, 32);
   }
 
   // TODO: テキスト未追加
