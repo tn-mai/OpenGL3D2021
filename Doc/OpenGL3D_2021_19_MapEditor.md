@@ -132,6 +132,7 @@
    GameEngine& engine = GameEngine::Get();
  
    switch (state) {
++  case State::title:
 +    UpdateTitle(deltaTime);
 +    break;
 +
