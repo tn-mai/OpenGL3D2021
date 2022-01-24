@@ -102,7 +102,7 @@
 それでは、宣言したメンバ関数を定義しましょう。`GameManager.cpp`を開き、アップデートタイトルユーアイ関数の定義の下に、次のプログラムを追加してください。
 
 ```diff
-   // フェードアウト用の黒い平面
+   // フェードアウト用の前景
    GetForegroundDrawList()->AddRectFilled(screenMin, screenMax,
      ImColor(0.0f, 0.0f, 0.0f, fadeAlpha));
  }
