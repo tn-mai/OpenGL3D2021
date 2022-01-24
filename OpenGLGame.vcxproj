@@ -259,6 +259,7 @@
     <Image Include="Res\Sprite\smoke.tga" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="Res\ending.txt" />
     <Text Include="Res\Ground.obj">
       <FileType>Document</FileType>
     </Text>

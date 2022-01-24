@@ -22,6 +22,8 @@
 #include <memory>
 #include <algorithm>
 #include <unordered_map>
+#undef APIENTRY
+#include <Windows.h>
 #pragma comment(lib, "opengl32.lib")
 
 /// 座標データ:四角形
@@ -279,6 +281,14 @@ const GLuint imageRoad[8 * 8] = {
 */
 int main()
 {
+  // VSデバッガから起動した場合、デバッガがコンソールを握っているため
+  // FreeConsole()を実行してもコンソールが消えない点に注意
+  // (デバッグなしで開始した場合も同様)
+  // exeを直接起動した場合はちゃんと消える
+#ifdef NDEBUG
+  FreeConsole();
+#endif
+
   GameEngine::Initialize();
   GameEngine& engine = GameEngine::Get();
 

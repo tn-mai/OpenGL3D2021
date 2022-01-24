@@ -23,8 +23,13 @@ public:
   virtual void OnUpdate(float deltaTime);
   virtual void OnCollision(const struct Contact& contact);
 
+  // ユーザー操作可能フラグの設定
+  void SetControlFlag(bool flag) { isControlable = flag; }
+  bool GetControlFlag() const { return isControlable; }
+
 private:
-  int oldShotButton = 0;               // 前回のショットボタンの状態
+  int oldShotButton = 0;     // 前回のショットボタンの状態
+  bool isControlable = true; // ユーザー操作可能フラグ
 
   // 21で実装. 21bは未実装.
   float rotTurret = 0;              // 砲塔の回転角度

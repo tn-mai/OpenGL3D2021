@@ -348,5 +348,8 @@
     <Text Include="Res\Plane.obj">
       <Filter>リソース ファイル</Filter>
     </Text>
+    <Text Include="Res\ending.txt">
+      <Filter>リソース ファイル</Filter>
+    </Text>
   </ItemGroup>
 </Project>

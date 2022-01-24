@@ -55,7 +55,18 @@ void PlayerActor::OnUpdate(float deltaTime)
 {
   GameEngine& engine = GameEngine::Get();
 
-  // ターレット(と砲身)をマウスカーソルの方向に向ける
+  // ユーザー操作を受け付けないときは何もしない
+  if (!isControlable) {
+    oldShotButton = 0;
+#ifdef USE_EASY_AUDIO
+    Audio::Stop(1);
+#else
+    Audio::Get().Stop(2);
+#endif
+    return;
+  }
+
+    // ターレット(と砲身)をマウスカーソルの方向に向ける
   MeshRenderer& meshRenderer = static_cast<MeshRenderer&>(*renderer);
   MeshPtr mesh = meshRenderer.GetMesh();
   if (mesh) {
@@ -112,24 +123,24 @@ void PlayerActor::OnUpdate(float deltaTime)
   if (isOnActor) {
     float speed2 = glm::dot(velocity, velocity);
     //if (speed2 < 10.0f * 10.0f) {
-      float tankAccel = 0.2f; // 戦車の加速度
-      if (engine.GetKey(GLFW_KEY_W)) {
-        velocity += tankFront * tankAccel;
-        playTankTruck = true;
-      } else if (engine.GetKey(GLFW_KEY_S)) {
-        velocity -= tankFront * tankAccel;
-        playTankTruck = true;
-      } else {
-        float v = glm::dot(tankFront, velocity);
-        velocity -= tankFront * glm::clamp(v, -0.1f, 0.1f);
-      }
-      //glm::vec3 tankRight = glm::normalize(glm::cross(tankFront, glm::vec3(0, 1, 0)));
-      //float rightSpeed = glm::dot(tankRight, velocity);
-      //velocity -= tankRight * glm::clamp(rightSpeed, -0.2f, 0.2f);
-    //}
-      if (engine.GetKey(GLFW_KEY_SPACE)) {
-        velocity.y = 12;
-      }
+    float tankAccel = 0.2f; // 戦車の加速度
+    if (engine.GetKey(GLFW_KEY_W)) {
+      velocity += tankFront * tankAccel;
+      playTankTruck = true;
+    } else if (engine.GetKey(GLFW_KEY_S)) {
+      velocity -= tankFront * tankAccel;
+      playTankTruck = true;
+    } else {
+      float v = glm::dot(tankFront, velocity);
+      velocity -= tankFront * glm::clamp(v, -0.1f, 0.1f);
+    }
+    //glm::vec3 tankRight = glm::normalize(glm::cross(tankFront, glm::vec3(0, 1, 0)));
+    //float rightSpeed = glm::dot(tankRight, velocity);
+    //velocity -= tankRight * glm::clamp(rightSpeed, -0.2f, 0.2f);
+  //}
+    if (engine.GetKey(GLFW_KEY_SPACE)) {
+      velocity.y = 12;
+    }
   }
 
 #ifdef USE_EASY_AUDIO
@@ -207,7 +218,10 @@ void PlayerActor::OnUpdate(float deltaTime)
 void PlayerActor::OnCollision(const struct Contact& contact)
 {
   if (contact.b->name == "EnemyBullet") {
-    --health;
+    // ユーザー操作を受け付けないときはダメージを受けない
+    if (isControlable) {
+      --health;
+    }
     if (health <= 0) {
 #ifdef USE_EASY_AUDIO
       Audio::PlayOneShot(SE_EXPLOSION);

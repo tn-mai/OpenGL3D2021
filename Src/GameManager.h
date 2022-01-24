@@ -23,6 +23,7 @@ public:
     playing,   // ゲームプレイ中
     gameclear, // ゲームクリア
     gameover,  // ゲームオーバー
+    ending,    // エンディング画面
   };
   void SetState(State s);
 
@@ -63,6 +64,11 @@ private:
   void UpdateTitleUI();
   // ここまで(19bで実装. 19は未実装)
 
+  // エンディング用メンバ関数
+  void InitializeEnding();
+  void UpdateEnding(float deltaTime);
+  void UpdateEndingUI();
+
   State state = State::title; // 現在の動作状態
   std::shared_ptr<Actor> playerTank;
   std::vector<std::shared_ptr<Actor>> enemies;
@@ -98,6 +104,16 @@ private:
   bool startHovered = false;
   bool exitHovered = false;
   // ここまで(19bで実装. 19は未実装)
+
+  // エンディング用データ
+  struct EndingText {
+    uint32_t color; // 色
+    std::string text; // 文章(1行分)
+  };
+  std::vector<EndingText> endingText;
+  bool isScrollFinished = false; // false=スクロール中 true=停止
+  float endingPosY = 0.0f; // スクロール量
+  float fontSize = 1.0f;   // エンディングの文字サイズ
 };
 
 #endif // GAMEMANAGER_H_INCLUDED

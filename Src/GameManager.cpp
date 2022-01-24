@@ -20,6 +20,7 @@
 #include <imgui.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <fstream>
 
 namespace {
 
@@ -27,7 +28,7 @@ GameManager* manager = nullptr;
 
 const char* const mapFiles[] = {
   "mapdata00.txt",
-  "mapdata01.txt",
+//  "mapdata01.txt",
 };
 
 /// マップデータ.
@@ -112,7 +113,9 @@ void GameManager::SetState(State s)
     "start",
     "playing",
     "gameclear",
-    "gameover" };
+    "gameover",
+    "ending",
+  };
   std::cout << names[static_cast<int>(state)] <<
     "->" << names[static_cast<int>(s)] << "\n";
 
@@ -145,6 +148,9 @@ void GameManager::Update(float deltaTime)
 
     // プレイヤーが操作するアクターを取得する
     playerTank = engine.FindActor("Tiger-I");
+    if (playerTank) {
+      static_cast<PlayerActor&>(*playerTank).SetControlFlag(true);
+    }
 
     // 人間アクターを配置
     engine.AddActor(std::make_shared<HumanActor>(
@@ -219,21 +225,27 @@ void GameManager::Update(float deltaTime)
         }
       }
       if (allKill) {
-        std::shared_ptr<Actor> gameclear(new Actor{ "GameClear",
-          engine.GetPrimitive("Res/Plane.obj"),
-          engine.LoadTexture("Res/GameClear.tga"),
-          glm::vec3(0), glm::vec3(700, 200, 1), 0.0f, glm::vec3(0) });
-        gameclear->isStatic = true;
-        gameclear->layer = Layer::UI;
-        engine.AddActor(gameclear);
+        // 最終ステージをクリアしたらエンディングへ
+        if (stageNo + 1 >= std::size(mapFiles)) {
+          InitializeEnding();
+        } else {
+          // ステージクリア画像を表示
+          std::shared_ptr<Actor> gameclear(new Actor{ "GameClear",
+            engine.GetPrimitive("Res/Plane.obj"),
+            engine.LoadTexture("Res/GameClear.tga"),
+            glm::vec3(0), glm::vec3(700, 200, 1), 0.0f, glm::vec3(0) });
+          gameclear->isStatic = true;
+          gameclear->layer = Layer::UI;
+          engine.AddActor(gameclear);
 
 #ifdef USE_EASY_AUDIO
-        Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_GAMECLEAR);
+          Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_GAMECLEAR);
 #else
-        Audio::Get().Play(0, CRI_BGM_GAMECLEAR);
+          Audio::Get().Play(0, CRI_BGM_GAMECLEAR);
 #endif // USE_EASY_AUDIO
-        SetState(State::gameclear);
-      }
+          SetState(State::gameclear);
+        }
+      } // allKill
     }
     break;
 
@@ -267,6 +279,10 @@ void GameManager::Update(float deltaTime)
       SetState(State::title);
     }
     break;
+
+  case State::ending:
+    UpdateEnding(deltaTime);
+    break;
   }
 }
 
@@ -299,6 +315,7 @@ void GameManager::UpdateUI()
 {
   switch (state) {
   case State::title: UpdateTitleUI(); break;
+  case State::ending: UpdateEndingUI(); break;
   default:           UpdateGameUI(); break;
   }
 }
@@ -660,9 +677,178 @@ void GameManager::UpdateTitleUI()
     End();
   }
 
-  // フェードアウト用の黒い平面
+  // フェードアウト用の前景
   GetForegroundDrawList()->AddRectFilled(screenMin, screenMax,
     ImColor(0.0f, 0.0f, 0.0f, fadeAlpha));
+}
+
+/**
+* エンディングを初期化する
+*/
+void GameManager::InitializeEnding()
+{
+  endingText.clear();
+
+  // エンディング用テキストを読み込む
+  std::ifstream ifs("Res/ending.txt");
+  if (ifs) {
+    while (!ifs.eof()) {
+      std::string line;
+      std::getline(ifs, line);
+      uint32_t color = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
+      // 先頭に@があったら文字色を変える
+      if (line.size() > 0 && line[0] == '@') {
+        color = ImColor(0.7f, 0.8f, 1.0f, 1.0f);
+        line.erase(line.begin()); // @を除去
+      }
+      endingText.push_back(EndingText{ color, line });
+    }
+  } else {
+    // 読み込みに失敗したのでエラーメッセージを設定
+    const uint32_t color = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
+    endingText.push_back(EndingText{ color, u8"ending.txtを開けませんでした" });
+    endingText.push_back(EndingText{ color, u8"ファイル名を確認してください" });
+  }
+
+  // フォントサイズを設定
+  const float defaultFontPixels = 13.0f; // ImGui標準のフォントサイズ(ピクセル)
+  fontSize = defaultFontPixels * 4.0f;   // 適当なサイズを設定
+
+  // 画面下をスクロール開始位置に設定
+  GameEngine& engine = GameEngine::Get();
+  const glm::vec2 windowSize = engine.GetWindowSize();
+  endingPosY = windowSize.y;
+
+  isScrollFinished = false; // スクロール開始
+  fadeAlpha = 0; // フェードアウト無効
+
+  // プレイヤーを操作不能にする
+  if (playerTank) {
+    static_cast<PlayerActor&>(*playerTank).SetControlFlag(false);
+  }
+
+  // TODO: ここでBGMを設定
+#ifdef USE_EASY_AUDIO
+  //Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_ENDING);
+#endif // USE_EASY_AUDIO
+
+  // ゲーム状態を「エンディング」にする
+  SetState(State::ending);
+}
+
+/**
+* エンディングの状態を更新する
+*/
+void GameManager::UpdateEnding(float deltaTime)
+{
+  GameEngine& engine = GameEngine::Get();
+
+  // スクロール処理
+  if (!isScrollFinished) {
+    const float speed = 8.0f; // スクロール速度(秒毎スクリーン)
+    const glm::vec2 windowSize = engine.GetWindowSize();
+    endingPosY -= (windowSize.y / speed) * deltaTime;
+
+    // 最後の行の位置が、画面中央に到達したらスクロールを止める
+    const float lastY = endingPosY + endingText.size() * fontSize;
+    if (lastY <= windowSize.y * 0.5f) {
+      isScrollFinished = true; // スクロール停止
+    }
+  }
+
+  // フェードアウトが開始されていなければ、キー入力を受け付ける
+  if (fadeAlpha <= 0) {
+    if (engine.GetKey(GLFW_KEY_ENTER)) {
+      fadeAlpha += deltaTime;
+    }
+  } else {
+    // フェードアウトが完了したらタイトル画面に戻る
+    fadeAlpha += deltaTime;
+    if (fadeAlpha >= 1) {
+      engine.ClearAllActors();
+      endingText.clear();
+
+      // タイトル画面に戻る
+      SetState(State::title);
+    }
+  }
+}
+
+/**
+* エンディング画面UIの更新
+*/
+void GameManager::UpdateEndingUI()
+{
+  using namespace ImGui;
+
+  GameEngine& engine = GameEngine::Get();
+  const glm::vec2 windowSize = engine.GetWindowSize();
+
+  // 背景を徐々に消していく
+  const float alpha = 1.0f - glm::max(endingPosY / windowSize.y, 0.0f);
+  GetBackgroundDrawList()->AddRectFilled(ImVec2(0, 0),
+    ImVec2(windowSize.x, windowSize.y), ImColor(0.0f, 0.0f, 0.0f, alpha));
+
+  // テキストを表示
+  ImFont* font = GetFont();
+  ImDrawList* drawList = GetForegroundDrawList();
+  ImVec2 pos(0, endingPosY);
+  ImVec2 posShadow(0, endingPosY + fontSize * 0.05f);
+  const ImU32 colorShadow = ImColor(0.3f, 0.3f, 0.3f, 0.8f);
+  for (const auto& e : endingText) {
+    // テキストが1文字以上ある場合だけ描画する
+    if (e.text.size() >= 1) {
+      // 表示位置が画面の上端より下、下端より上の場合だけ描画する
+      if (pos.y >= -fontSize && pos.y <= windowSize.y) {
+        const char* textBegin = e.text.data();
+        const char* textEnd = textBegin + e.text.size();
+        // テキストを中央寄せで表示
+        const ImVec2 textSize = font->CalcTextSizeA(
+          fontSize, FLT_MAX, -1.0f, textBegin, textEnd);
+        pos.x = (windowSize.x - textSize.x) * 0.5f;
+        posShadow.x = pos.x + fontSize * 0.05f;
+        drawList->AddText(font, fontSize, posShadow,
+          colorShadow, textBegin, textEnd);
+        drawList->AddText(font, fontSize, pos,
+          e.color, textBegin, textEnd);
+      }
+    }
+    // 次の表示位置を設定
+    pos.y += fontSize;
+    posShadow.y += fontSize;
+  }
+
+  // タイトルに戻るボタンを表示
+  if (isScrollFinished && fadeAlpha <= 0) {
+    Begin("button", nullptr,
+      ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration);
+
+    // ボタンのスタイルを設定
+    PushStyleVar(ImGuiStyleVar_FrameRounding, 12);
+    PushStyleVar(ImGuiStyleVar_FrameBorderSize, 4);
+    ImDrawList* drawList = GetWindowDrawList();
+    SetWindowFontScale(3.0f);
+    
+    // ボタンを右下端に表示
+    const char text[] = u8" タイトルに戻る ";
+    const ImVec2 textSize = CalcTextSize(text);
+    const ImVec2 buttonSize(textSize.x + 32, textSize.y + 24);
+    SetWindowPos(ImVec2(
+      windowSize.x * 0.95f - buttonSize.x,
+      windowSize.y * 0.95f - buttonSize.y));
+    if (Button(text, buttonSize)) {
+      fadeAlpha = 0.0001f; // ボタンが押されたらフェードアウト開始
+    }
+
+    PopStyleVar(2); // スタイルを元に戻す
+    End();
+  }
+
+  // フェードアウト
+  if (fadeAlpha > 0) {
+    drawList->AddRectFilled(ImVec2(0, 0),
+      ImVec2(windowSize.x, windowSize.y), ImColor(0.0f, 0.0f, 0.0f, fadeAlpha));
+  }
 }
 
 /**
