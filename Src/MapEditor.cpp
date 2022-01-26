@@ -1431,6 +1431,7 @@ bool MapEditor::Load(const char* filename)
   GameManager& manager = GameManager::Get();
   manager.SetGameFlagCount(tmpGameFlags.size());
   for (int i = 0; i < tmpGameFlags.size(); ++i) {
+    manager.SetGameFlag(i, false);
     manager.SetGameFlagDesc(i, tmpGameFlags[i]);
   }
 
