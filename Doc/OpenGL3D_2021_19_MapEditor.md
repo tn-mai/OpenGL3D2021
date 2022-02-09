@@ -987,7 +987,7 @@ bool IsItemHovered();
      }
 +
 +    // BGMを再生
-+    Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_MAINGAME, 1.0f, true);
++    Audio::Play(AUDIO_PLAYER_ID_BGM, BGM_NORMAL_BATTLE, 1.0f, true);
 
      state = State::playing;
      std::cout << __func__ << ": start -> playing\n";
