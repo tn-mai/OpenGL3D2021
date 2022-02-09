@@ -827,7 +827,7 @@
 ```diff
  for (auto& e : engine.GetNewActors()) {
    if (e->name == "T-34") {
-     T34TankActor& enemy = static_cast<T34TankActor&>(*e);
++    T34TankActor& enemy = static_cast<T34TankActor&>(*e);
 +    enemy.SetTarget(palyerTank); // 攻撃対象を設定
      enemies.push_back(e);
    }
