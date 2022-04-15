@@ -1184,7 +1184,7 @@ void glDrawElementsInstancedBaseVertex(プリミティブの種類,<br>
 それでは、アクターを使わないでインスタンシングをしてみます。インスタンシングに向いた題材として「草を生やす」ことにします。
 
 <pre class="tnmai_assignment">
-<strong>【課題02】</strong>
+<strong>【課題01】</strong>
 ブラウザで<code>https://github.com/tn-mai/OpenGL3D2021/tree/master/Res</code>を開き、以下の3つのファイルをダウンロードして、プロジェクトの<code>Res</code>フォルダにコピーしなさい。
 grass.obj
 grass.mtl
@@ -1283,9 +1283,64 @@ grass.tga
 <img src="images/Tips_02_result_1.png" width="45%" />
 </p>
 
+<pre class="tnmai_assignment">
+<strong>【課題02】</strong>
+インスタンスごとに草丈が異なるように、モデル行列にランダムなサイズの拡大縮小行列を乗算しなさい。
+あるいは、地面マップを参照して、地面の種類によって草の長さを変えたり、道路には草を生やさないようにしてもいいでしょう。
+</pre>
+
+### 3.7 SSBOに構造体を指定する
+
+`SSBO`には構造体の配列を指定することもできます。`InstancedMesh.vert`を開き、`InstancedDataBuffer`の定義を次のように変更してください。
+
+```diff
+ layout(location=10) uniform vec4 materialColor[10];
+ layout(location=20) uniform uint materialTextureNo[10];
++
++// インスタンスのデータ
++struct InstanceData
++{
++  mat4 matModel; // モデル行列
++  vec4 color;    // 色
++};
+
+ // SSBO
+ layout(std430, binding=0) buffer InstanceDataBuffer
+ {
+-  mat4 matInstance[]; // インスタンスのモデル行列(可変長配列)
++  InstanceData instances[]; // インスタンスデータ(可変長配列)
+ };
+
+ // 頂点シェーダプログラム
+ void main()
+```
+
+それでは、以下の課題を完了させて、インスタンスごとに色を指定できるプログラムを完成させてください。
+
+<pre class="tnmai_assignment">
+<strong>【課題03】</strong>
+シェーダ内の<code>matInsntace</code>を<code>instances</code>を使うように変更しなさい。
+</pre>
+
+<pre class="tnmai_assignment">
+<strong>【課題04】</strong>
+<code>outColor</code>に<code>instanced[gl_InstanceID].color</code>を乗算しなさい。
+</pre>
+
+<pre class="tnmai_assignment">
+<strong>【課題05】</strong>
+<code>InstancedMeshRenderer</code>を<code>InstanceData</code>構造体を使うように変更しなさい。
+</pre>
+
+<pre class="tnmai_assignment">
+<strong>【課題06】</strong>
+乱数などを利用して、草インスタンスごとに微妙に色が違うようにしなさい。
+</pre>
+
 >**【3章のまとめ】**
 >
 >* インスタンシングを行う場合、インスタンスの座標や色を管理するデータは別に持っておくとよい。本テキストではアクタークラスを使っている。
 >* シェーダを切り替えると、GPUはシェーダ用のパラメータを初期化する。初期化時間を減らすには、シェーダを切り替える回数を減らす。
 >* シェーダごとにメッシュ(アクター)をまとめて描画すると、上記のパラメータ初期化時間を最小化できる。
 >* 描画の目的によって、効率のよい描画順序が異なる。
+>* `SSBO`には構造体を指定できる。
