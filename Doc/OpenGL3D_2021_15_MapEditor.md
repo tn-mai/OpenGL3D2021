@@ -953,7 +953,7 @@ vec4 texelFetch(サンプラ, 読み取り位置, 読み取るミップマップ
 次にメンバ変数を初期化します。`MapEditor.cpp`を開き、コンストラクタに次のプログラムを追加してください。
 
 ```diff
-   groundActor->shader = Shader::Ground;
+   groundActor->shader = Shader::GroundMap;
    engine.AddActor(groundActor);
 +
 +  // マップデータテクスチャ操作用の変数を初期化
