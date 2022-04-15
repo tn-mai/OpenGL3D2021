@@ -1,4 +1,4 @@
-[OpenGL 3D 2021 Tips 第01回]
+[OpenGL 3D 2022 Tips 第01回]
 
 # 制作スケジュールを立てよう
 

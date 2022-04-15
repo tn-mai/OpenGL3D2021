@@ -1,4 +1,4 @@
-[OpenGL 3D 2021 Tips 第05回]
+[OpenGL 3D 2022 Tips 第02回]
 
 # インスタンシング
 
