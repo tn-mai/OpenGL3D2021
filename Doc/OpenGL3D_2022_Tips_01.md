@@ -10,7 +10,7 @@
 
 スケジュールを立てるために、今回は「Microsoft Excel」や「Googleスプレッドシート」のような表計算ソフトを使います。以下のURLから`(クラス_氏名_作品名)のスケジュール.xlsx`という名前のスプレッドシートをダウンロードしてください。
 
->`https://github.com/tn-mai/OpenGL3D2021_Tips`
+>`https://github.com/tn-mai/OpenGL3D2021/tree/master/Doc`
 
 ダウンロードしたら、ファイル名の「クラス」、「氏名」、「作品名」の部分を、みなさんの名前で置き換えてください。
 
