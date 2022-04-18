@@ -6,7 +6,7 @@
 #include "../Actor.h"
 
 /**
-* エレベーター
+* 弾丸
 */
 class BulletActor : public Actor
 {
