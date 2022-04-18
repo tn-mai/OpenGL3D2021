@@ -164,6 +164,17 @@ void Primitive::Draw() const
 }
 
 /**
+* インスタンシングありでプリミティブを描画する
+*
+* @param instanceCount 描画するインスタンス数
+*/
+void Primitive::DrawInstanced(size_t instanceCount) const
+{
+  glDrawElementsInstancedBaseVertex(mode, count, GL_UNSIGNED_SHORT, indices,
+    static_cast<GLsizei>(instanceCount), baseVertex);
+}
+
+/**
 * プリミティブ用のメモリを確保する.
 *
 * @param maxVertexCount  格納可能な最大頂点数.

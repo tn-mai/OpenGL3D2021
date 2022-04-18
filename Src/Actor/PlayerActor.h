@@ -35,6 +35,8 @@ private:
   float rotTurret = 0;              // 砲塔の回転角度
   static const int gunGroup    = 0; // 砲身のグループ番号
   static const int turretGroup = 1; // 砲塔のグループ番号
+
+  InstancedMeshRendererPtr bulletRenderer;
 };
 
 #endif // PLAYERACTOR_H_INCLUDED

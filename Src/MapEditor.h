@@ -25,7 +25,7 @@ public:
   void UpdateCamera(float deltaTime);
   void UpdateUI();
   void Save(const char* filename);
-  bool Load(const char* filename);
+  bool Load(const char* filename, bool instancing = false);
   std::shared_ptr<Actor> GetActor(const char* name, int* no = nullptr) const;
 
 private:

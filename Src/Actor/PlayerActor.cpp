@@ -55,6 +55,20 @@ void PlayerActor::OnUpdate(float deltaTime)
 {
   GameEngine& engine = GameEngine::Get();
 
+  // 弾のインスタンシング用レンダラを作成
+  if (!bulletRenderer) {
+    bulletRenderer = std::make_shared<InstancedMeshRenderer>(100);
+    bulletRenderer->SetMesh(engine.LoadMesh("Res/Bullet.obj"));
+    bulletRenderer->SetMaterial(0, { "bullet", glm::vec4(1), engine.LoadTexture("Res/Bullet.tga") });
+    std::shared_ptr<Actor> p = std::make_shared<Actor>("BulletInstancedActor");
+    p->renderer = bulletRenderer;
+    p->shader = Shader::InstancedMesh;
+    engine.AddActor(p);
+  }
+
+  // インスタンスのモデル行列を更新
+  bulletRenderer->UpdateInstanceTransforms();
+
   // ユーザー操作を受け付けないときは何もしない
   if (!isControlable) {
     oldShotButton = 0;
@@ -178,11 +192,9 @@ void PlayerActor::OnUpdate(float deltaTime)
     glm::vec3 position = this->position + direction * 6.0f;
     position.y += 2.0f;
 
-    std::shared_ptr<Actor> bullet(new Actor{
-      "Bullet",
-      engine.GetPrimitive("Res/Bullet.obj"),
-      engine.LoadTexture("Res/Bullet.tga"),
-      position, glm::vec3(0.25f), rotation, glm::vec3(0) });
+    std::shared_ptr<Actor> bullet = std::make_shared<Actor>(
+      "Bullet", false,
+      position, glm::vec3(0.25f), rotation, glm::vec3(0));
 
     // 1.5秒後に弾を消す
     bullet->lifespan = 1.5f;
@@ -197,6 +209,7 @@ void PlayerActor::OnUpdate(float deltaTime)
     bullet->mass = 6.8f;
     bullet->friction = 1.0f;
 
+    bulletRenderer->AddInstance(bullet);
     engine.AddActor(bullet);
 
 #ifdef USE_EASY_AUDIO

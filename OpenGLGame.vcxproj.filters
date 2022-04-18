@@ -147,6 +147,9 @@
     <ClCompile Include="Src\Actor\HumanActor.cpp">
       <Filter>ソース ファイル\Actor</Filter>
     </ClCompile>
+    <ClCompile Include="Src\ShaderStorageBuffer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -172,6 +175,9 @@
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="Res\DepthOfField.vert">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\InstancedMesh.vert">
       <Filter>リソース ファイル</Filter>
     </None>
   </ItemGroup>
@@ -307,6 +313,9 @@
     </ClInclude>
     <ClInclude Include="Src\Actor\HumanActor.h">
       <Filter>ソース ファイル\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\ShaderStorageBuffer.h">
+      <Filter>ソース ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

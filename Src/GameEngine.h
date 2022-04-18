@@ -108,6 +108,14 @@ public:
   }
 
   /**
+  * 地面マップのサイズを返す
+  */
+  glm::ivec2 GetMapSize() const
+  {
+    return mapSize;
+  }
+
+  /**
   * フロントバッファとバックバッファを交換する
   */
   void SwapBuffers() const
@@ -182,6 +190,7 @@ private:
   std::shared_ptr<ProgramPipeline> pipeline;
   std::shared_ptr<ProgramPipeline> pipelineUI;
   std::shared_ptr<ProgramPipeline> pipelineDoF;
+  std::shared_ptr<ProgramPipeline> pipelineInstancedMesh;
   std::shared_ptr<Sampler> sampler;
   std::shared_ptr<Sampler> samplerUI;
   std::shared_ptr<Sampler> samplerDoF;

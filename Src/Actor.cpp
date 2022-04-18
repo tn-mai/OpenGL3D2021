@@ -51,6 +51,27 @@ Actor::Actor(
 }
 
 /**
+* コンストラクタ
+*
+* プリミティブもメッシュもないアクターを作成する
+*/
+Actor::Actor(
+  const std::string& name,
+  bool isStatic,
+  const glm::vec3& position,
+  const glm::vec3& scale,
+  float rotation,
+  const glm::vec3& adjustment) :
+  name(name),
+  position(position),
+  scale(scale),
+  rotation(rotation),
+  adjustment(adjustment),
+  isStatic(isStatic)
+{
+}
+
+/**
 * アクターの状態を更新する
 *
 * @param deltaTime 前回の更新からの経過時間(秒)
@@ -77,6 +98,18 @@ void Actor::SetAnimation(AnimationPtr a)
 { 
   animation = a;
   a->SetActor(this);
+}
+
+/**
+* モデル行列を取得する
+*/
+glm::mat4 Actor::GetModelMatrix() const
+{
+  glm::mat4 matT = glm::translate(glm::mat4(1), position);
+  glm::mat4 matR = glm::rotate(glm::mat4(1), rotation, glm::vec3(0, 1, 0));
+  glm::mat4 matS = glm::scale(glm::mat4(1), scale);
+  glm::mat4 matA = glm::translate(glm::mat4(1), adjustment);
+  return matT * matR * matS * matA;
 }
 
 /**

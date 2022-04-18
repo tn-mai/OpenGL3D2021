@@ -46,8 +46,10 @@ static const size_t layerCount = 3; // レイヤー数
 enum class Shader
 {
   FragmentLighting,
-  Ground,
+  InstancedMesh,
+  GroundMap,
 };
+static size_t shaderCount = 3; // シェーダの種類数
 
 /**
 * 衝突判定の種類
@@ -106,6 +108,14 @@ public:
     float rotation,
     const glm::vec3& adjustment);
 
+  Actor(
+    const std::string& name,
+    bool isStatic = true,
+    const glm::vec3& position = glm::vec3(0),
+    const glm::vec3& scale = glm::vec3(1),
+    float rotation = 0,
+    const glm::vec3& adjustment = glm::vec3(0));
+
   virtual ~Actor() = default;
   virtual std::shared_ptr<Actor> Clone() const {
     std::shared_ptr<Actor> clone(new Actor(*this));
@@ -121,6 +131,7 @@ public:
   virtual void OnCollision(const struct Contact& contact);
   virtual void OnTrigger(std::shared_ptr<Actor> other) {}
   void SetAnimation(AnimationPtr a);
+  glm::mat4 GetModelMatrix() const;
 
   std::string name;                // アクターの名前
   RendererPtr renderer;            // 描画オブジェクト
@@ -150,6 +161,11 @@ public:
 
   Layer layer = Layer::Default;    // 表示レイヤー
   Shader shader = Shader::FragmentLighting;
+
+  // [マップエディタ専用] インスタンスグループの管理
+  static const int noInstanceGroup = -1; // グループなし
+  static const int maxInstanceGroup = 15;// 最大グループ番号
+  int instanceGroup = noInstanceGroup;
 
   // アニメーションを設定するときはSetAnimationを使うこと
   AnimationPtr animation;          // アニメーション

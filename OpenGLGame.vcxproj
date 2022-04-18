@@ -191,6 +191,7 @@
     <ClCompile Include="Src\ProgramPipeline.cpp" />
     <ClCompile Include="Src\Renderer.cpp" />
     <ClCompile Include="Src\Sampler.cpp" />
+    <ClCompile Include="Src\ShaderStorageBuffer.cpp" />
     <ClCompile Include="Src\Sprite.cpp" />
     <ClCompile Include="Src\Texture.cpp" />
   </ItemGroup>
@@ -201,6 +202,7 @@
     <None Include="Res\FragmentLighting.frag" />
     <None Include="Res\FragmentLighting.vert" />
     <None Include="Res\GroundShader.frag" />
+    <None Include="Res\InstancedMesh.vert" />
     <None Include="Res\Simple.frag" />
     <None Include="Res\Simple.vert" />
     <None Include="Res\VertexLighting.vert" />
@@ -248,6 +250,7 @@
     <ClInclude Include="Src\ProgramPipeline.h" />
     <ClInclude Include="Src\Renderer.h" />
     <ClInclude Include="Src\Sampler.h" />
+    <ClInclude Include="Src\ShaderStorageBuffer.h" />
     <ClInclude Include="Src\Sprite.h" />
     <ClInclude Include="Src\Texture.h" />
   </ItemGroup>

@@ -192,3 +192,119 @@ std::vector<glm::mat4> MeshRenderer::CalcGroupMatirices() const
   return m;
 }
 
+/**
+* コンストラクタ
+*/
+InstancedMeshRenderer::InstancedMeshRenderer(size_t instanceCount)
+{
+  instances.reserve(instanceCount);
+  ssbo = std::make_shared<ShaderStorageBuffer>(instanceCount * sizeof(InstanceData));
+}
+
+/**
+* クローンを作成する
+*/
+RendererPtr InstancedMeshRenderer::Clone() const
+{
+  auto clone = std::make_shared<InstancedMeshRenderer>(*this);
+  clone->ssbo = std::make_shared<ShaderStorageBuffer>(ssbo->GetSize());
+  return clone;
+}
+
+/**
+* メッシュを描画する
+*/
+void InstancedMeshRenderer::Draw(const Actor& actor,
+  const ProgramPipeline& pipeline,
+  const glm::mat4& matVP)
+{
+  if (!mesh) {
+    return;
+  }
+  if (latestInstanceSize <= 0) {
+    return;
+  }
+
+  // GPUメモリに送るためのマテリアルデータを更新
+  if (materialChanged) {
+    materialChanged = false;
+    colors.resize(materials.size());
+    for (int i = 0; i < materials.size(); ++i) {
+      colors[i] = materials[i].color;
+    }
+    textures = GetTextureList(materials);
+    textureIndices = GetTextureIndexList(materials, textures);
+  }
+
+  // モデル行列をGPUメモリにコピーする
+  pipeline.SetUniform(locMatModel, actor.GetModelMatrix());
+  if (actor.layer == Layer::Default) {
+    // マテリアルデータを設定
+    pipeline.SetUniform(locMaterialColor, colors.data(), colors.size());
+    pipeline.SetUniform(locMaterialTexture,
+      textureIndices.data(), textureIndices.size());
+  }
+
+  ssbo->Bind(0);
+
+  // TODO: テキスト未追加
+  const GLint locColor = 200;
+  pipeline.SetUniform(locColor, actor.color);
+
+  const GLuint bindingPoints[] = { 0, 2, 3, 4, 5, 6, 7, 8 };
+  const size_t size = std::min(textures.size(), std::size(bindingPoints));
+  for (int i = 0; i < size; ++i) {
+    textures[i]->Bind(bindingPoints[i]);
+  }
+  mesh->primitive.DrawInstanced(latestInstanceSize);
+
+  ssbo->FenceSync();
+  ssbo->Unbind(0);
+}
+
+/**
+* インスタンスのモデル行列を更新する
+*/
+void InstancedMeshRenderer::UpdateInstanceTransforms()
+{
+  // 死んでいるインスタンスを削除する
+  const auto i = std::remove_if(instances.begin(), instances.end(),
+    [](const ActorPtr& e) { return e->isDead; });
+  instances.erase(i, instances.end());
+
+  // インスタンス数を計算
+  latestInstanceSize = std::min(
+    ssbo->GetSize() / sizeof(glm::mat4), instances.size());
+  if (latestInstanceSize <= 0) {
+    return;
+  }
+
+  // モデル行列を計算
+  std::vector<InstanceData> transforms(latestInstanceSize);
+  for (size_t i = 0; i < latestInstanceSize; ++i) {
+    transforms[i].matModel = instances[i]->GetModelMatrix();
+    transforms[i].color = instances[i]->color;
+  }
+
+  // モデル行列をGPUメモリにコピー
+  ssbo->BufferSubData(0, latestInstanceSize * sizeof(InstanceData), transforms.data());
+  ssbo->SwapBuffers();
+}
+
+/**
+* インスタンスのモデル行列を更新する
+*/
+void InstancedMeshRenderer::UpdateInstanceData(size_t size, const InstanceData* data)
+{
+  // インスタンス数を計算
+  latestInstanceSize = std::min(
+    ssbo->GetSize() / sizeof(InstanceData), size);
+  if (latestInstanceSize <= 0) {
+    return;
+  }
+
+  // モデル行列をGPUメモリにコピー
+  ssbo->BufferSubData(0, latestInstanceSize * sizeof(InstanceData), data);
+  ssbo->SwapBuffers();
+}
+

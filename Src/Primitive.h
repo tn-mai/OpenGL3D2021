@@ -24,6 +24,7 @@ public:
   ~Primitive() = default;
 
   void Draw() const;
+  void DrawInstanced(size_t instanceCount) const;
   const std::string& GetName() const { return name; }
 
 private:

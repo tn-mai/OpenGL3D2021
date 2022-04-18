@@ -76,7 +76,7 @@ void MapEditor::InitGroundActor()
     engine.GetPrimitive("Res/Ground.obj"),
     engine.LoadTexture("GroundTiles", texList, std::size(texList)),
     glm::vec3(0), glm::vec3(mapSize.x, 1, mapSize.y), 0, glm::vec3(0)));
-  groundActor->shader = Shader::Ground;
+  groundActor->shader = Shader::GroundMap;
   groundActor->isStatic = true;
   const glm::vec2 colliderSize = glm::vec2(mapSize) * gridSize * 0.5f;
   groundActor->collider = Box::Create(
@@ -471,6 +471,34 @@ void MapEditor::ShowActorInfo(std::shared_ptr<Actor> actor)
   SameLine();
   Checkbox("##randomScale", &randomScaleFlag);
 
+  Text(u8"インスタンスグループ:");
+  SameLine();
+  SetNextItemWidth(GetWindowContentRegionWidth() - 150);
+  if (actor->instanceGroup == Actor::noInstanceGroup) {
+    snprintf(previewTag, 255, "(No instancing)");
+  } else {
+    snprintf(previewTag, 255, "%02d", actor->instanceGroup);
+  }
+  if (BeginCombo("##instanceGroup", previewTag)) {
+    for (int i = Actor::noInstanceGroup; i <= Actor::maxInstanceGroup; ++i) {
+      char label[256];
+      if (i == -1) {
+        snprintf(label, 255, "(No instancing)");
+      } else {
+        snprintf(label, 255, "%02d", i);
+      }
+      const bool isSelected = actor->instanceGroup == i;
+      if (ImGui::Selectable(label, isSelected)) {
+        actor->instanceGroup = i;
+      }
+      if (isSelected) {
+        SetItemDefaultFocus();
+      }
+    }
+    EndCombo();
+  }
+
+
   // フラグアクターのフラグメンバを表示する
   std::function<int()> getFlagNo;
   std::function<void(int)> setFlagNo;
@@ -650,7 +678,7 @@ void MapEditor::Update(float deltaTime)
       if (select) {
         select->color = glm::vec4(1.0f, 0.5f, 0.2f, 0.5f);
         gui.rotation = static_cast<int>(select->rotation / glm::radians(90.0f) + 0.5f);
-        gui.scale = select->scale;
+        gui.scale = select->scale / cursorOriginal->scale;
       }
       break;
 
@@ -911,6 +939,8 @@ void MapEditor::UpdateUI()
       const bool isSelected = cursor == actors[i];
       if (Selectable(actors[i]->name.c_str(), isSelected)) {
         cursorOriginal = actors[i]; // 元になったアクターを記録しておく
+        gui.scale = glm::vec3(1);
+        gui.rotation = static_cast<int>(cursorOriginal->rotation / glm::radians(90.0f) + 0.5f);
         // 型情報を維持するために新しいクローンを作る
         cursor->isDead = true; // 古いクローンは削除する
         cursor = actors[i]->Clone();
@@ -1141,6 +1171,9 @@ void MapEditor::Save(const char* filename)
     snprintf(tmp, std::size(tmp), ", { actorTag: %s }", ActorTagToString(e->tag));
     ofs << tmp;
 
+    snprintf(tmp, std::size(tmp), ", { instancingGroup: %d }", e->instanceGroup);
+    ofs << tmp;
+
     // フラグ番号を書き出す
     FlagIfDied* p0 = dynamic_cast<FlagIfDied*>(e.get());
     if (p0) {
@@ -1205,7 +1238,7 @@ std::shared_ptr<Actor> MapEditor::GetActor(const char* name, int* no) const
 /**
 * マップデータをファイルから読み込む
 */
-bool MapEditor::Load(const char* filename)
+bool MapEditor::Load(const char* filename, bool instancing)
 {
   std::ifstream ifs(filename);
   if (!ifs) {
@@ -1264,6 +1297,7 @@ bool MapEditor::Load(const char* filename)
     float health = -1;
     int flagNo = 0;
     int tag = -1;
+    int instancingGroup = Actor::noInstanceGroup;
     for (;;) {
       char dataName[100];
       char data[100];
@@ -1283,6 +1317,9 @@ bool MapEditor::Load(const char* filename)
       }
       else if (strcmp("actorTag", dataName) == 0) {
         tag = static_cast<int>(StringToActorTag(data));
+      }
+      else if (strcmp("instancingGroup", dataName) == 0) {
+        instancingGroup = std::stoi(data);
       }
     }
 
@@ -1315,6 +1352,7 @@ bool MapEditor::Load(const char* filename)
     if (tag >= 0) {
       newActor->tag = static_cast<ActorTag>(tag);
     }
+    newActor->instanceGroup = instancingGroup;
     newActor->position = position;
     newActor->scale = scale;
     newActor->rotation = rotation;
@@ -1450,9 +1488,65 @@ bool MapEditor::Load(const char* filename)
   // ゲームエンジンのアクターを更新
   engine.ClearAllActors();
   InitGroundActor();
-  for (std::shared_ptr<Actor>& e : map) {
-    if (e) {
-      engine.AddActor(e);
+  if (instancing) {
+    // 有効なインスタンスグループ番号を持つアクターをグループ分けする
+    // インスタンスグループ番号を持たないアクターはそのままエンジンに追加する
+    using ActorPtr = std::shared_ptr<Actor>;
+    std::vector<std::vector<ActorPtr>> instanceGroup(Actor::maxInstanceGroup + 1);
+    for (std::shared_ptr<Actor>& e : map) {
+      if (!e) {
+        continue;
+      }
+      if (e->instanceGroup == Actor::noInstanceGroup) {
+        engine.AddActor(e);
+      } else {
+        instanceGroup[e->instanceGroup].push_back(e);
+      }
+    }
+
+    // インスタンスグループごとに、インスタンス化メッシュアクターを作成する
+    for (auto& group : instanceGroup) {
+      std::unordered_map<std::string, std::vector<ActorPtr>> map;
+      for (const ActorPtr& e : group) {
+        map[e->name].push_back(e);
+      }
+      for (auto e : map) {
+        // インスタンス化メッシュレンダラを作成
+        const ActorPtr& baseActor = e.second[0];
+        InstancedMeshRendererPtr renderer = std::make_shared<InstancedMeshRenderer>(e.second.size());
+
+        // 元になるメッシュレンダラからメッシュとマテリアルをコピー
+        const MeshRenderer& prevRenderer = static_cast<MeshRenderer&>(*baseActor->renderer);
+        renderer->SetMesh(prevRenderer.GetMesh());
+        for (size_t i = 0; i < renderer->GetMaterialCount(); ++i) {
+          renderer->SetMaterial(i, prevRenderer.GetMaterial(i));
+        }
+
+        // インスタンス化メッシュレンダラで描画するアクターをエンジンに登録
+        ActorPtr parent = std::make_shared<Actor>("InstancedMeshParent");
+        parent->renderer = renderer;
+        parent->shader = Shader::InstancedMesh;
+        engine.AddActor(parent);
+
+        // インスタンス化するアクターをエンジンに登録
+        for (size_t i = 0; i < e.second.size(); ++i) {
+          // インスタンス化するアクターはじぶんでは描画しない
+          e.second[i]->renderer = nullptr;
+          // アクターをインスタンス化描画レンダラに設定
+          renderer->AddInstance(e.second[i]);
+          // アクターをエンジンに登録
+          engine.AddActor(e.second[i]);
+        }
+
+        // インスタンスのモデル座標を更新
+        renderer->UpdateInstanceTransforms();
+      }
+    }
+  } else {
+    for (std::shared_ptr<Actor>& e : map) {
+      if (e) {
+        engine.AddActor(e);
+      }
     }
   }
 

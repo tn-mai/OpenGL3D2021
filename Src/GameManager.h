@@ -56,6 +56,7 @@ private:
   void LoadTextures();
   void SpawnPlayer();
   void SpawnEnemies();
+  void SpawnGrass();
   void SpawnMap();
 
   // 19b‚ÅŽÀ‘•. 19‚Í–¢ŽÀ‘•.

@@ -28,7 +28,7 @@ GameManager* manager = nullptr;
 
 const char* const mapFiles[] = {
   "mapdata00.txt",
-//  "mapdata01.txt",
+  "mapdata01.txt",
 };
 
 /// マップデータ.
@@ -144,7 +144,9 @@ void GameManager::Update(float deltaTime)
 
     // マップデータをロードする
     stageNo = std::min(stageNo, std::size(mapFiles) - 1);
-    MapEditor(MapEditor::SystemType::game).Load(mapFiles[stageNo]);
+    MapEditor(MapEditor::SystemType::game).Load(mapFiles[stageNo], true);
+
+    SpawnGrass();
 
     // プレイヤーが操作するアクターを取得する
     playerTank = engine.FindActor("Tiger-I");
@@ -1041,6 +1043,43 @@ void GameManager::SpawnEnemies()
   for (int i = 0; i < enemies.size(); ++i) {
     engine.AddActor(enemies[i]);
   }
+}
+
+/**
+* 草を生やす
+*/
+void GameManager::SpawnGrass()
+{
+  GameEngine& engine = GameEngine::Get();
+  const glm::ivec2 mapSize = engine.GetMapSize();
+
+  // 草のインスタンシング用レンダラを作成
+  InstancedMeshRendererPtr grassRenderer =
+    std::make_shared<InstancedMeshRenderer>(mapSize.x * mapSize.y);
+  grassRenderer->SetMesh(engine.LoadMesh("Res/grass.obj"));
+  grassRenderer->SetMaterial(0,
+    { "grass", glm::vec4(1), engine.LoadTexture("Res/grass.tga") });
+  std::vector<InstancedMeshRenderer::InstanceData> matGrassList(mapSize.x * mapSize.y);
+  for (int y = 0; y < mapSize.y; ++y) {
+    for (int x = 0; x < mapSize.x; ++x) {
+      glm::vec3 pos(x * 4 - mapSize.x * 2 + 2, 0, y * 4 - mapSize.y * 2 + 2);
+      const int i = y * mapSize.x + x;
+      matGrassList[i].matModel = glm::translate(glm::mat4(1), pos);
+      matGrassList[i].color.r = engine.GetRandomFloat(0.666f, 1.0f);
+      matGrassList[i].color.g = engine.GetRandomFloat(0.666f, 1.0f);
+      matGrassList[i].color.b = engine.GetRandomFloat(0.666f, 1.0f);
+      matGrassList[i].color.a = 1;
+
+      matGrassList[y * mapSize.x + x].matModel *= glm::scale(glm::mat4(1),
+        glm::vec3(1, engine.GetRandomFloat(0.5f, 1.2f), 1));
+    }
+  }
+  grassRenderer->UpdateInstanceData(matGrassList.size(), matGrassList.data());
+
+  auto grassActor = std::make_shared<Actor>("grass");
+  grassActor->renderer = grassRenderer;
+  grassActor->shader = Shader::InstancedMesh;
+  engine.AddActor(grassActor);
 }
 
 /**

@@ -217,8 +217,13 @@ bool GameEngine::Initialize()
 
     engine->pipeline.reset(new ProgramPipeline(
       "Res/FragmentLighting.vert", "Res/FragmentLighting.frag"));
-    engine->pipelineUI.reset(new ProgramPipeline("Res/Simple.vert", "Res/Simple.frag"));
-    engine->pipelineDoF.reset(new ProgramPipeline("Res/DepthOfField.vert", "Res/DepthOfField.frag"));
+    engine->pipelineUI.reset(new ProgramPipeline(
+      "Res/Simple.vert", "Res/Simple.frag"));
+    engine->pipelineDoF.reset(new ProgramPipeline(
+      "Res/DepthOfField.vert", "Res/DepthOfField.frag"));
+    engine->pipelineInstancedMesh.reset(new ProgramPipeline(
+      "Res/InstancedMesh.vert", "Res/FragmentLighting.frag"));
+
     engine->sampler = std::shared_ptr<Sampler>(new Sampler(GL_REPEAT));
     engine->samplerUI.reset(new Sampler(GL_CLAMP_TO_EDGE));
     engine->samplerDoF.reset(new Sampler(GL_CLAMP_TO_EDGE));
@@ -567,6 +572,20 @@ void GameEngine::RemoveDeadActors()
 */
 void GameEngine::RenderDefault()
 {
+  // シェーダの切り替えによる描画効率の低下を防ぐため、アクターをシェーダ別に分ける
+  std::vector<std::vector<Actor*>> shaderGroup;
+  shaderGroup.resize(shaderCount);
+  for (auto& e : shaderGroup) {
+    e.reserve(1024);
+  }
+  ActorList& defaultActors = actors[static_cast<int>(Layer::Default)];
+  for (auto& e : defaultActors) {
+    if (e->renderer) {
+      const size_t i = static_cast<int>(e->shader);
+      shaderGroup[i].push_back(e.get());
+    }
+  }
+
   // 平行光源の向き
   const glm::vec3 lightDirection = glm::normalize(glm::vec4(3,-2,-2, 0));
 
@@ -596,7 +615,8 @@ void GameEngine::RenderDefault()
   glm::vec3 viewTarget = mainCamera.target;
 #endif
   const glm::vec3 viewPosition = viewTarget - viewFront * 30.0f;
-  const glm::mat4 matShadowView = glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
+  const glm::mat4 matShadowView =
+    glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
 
   // 影を描画
   {
@@ -610,17 +630,25 @@ void GameEngine::RenderDefault()
     glClear(GL_DEPTH_BUFFER_BIT);
 
     primitiveBuffer->BindVertexArray();
-    pipeline->Bind();
     sampler->Bind(0);
 
     // アクターを描画
-    const int layer = static_cast<int>(Layer::Default);
     const glm::mat4 matVP = matShadowProj * matShadowView;
-    for (auto& e : actors[layer]) {
-      if (e->renderer) {
-        e->renderer->Draw(*e, *pipeline, matVP);
-      }
+    pipelineInstancedMesh->Bind();
+    pipelineInstancedMesh->SetUniform(Renderer::locMatTRS, matVP);
+    for (Actor* e : shaderGroup[static_cast<size_t>(Shader::InstancedMesh)]) {
+      e->renderer->Draw(*e, *pipelineInstancedMesh, matVP);
     }
+    pipeline->Bind();
+    for (Actor* e : shaderGroup[static_cast<size_t>(Shader::FragmentLighting)]) {
+      e->renderer->Draw(*e, *pipeline, matVP);
+    }
+    pipelineGround->Bind();
+    texMap->Bind(2);
+    for (Actor* e : shaderGroup[static_cast<size_t>(Shader::GroundMap)]) {
+      e->renderer->Draw(*e, *pipeline, matVP);
+    }
+    texMap->Unbind(2);
 
     // デフォルトのフレームバッファに戻す
     fboShadow->Unbind();
@@ -666,31 +694,31 @@ void GameEngine::RenderDefault()
   const glm::mat4 matShadow = matShadowTex * matShadowProj * matShadowView;
   pipeline->SetUniform(locMatShadow, matShadow);
   pipelineGround->SetUniform(locMatShadow, matShadow);
+  pipelineInstancedMesh->SetUniform(locMatShadow, matShadow);
   fboShadow->BindDepthTexture(1);
 
   // アクターを描画する
-  const int layer = static_cast<int>(Layer::Default);
-  ActorList& defaultActors = actors[layer];
+  // 半透明メッシュ対策として、先に地面を描く
   const glm::mat4 matVP = matProj * matView;
-  for (auto& actor : defaultActors) {
-    if (!actor->renderer) {
-      continue;
-    }
-    switch (actor->shader) {
-    default:
-    case Shader::FragmentLighting:
-      actor->renderer->Draw(*actor, *pipeline, matVP);
-      break;
-
-    case Shader::Ground:
-      pipelineGround->Bind();
-      texMap->Bind(2);
-      actor->renderer->Draw(*actor, *pipelineGround, matVP);
-      texMap->Unbind(2);
-      pipeline->Bind();
-      break;
-    }
+  pipelineGround->Bind();
+  texMap->Bind(2);
+  for (Actor* e : shaderGroup[static_cast<size_t>(Shader::GroundMap)]) {
+    e->renderer->Draw(*e, *pipelineGround, matVP);
   }
+  texMap->Unbind(2);
+
+  pipelineInstancedMesh->Bind();
+  pipelineInstancedMesh->SetUniform(Renderer::locMatTRS, matVP);
+  for (Actor* e : shaderGroup[static_cast<size_t>(Shader::InstancedMesh)]) {
+    e->renderer->Draw(*e, *pipelineInstancedMesh, matVP);
+  }
+
+  pipeline->Bind();
+  for (Actor* e : shaderGroup[static_cast<size_t>(Shader::FragmentLighting)]) {
+    e->renderer->Draw(*e, *pipeline, matVP);
+  }
+
+  // 深度テクスチャの割り当てを解除する
   fboShadow->UnbindDepthTexture(1);
 
   // コライダーを表示する(デバッグ用)
@@ -841,7 +869,6 @@ void GameEngine::RenderUI()
   // ビュー行列を作成.
   const glm::mat4 matView =
     glm::lookAt(glm::vec3(0, 0, 100), glm::vec3(0), glm::vec3(0, 1, 0));
-
 
   // Z座標の降順で2Dアクターを描画する
   ActorList a = actors[static_cast<int>(Layer::UI)];
