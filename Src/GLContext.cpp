@@ -88,7 +88,10 @@ GLuint CreateVertexArray(GLuint vboPosition, GLuint vboColor,
   const GLuint groupIndex = 4;
   const GLuint groupBindingIndex = 4;
   glEnableVertexArrayAttrib(id, groupIndex);
-#if 0 // NOTE: インテルドライバではglVertexArrayAttribIFormatが正しく動作しない
+  // NOTE: インテルドライバではglVertexArrayAttribIFormatが正しく動作しない
+  //       以下のように旧来のAPIを使うか、floatで渡してシェーダでキャストする
+  // 参考: https://community.khronos.org/t/data-alignment-in-shader/106560
+#if 0
   glVertexArrayAttribIFormat(id, groupIndex, 2, GL_UNSIGNED_BYTE, 0);
 #else
   glBindBuffer(GL_ARRAY_BUFFER, vboMaterialGroup);
