@@ -803,7 +803,7 @@ ImGuiの描画設定をデフォルトに戻すには、`AddCallback`関数の�
 +
 +// 効果音設定
 +#define SE_SELECT     "Res/Audio/????" // ボタンの上にカーソルが乗った
-+#define SE_GAMESTARR  "Res/Audio/????" // ゲーム開始ボタンが押された
++#define SE_GAMESTART  "Res/Audio/????" // ゲーム開始ボタンが押された
 +
 +#endif // EASY_AUDIO_SETTINGS_H_INCLUDED
 ```
@@ -815,7 +815,7 @@ ImGuiの描画設定をデフォルトに戻すには、`AddCallback`関数の�
 
 ### 2.5 BGMを再生する
 
-それでは音声を再生しましょう。`GameManger.h`を開き、次のように音声用ヘッダファイルをインクルードしてください。
+それでは音声を再生しましょう。`GameManager.cpp`を開き、次のように音声用ヘッダファイルをインクルードしてください。
 
 ```diff
  #include "Actor/PlayerActor.h"
@@ -833,7 +833,7 @@ BGMのようにループ再生をしたり、途中で停止させる必要の�
 void Play(再生に使うプレイヤー番号, 音声ファイル名, 音量, ループフラグ);
 </pre>
 
-それでは、アップデートタイトル関数に次のプログラムを追加してください。
+次に、アップデートタイトル関数に次のプログラムを追加してください。
 
 ```diff
    switch (titleState) {
