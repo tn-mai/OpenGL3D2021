@@ -25,6 +25,9 @@
     <Filter Include="リソース ファイル\Sprite">
       <UniqueIdentifier>{699d0ba0-a980-4786-aa06-eb37c52c4262}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\json11">
+      <UniqueIdentifier>{810786a3-e236-4b5d-82b1-e99f4d0743ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Src\Main.cpp">
@@ -150,6 +153,15 @@
     <ClCompile Include="Src\ShaderStorageBuffer.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Src\GltfMesh.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\json11\json11.cpp">
+      <Filter>ソース ファイル\json11</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\VertexArrayObject.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -178,6 +190,12 @@
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="Res\InstancedMesh.vert">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\StaticMesh.vert">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\StaticMesh.frag">
       <Filter>リソース ファイル</Filter>
     </None>
   </ItemGroup>
@@ -315,6 +333,15 @@
       <Filter>ソース ファイル\Actor</Filter>
     </ClInclude>
     <ClInclude Include="Src\ShaderStorageBuffer.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\GltfMesh.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\json11\json11.hpp">
+      <Filter>ソース ファイル\json11</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\VertexArrayObject.h">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
   </ItemGroup>

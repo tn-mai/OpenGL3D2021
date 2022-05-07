@@ -178,6 +178,7 @@
     <ClCompile Include="Src\GameMap.cpp" />
     <ClCompile Include="Src\glad\src\glad.c" />
     <ClCompile Include="Src\GLContext.cpp" />
+    <ClCompile Include="Src\GltfMesh.cpp" />
     <ClCompile Include="Src\imgui\imgui.cpp" />
     <ClCompile Include="Src\imgui\imgui_demo.cpp" />
     <ClCompile Include="Src\imgui\imgui_draw.cpp" />
@@ -185,6 +186,7 @@
     <ClCompile Include="Src\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="Src\imgui\imgui_tables.cpp" />
     <ClCompile Include="Src\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Src\json11\json11.cpp" />
     <ClCompile Include="Src\Main.cpp" />
     <ClCompile Include="Src\MapEditor.cpp" />
     <ClCompile Include="Src\Primitive.cpp" />
@@ -194,6 +196,7 @@
     <ClCompile Include="Src\ShaderStorageBuffer.cpp" />
     <ClCompile Include="Src\Sprite.cpp" />
     <ClCompile Include="Src\Texture.cpp" />
+    <ClCompile Include="Src\VertexArrayObject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -205,6 +208,8 @@
     <None Include="Res\InstancedMesh.vert" />
     <None Include="Res\Simple.frag" />
     <None Include="Res\Simple.vert" />
+    <None Include="Res\StaticMesh.frag" />
+    <None Include="Res\StaticMesh.vert" />
     <None Include="Res\VertexLighting.vert" />
   </ItemGroup>
   <ItemGroup>
@@ -245,6 +250,7 @@
     <ClInclude Include="Src\imgui\imstb_rectpack.h" />
     <ClInclude Include="Src\imgui\imstb_textedit.h" />
     <ClInclude Include="Src\imgui\imstb_truetype.h" />
+    <ClInclude Include="Src\json11\json11.hpp" />
     <ClInclude Include="Src\MapEditor.h" />
     <ClInclude Include="Src\Primitive.h" />
     <ClInclude Include="Src\ProgramPipeline.h" />
@@ -252,7 +258,9 @@
     <ClInclude Include="Src\Sampler.h" />
     <ClInclude Include="Src\ShaderStorageBuffer.h" />
     <ClInclude Include="Src\Sprite.h" />
+    <ClInclude Include="Src\GltfMesh.h" />
     <ClInclude Include="Src\Texture.h" />
+    <ClInclude Include="Src\VertexArrayObject.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Res\Building.tga" />

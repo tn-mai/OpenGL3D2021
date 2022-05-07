@@ -5,6 +5,8 @@
 #include "ProgramPipeline.h"
 #include "Texture.h"
 #include "Actor.h"
+#include "GltfMesh.h"
+#include "VertexArrayObject.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 /**
@@ -306,5 +308,39 @@ void InstancedMeshRenderer::UpdateInstanceData(size_t size, const InstanceData* 
   // モデル行列をGPUメモリにコピー
   ssbo->BufferSubData(0, latestInstanceSize * sizeof(InstanceData), data);
   ssbo->SwapBuffers();
+}
+
+/**
+* クローンを作成する
+*/
+RendererPtr StaticMeshRenderer::Clone() const
+{
+  return std::make_shared<StaticMeshRenderer>(*this);
+}
+
+/**
+* メッシュを描画する
+*/
+void StaticMeshRenderer::Draw(const Actor& actor,
+  const ProgramPipeline& pipeline, const glm::mat4& matVP)
+{
+  if (!file || meshIndex < 0 || meshIndex >= file->meshes.size()) {
+    return;
+  }
+
+  // モデル行列をGPUメモリにコピーする
+  pipeline.SetUniform(locMatModel, actor.GetModelMatrix());
+
+  for (const auto& prim : file->meshes[meshIndex].primitives) {
+    // マテリアルデータを設定
+    const GltfMaterial& m = file->materials[prim.materialNo];
+    pipeline.SetUniform(locMaterialColor, m.baseColor);
+    m.texBaseColor->Bind(0);
+
+    prim.vao->Bind();
+    glDrawElementsBaseVertex(prim.mode, prim.count, prim.type,
+      prim.indices, prim.baseVertex);
+  }
+  glBindVertexArray(0);
 }
 

@@ -47,9 +47,10 @@ enum class Shader
 {
   FragmentLighting,
   InstancedMesh,
+  StaticMesh,
   GroundMap,
 };
-static size_t shaderCount = 3; // シェーダの種類数
+static size_t shaderCount = 4; // シェーダの種類数
 
 /**
 * 衝突判定の種類

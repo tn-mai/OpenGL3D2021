@@ -15,6 +15,12 @@
 #include <unordered_map>
 #include <random>
 
+// 先行宣言
+struct GltfFile;
+using GltfFilePtr = std::shared_ptr<GltfFile>;
+class GitfFileBuffer;
+using GltfFileBufferPtr = std::shared_ptr<GitfFileBuffer>;
+
 using ActorList = std::vector<std::shared_ptr<Actor>>;
 using TextureBuffer = std::unordered_map<std::string, std::shared_ptr<Texture>>;
 
@@ -52,9 +58,12 @@ public:
   const Primitive& GetPrimitive(const char* filename) const;
   const Primitive& GetPrimitive(int n) const { return primitiveBuffer->Get(n); }
   const MeshPtr& LoadMesh(const char* name);
+  GltfFilePtr LoadGltfFile(const char* filename);
+  GltfFilePtr GetGltfFile(const char* filename) const;
 
   std::shared_ptr<Texture> LoadTexture(const char* filename);
-  std::shared_ptr<Texture> LoadTexture(const char* name, const char** fileList, size_t count);
+  std::shared_ptr<Texture> LoadTexture(
+    const char* name, const char** fileList, size_t count);
 
   void UpdateGroundMap(int x, int y, int width, int height, const void* data);
   void ResizeGroundMap(int width, int height, const void* data);
@@ -184,6 +193,16 @@ private:
   GameEngine(const GameEngine&) = delete;
   GameEngine& operator=(const GameEngine&) = delete;
 
+  struct RenderingData {
+    Shader shaderType;
+    ProgramPipeline* pipeline;
+  };
+  using RenderingDataList = std::vector<RenderingData>; // 描画データ配列型
+  using ShaderGroupList = std::vector<std::vector<Actor*>>;
+
+  void RenderShaderGroups(const ShaderGroupList& shaderGroups,
+    const RenderingDataList& renderingList, const glm::mat4& matVP);
+
   GLFWwindow* window = nullptr;
   glm::vec2 windowSize = glm::vec2(0);
   // パイプライン・オブジェクトを作成する.
@@ -191,6 +210,7 @@ private:
   std::shared_ptr<ProgramPipeline> pipelineUI;
   std::shared_ptr<ProgramPipeline> pipelineDoF;
   std::shared_ptr<ProgramPipeline> pipelineInstancedMesh;
+  std::shared_ptr<ProgramPipeline> pipelineStaticMesh;
   std::shared_ptr<Sampler> sampler;
   std::shared_ptr<Sampler> samplerUI;
   std::shared_ptr<Sampler> samplerDoF;
@@ -222,6 +242,11 @@ private:
 
   // TODO: テキスト未追加
   std::shared_ptr<Sampler> samplerShadow;
+
+  // glTFファイル管理オブジェクト
+  GltfFileBufferPtr gltfFileBuffer;
 };
+
+void SetStaticMeshRenderer(Actor& actor, const char* filename, int index);
 
 #endif // GAMEENGINE_H_INCLUDED

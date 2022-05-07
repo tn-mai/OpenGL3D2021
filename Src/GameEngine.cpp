@@ -2,6 +2,7 @@
 * @file GameEngine.cpp
 */
 #include "GameEngine.h"
+#include "GltfMesh.h"
 #include "Audio.h"
 #include "Audio/OpenGLGame_acf.h"
 #include <imgui.h>
@@ -223,6 +224,8 @@ bool GameEngine::Initialize()
       "Res/DepthOfField.vert", "Res/DepthOfField.frag"));
     engine->pipelineInstancedMesh.reset(new ProgramPipeline(
       "Res/InstancedMesh.vert", "Res/FragmentLighting.frag"));
+    engine->pipelineStaticMesh.reset(new ProgramPipeline(
+      "Res/StaticMesh.vert", "Res/StaticMesh.frag"));
 
     engine->sampler = std::shared_ptr<Sampler>(new Sampler(GL_REPEAT));
     engine->samplerUI.reset(new Sampler(GL_CLAMP_TO_EDGE));
@@ -275,6 +278,9 @@ bool GameEngine::Initialize()
         return false;
       }
     }
+
+    // glTFファイル用バッファを初期化
+    engine->gltfFileBuffer = std::make_shared<GitfFileBuffer>(256 * 1024 * 1024);
 
     // ImGuiの初期化
     ImGui::CreateContext();
@@ -629,26 +635,16 @@ void GameEngine::RenderDefault()
 
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    primitiveBuffer->BindVertexArray();
     sampler->Bind(0);
 
     // アクターを描画
-    const glm::mat4 matVP = matShadowProj * matShadowView;
-    pipelineInstancedMesh->Bind();
-    pipelineInstancedMesh->SetUniform(Renderer::locMatTRS, matVP);
-    for (Actor* e : shaderGroup[static_cast<size_t>(Shader::InstancedMesh)]) {
-      e->renderer->Draw(*e, *pipelineInstancedMesh, matVP);
-    }
-    pipeline->Bind();
-    for (Actor* e : shaderGroup[static_cast<size_t>(Shader::FragmentLighting)]) {
-      e->renderer->Draw(*e, *pipeline, matVP);
-    }
-    pipelineGround->Bind();
-    texMap->Bind(2);
-    for (Actor* e : shaderGroup[static_cast<size_t>(Shader::GroundMap)]) {
-      e->renderer->Draw(*e, *pipeline, matVP);
-    }
-    texMap->Unbind(2);
+    const RenderingDataList renderingList = {
+      { Shader::InstancedMesh, pipelineInstancedMesh.get() },
+      { Shader::FragmentLighting, pipeline.get() },
+      { Shader::GroundMap, pipelineGround.get() },
+      { Shader::StaticMesh, pipelineStaticMesh.get() },
+    };
+    RenderShaderGroups(shaderGroup, renderingList, matShadowProj * matShadowView);
 
     // デフォルトのフレームバッファに戻す
     fboShadow->Unbind();
@@ -675,8 +671,6 @@ void GameEngine::RenderDefault()
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  primitiveBuffer->BindVertexArray();
-  pipeline->Bind();
   sampler->Bind(0);
   samplerShadow->Bind(1);
 
@@ -695,34 +689,25 @@ void GameEngine::RenderDefault()
   pipeline->SetUniform(locMatShadow, matShadow);
   pipelineGround->SetUniform(locMatShadow, matShadow);
   pipelineInstancedMesh->SetUniform(locMatShadow, matShadow);
+  pipelineStaticMesh->SetUniform(locMatShadow, matShadow);
   fboShadow->BindDepthTexture(1);
 
   // アクターを描画する
   // 半透明メッシュ対策として、先に地面を描く
-  const glm::mat4 matVP = matProj * matView;
-  pipelineGround->Bind();
-  texMap->Bind(2);
-  for (Actor* e : shaderGroup[static_cast<size_t>(Shader::GroundMap)]) {
-    e->renderer->Draw(*e, *pipelineGround, matVP);
-  }
-  texMap->Unbind(2);
-
-  pipelineInstancedMesh->Bind();
-  pipelineInstancedMesh->SetUniform(Renderer::locMatTRS, matVP);
-  for (Actor* e : shaderGroup[static_cast<size_t>(Shader::InstancedMesh)]) {
-    e->renderer->Draw(*e, *pipelineInstancedMesh, matVP);
-  }
-
-  pipeline->Bind();
-  for (Actor* e : shaderGroup[static_cast<size_t>(Shader::FragmentLighting)]) {
-    e->renderer->Draw(*e, *pipeline, matVP);
-  }
+  const RenderingDataList renderingList = {
+    { Shader::GroundMap, pipelineGround.get() },
+    { Shader::InstancedMesh, pipelineInstancedMesh.get() },
+    { Shader::FragmentLighting, pipeline.get() },
+    { Shader::StaticMesh, pipelineStaticMesh.get() },
+  };
+  RenderShaderGroups(shaderGroup, renderingList, matProj * matView);
 
   // 深度テクスチャの割り当てを解除する
   fboShadow->UnbindDepthTexture(1);
 
   // コライダーを表示する(デバッグ用)
   if (showCollider) {
+    primitiveBuffer->BindVertexArray();
     const Primitive& primBox = GetPrimitive("Collider(Box)");
     const Primitive& primSphere = GetPrimitive("Collider(Sphere)");
     const Primitive& primCylinder = GetPrimitive("Collider(Cylinder)");
@@ -938,6 +923,67 @@ const MeshPtr& GameEngine::LoadMesh(const char* filename)
     primitiveBuffer->AddFromObjFile(filename);
   }
   return primitiveBuffer->GetMesh(filename);
+}
+
+/**
+* glTFファイルからメッシュを読み込む
+*/
+GltfFilePtr GameEngine::LoadGltfFile(const char* filename)
+{
+  gltfFileBuffer->AddFromFile(filename);
+  return gltfFileBuffer->GetFile(filename);
+}
+
+/**
+* スタティックメッシュを取得する
+*/
+GltfFilePtr GameEngine::GetGltfFile(const char* filename) const
+{
+  return gltfFileBuffer->GetFile(filename);
+}
+
+/**
+* 描画データ配列に従ってアクターを描画する
+*/
+void GameEngine::RenderShaderGroups(const ShaderGroupList& shaderGroups,
+  const RenderingDataList& renderingList, const glm::mat4& matVP)
+{
+  for (const RenderingData& e : renderingList) {
+    // 前処理
+    if (e.shaderType == Shader::InstancedMesh ||
+      e.shaderType == Shader::StaticMesh) {
+      e.pipeline->SetUniform(Renderer::locMatTRS, matVP);
+    } else if (e.shaderType == Shader::GroundMap) {
+      texMap->Bind(2);
+    }
+
+    // アクターの描画
+    primitiveBuffer->BindVertexArray();
+    e.pipeline->Bind();
+    for (Actor* actor : shaderGroups[static_cast<size_t>(e.shaderType)]) {
+      actor->renderer->Draw(*actor, *e.pipeline, matVP);
+    }
+
+    // 後処理
+    if (e.shaderType == Shader::GroundMap) {
+      texMap->Unbind(2);
+    }
+  }
+}
+
+/**
+* アクターにスタティックメッシュレンダラを設定する
+*
+* @param actor    レンダラを設定するアクター
+* @param filename glTFファイル名
+* @param index    glTFに含まれるメッシュのインデックス
+*/
+void SetStaticMeshRenderer(Actor& actor, const char* filename, int index)
+{
+  auto renderer = std::make_shared<StaticMeshRenderer>();
+  renderer->SetMesh(GameEngine::Get().LoadGltfFile(filename), index);
+  actor.renderer = renderer;
+  actor.shader = Shader::StaticMesh;
 }
 
 /**

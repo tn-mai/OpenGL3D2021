@@ -154,6 +154,15 @@ void GameManager::Update(float deltaTime)
       static_cast<PlayerActor&>(*playerTank).SetControlFlag(true);
     }
 
+    // glTFファイル表示テスト
+    {
+      ActorPtr actor = std::make_shared<Actor>("StaticMeshTest");
+      SetStaticMeshRenderer(*actor, "Res/glTF/Cube.gltf", 0);
+      actor->scale = glm::vec3(2);
+      actor->position = playerTank->position;
+      engine.AddActor(actor);
+    }
+
     // 人間アクターを配置
     engine.AddActor(std::make_shared<HumanActor>(
       playerTank->position + glm::vec3(0, 0, -5), glm::vec3(3), glm::radians(-60.0f)));

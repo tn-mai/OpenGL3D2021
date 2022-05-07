@@ -24,6 +24,9 @@ using MeshRendererPtr = std::shared_ptr<MeshRenderer>;
 using InstancedMeshRendererPtr = std::shared_ptr<InstancedMeshRenderer>;
 using ActorPtr = std::shared_ptr<Actor>;
 
+struct GltfFile;
+using GltfFilePtr = std::shared_ptr<GltfFile>;
+
 /**
 * 描画機能の基本クラス
 */
@@ -151,6 +154,28 @@ private:
   std::vector<ActorPtr> instances;
   size_t latestInstanceSize = 0; // 最終更新時のインスタンス数
   ShaderStorageBufferPtr ssbo;
+};
+
+/**
+* スタティックメッシュ描画クラス
+*/
+class StaticMeshRenderer : public Renderer
+{
+public:
+  StaticMeshRenderer() = default;
+  virtual ~StaticMeshRenderer() = default;
+  virtual RendererPtr Clone() const override;
+  virtual void Draw(const Actor& actor,
+    const ProgramPipeline& pipeline,
+    const glm::mat4& matVP) override;
+
+  void SetMesh(const GltfFilePtr& p, int index) { file = p; meshIndex = index; }
+  const GltfFilePtr& GetFile() const { return file; }
+  int GetMeshIndex() const { return meshIndex; }
+
+private:
+  GltfFilePtr file;
+  int meshIndex = -1;
 };
 
 #endif // RENDERER_H_INCLUDED
