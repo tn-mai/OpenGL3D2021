@@ -8,7 +8,7 @@
 * SSBOを作成し、インスタンシングに適用できる。
 * SSBOに、自分が必要とするデータを定義できる。
 
-## 1. シェーダ・ストレージ・バッファ・オブジェクト
+## 1. シェーダストレージバッファオブジェクト
 
 ### 1.1 インスタンシングの必要性
 
@@ -33,7 +33,7 @@ GPUは同じメッシュを何度も描画することが分かっているた�
 >**【インスタンシングの制限】**<br>
 >一度のインスタンシングで描画できるメッシュは1種類だけです。異なるメッシュを描画するには、メッシュの種類ごとに描画を行わなくてはなりません。
 
-### 1.2 シェーダーストレージバッファオブジェクト
+### 1.2 シェーダストレージバッファオブジェクト
 
 インスタンシングを使うと、大量のメッシュを効率よく描画できます。このとき、すべてのメッシュで描画前に設定したユニフォーム変数が使われます。
 
@@ -53,7 +53,8 @@ GPUは同じメッシュを何度も描画することが分かっているた�
 
 添字にする方法では、シェーダに配列を用意する必要があります。しかし、ユニフォーム変数にはきびしい容量制限があるため、大きな配列を用意することができません。
 
-シェーダで大きな配列を扱うには「シェーダーストレージバッファオブジェクト」、略して`SSBO`(エス・エス・ビー・オー)を使います。
+シェーダで大きな配列を扱うには「シェーダーストレージバッファオブジェクト」、略して
+`SSBO`(エス・エス・ビー・オー)を使います。
 
 `SSBO`はバッファオブジェクトの一種で、ユニフォーム変数ど同様にシェーダで読み出すことができます。また、特定のルールに従えばシェーダから書き込むことも可能です。
 
@@ -110,12 +111,12 @@ GPUは同じメッシュを何度も描画することが分かっているた�
 シェーダに`SSBO`を定義するには、`buffer`(バッファ)キーワードを使います。
 
 <pre class="tnmai_code"><strong>【書式】</strong><code>
-layout(レイアウト修飾子) buffer ブロック名<br>
-{<br>
-&emsp;SSBOのデータメンバ;<br>
-&emsp;&emsp;・<br>
-&emsp;&emsp;・<br>
-&emsp;&emsp;・<br>
+layout(レイアウト修飾子) buffer ブロック名
+{
+  SSBOのデータメンバ;
+      ・
+      ・
+      ・
 };
 </code></pre>
 
@@ -133,7 +134,8 @@ layout(レイアウト修飾子) buffer ブロック名<br>
 データメンバの名前は直接プログラムで使用します。ブロック名で修飾することはできないので、ほかの変数と重複しない名前を指定する必要があります。
 
 >**【SSBOのメンバに使える型について】**<br>
->`vec3`は使わないでください。必要な場合は`vec4`で代用してください。また、`mat3`や`mat4x3`のように、各行が`vec3`となる行列も使わないでください。それ以外の型は使っても大丈夫です。
+>`vec3`は使わないでください。必要な場合は`vec4`で代用してください。同様に`mat3`
+>や`mat4x3`などの、各行が`vec3`となる行列も使わないでください。それ以外の型は使っても大丈夫です。
 
 ### 1.3 ShaderStorageBufferクラスを定義する
 
@@ -192,7 +194,8 @@ layout(レイアウト修飾子) buffer ブロック名<br>
 
 ### 1.4 コンストラクタを定義する
 
-それでは、コンストラクタから定義していきましょう。プロジェクトの`Src`フォルダに`ShaderStorageBuffer.cpp`という名前のCPPファイルを追加してください。
+それでは、コンストラクタから定義していきましょう。プロジェクトの`Src`フォルダに
+`ShaderStorageBuffer.cpp`という名前のCPPファイルを追加してください。
 
 追加したファイルを開き、次のプログラムを追加してください。
 
@@ -223,7 +226,23 @@ layout(レイアウト修飾子) buffer ブロック名<br>
 
 このとき、`glNamedBufferStorage`に`SSBO`の用途に合わせたフラグを設定する必要があります。
 
-`GL_DYNAMIC_STORAGE_BIT`(ジーエル・ダイナミック・ストレージ・ビット)は、`glBufferSubData`関数によってデータを更新できるようにするフラグです。
+`GL_DYNAMIC_STORAGE_BIT`(ジーエル・ダイナミック・ストレージ・ビット)は、
+`glBufferSubData`関数によってデータを更新できるようにするフラグです。2021第02回で使ったフラグ表を再掲します。
+
+|名前|用途|
+|:-:|:--|
+|<ruby>GL_DYNAMIC_STORAGE_BIT<rt>ジーエル・ダイナミック・ストレージ・ビット</rt></ruby> | `glBufferSubData`を使って更新することができる。|
+|<ruby>GL_MAP_READ_BIT<rt>ジーエル・マップ・リード・ビット</rt></ruby> | `glMapBufferRange`を使って読み取ることができる。 |
+|<ruby>GL_MAP_WRITE_BIT<rt>ジーエル・マップ・ライト・ビット</rt></ruby> | `glMapBufferRange`を使って書き込むことができる。 |
+|<ruby>GL_MAP_PERSISTENT_BIT<rt>ジーエル・マップ・パーシステント・ビット</rt></ruby> | `GPU`が読み書きを行っている最中でも読み書きできる。 |
+|<ruby>GL_MAP_COHERENT_BIT<rt>ジーエル・マップ・コヒーレント・ビット</rt></ruby> | 書き込みの結果が次の処理ですぐ利用できる。 |
+|<ruby>GL_CLIENT_STORAGE_BIT<rt>ジーエル・クライアント・ストレージ</rt></ruby> | OpenGLに読み書き用のCPUメモリの確保を許可する。 |
+
+GPUメモリにデータをコピーする方法には、`glBufferSubData`と`glMapBufferRange`の2種類があります。性能差はそれほどありませんが、後発の`glMapBufferRange`のほうが効率的な傾向があります。
+
+ただ、`glMapBufferRange`を使う手法はコードが少し複雑になります。今回はコードの簡潔さを重視して、`glBufferSubData`を選択しました。
+
+なお、GPUメモリへの書き込みだけでなく、読み取りも行いたい場合、`glMapBufferRange`は最適です。
 
 ### 1.5 デストラクタを定義する
 
@@ -280,18 +299,16 @@ void glDeleteSync(削除する同期オブジェクト);
 +}
 ```
 
-2つのバッファのうち、`bindingBufferIndex`(バインディング・バッファ・インデックス)が示すほうを割り当てます。
-
-割り当てには`glBindBufferRange`(ジーエル・バインド・バッファ・レンジ)関数を使います。
+2つのバッファのうち、`bindingBufferIndex`(バインディング・バッファ・インデックス)が示すほうを割り当てます。割り当てには`glBindBufferRange`(ジーエル・バインド・バッファ・レンジ)関数を使います。
 
 <pre class="tnmai_code"><strong>【書式】</strong><code>
-void glBindBufferRange(バインドするバッファの種類, バインディングポイント番号,<br>
-&emsp;バッファオブジェクトID, 割り当て範囲の先頭オフセット, 割り当てるバイト数);
+void glBindBufferRange(バインドするバッファの種類, バインディングポイント番号,
+  バッファオブジェクトID, 割り当て範囲の先頭オフセット, 割り当てるバイト数);
 </code></pre>
 
-この関数は、`SSBO`として確保したGPUメモリ領域のうち、「割り当て範囲の先頭オフセット」から「割り当てるバイト数」で示される範囲を、「バインディングポイント番号」に割り当てます。
+この関数は`SSBO`として確保したGPUメモリ領域のうち、「割り当て範囲の先頭オフセット」と「割り当てるバイト数」で示される範囲を、「バインディングポイント番号」に割り当てます。
 
-また、わざわざ`SSBO`のサイズを指定するのは面倒なので、`size`引数に`0`を指定すると、`SSBO`のサイズを自動的に設定するようにしています。
+また、毎回`SSBO`のサイズを指定するのは面倒なので、`size`引数に`0`が指定された場合は自動的に`SSBO`のサイズを計算するようにしています。
 
 >**【オフセットは256バイト単位で指定する】**<br>
 >一部のGPUの実装上の都合により、オフセットに指定する数値は「256の倍数」で指定しなくてはなりません。
@@ -323,6 +340,7 @@ void glBindBufferRange(バインドするバッファの種類, バインディ�
 次に、データを`SSBO`(が管理するGPUメモリ)にコピーする`BufferSubData`(バッファ・サブ・データ)関数を定義します。`Unbind`関数の定義の下に、次のプログラムを追加してください。
 
 ```diff
+ {
    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, index, 0, 0, 0);
  }
 +
@@ -375,20 +393,22 @@ void glBindBufferRange(バインドするバッファの種類, バインディ�
 同期オブジェクトの状態 glClientWaitSync(同期オブジェクト, フラグ, 待機時間);
 </code></pre>
 
-同期オブジェクトは1度きりの使い捨てです。使い終わった同期オブジェクトは`glDeleteSync`で削除します。
+同期オブジェクトは1度きりの使い捨てです。<br>
+使い終わった同期オブジェクトは`glDeleteSync`で削除します。
 
 使用中でないことが確認できたなら、`glNamedBufferSubData`(ジーエル・ネームド・バッファ・サブ・データ)関数を使ってデータをコピーします。
 
 <pre class="tnmai_code"><strong>【書式】</strong><code>
-void glNamedBufferSubData(バッファオブジェクトID, コピー先オフセット,<br>
-&emsp;コピーするバイト数, コピーするデータのアドレス);
+void glNamedBufferSubData(バッファオブジェクトID, コピー先オフセット,
+  コピーするバイト数, コピーするデータのアドレス);
 </code></pre>
 
 `glBindBufferRange`関数と同様に、オフセットが「256の倍数でなければならない」ことに注意してください。
 
 ### 1.9 SwapBuffers関数を定義する
 
-ダブルバッファを切り替える`SwapBuffers`(スワップ・バッファーズ)関数を定義します。`BufferSubData`関数の定義の下に、次のプログラムを追加してください。
+ダブルバッファを切り替える`SwapBuffers`(スワップ・バッファーズ)関数を定義します。
+`BufferSubData`関数の定義の下に、次のプログラムを追加してください。
 
 ```diff
      glNamedBufferSubData(e.id, offset, size, data);
@@ -404,11 +424,12 @@ void glNamedBufferSubData(バッファオブジェクトID, コピー先オフ�
 +}
 ```
 
-ダブルバッファを切り替えるには、バインドするバッファを示す`bindingBufferIndex`を`1`増やすだけです。
+ダブルバッファを切り替えるには、`bindingBufferIndex`を`1`増やし、バッファ数で割って余りを出します。この計算により、例えばバッファ数が2の場合、`0→1→0→1→0...`のように0, 1が交互に現れます。
 
 ### 1.10 FenceSync関数を定義する
 
-最後に、同期オブジェクトを作成する`FenceSync`(フェンス・シンク)関数を定義します。`SwapBuffers`関数の定義の下に、次のプログラムを追加してください。
+最後に、同期オブジェクトを作成する`FenceSync`(フェンス・シンク)関数を定義します。
+`SwapBuffers`関数の定義の下に、次のプログラムを追加してください。
 
 ```diff
    bindingBufferIndex = (bindingBufferIndex + 1) % std::size(buffer);
@@ -427,15 +448,17 @@ void glNamedBufferSubData(バッファオブジェクトID, コピー先オフ�
 +}
 ```
 
-同期オブジェクトを作成するには`glFenceSync`(ジーエル・フェンス・シンク)関数を使います。
+同期オブジェクトの作成には`glFenceSync`(ジーエル・フェンス・シンク)関数を使います。
 
 <pre class="tnmai_code"><strong>【書式】</strong><code>
 同期オブジェクト glFenceSync(同期条件, フラグ);
 </code></pre>
 
-「同期条件：には、同期オブジェクトが「同期」したと判定される条件を指定します。OpenGL4.6で指定できる条件は`GL_SYNC_GPU_COMMANDS_COMPLETE`(ジーエル・シンク・ジーピーユー・コマンズ・コンプリート)だけです。
+「同期条件」には、同期オブジェクトが「同期」したと判定される条件を指定します。
+OpenGL4.5で指定できる条件は`GL_SYNC_GPU_COMMANDS_COMPLETE`(ジーエル・シンク・ジーピーユー・コマンズ・コンプリート)だけです。
 
-「フラグ」は、同期オブジェクトの動作を制御するために用意されています。ただし、OpenGL4.6ではフラグが定義されていないため、常に`0`を指定します。
+「フラグ」は、同期オブジェクトの動作を制御するために用意されています。<br>
+ただし、OpenGL4.5ではフラグが定義されていないため、常に`0`を指定します。
 
 また、`FenceSync`を連続で呼び出された場合など、前に作成した同期オブジェクトが残っている可能性があるため、既存のオブジェクトを削除してから作成しなおすようにしています。
 
@@ -466,7 +489,6 @@ void glNamedBufferSubData(バッファオブジェクトID, コピー先オフ�
    const std::string& GetName() const { return name; }
 
  private:
-   std::string name;
 ```
 
 次に`Primitive.cpp`を開き、`Draw`関数の定義の下に、次のプログラムを追加してください。
@@ -490,15 +512,16 @@ void glNamedBufferSubData(バッファオブジェクトID, コピー先オフ�
  * プリミティブ用のメモリを確保する
 ```
 
-インスタンシングを行うには、`glDrawElementsInstancedBaseVertex`(ジーエル・ドロー・エレメンツ・インスンスド・ベース・バーテックス)という、やたら長い名前の関数を使います。
+インスタンシングを行うには、`glDrawElementsInstancedBaseVertex`(ジーエル・ドロー・エレメンツ・インスンスド・ベース・バーテックス)という、やたらと長い名前の関数を使います。
 
 <pre class="tnmai_code"><strong>【書式】</strong><code>
-void glDrawElementsInstancedBaseVertex(プリミティブの種類,<br>
-&emsp;描画するインデックスの数, インデックスの型, インデックスデータの位置,<br>
-&emsp;描画するインスタンスの数, 頂点データの位置);
+void glDrawElementsInstancedBaseVertex(プリミティブの種類,
+  描画するインデックスの数, インデックスの型, インデックスデータの位置,
+  描画するインスタンスの数, 頂点データの位置);
 </code></pre>
 
->インスタンシング用の描画関数の名前は、インスタンシングのない通常の関数名に`Instanced`(インスンスド)という単語を追加した名前になっています。
+インスタンシング用の描画関数の名前は、インスタンシングをしない通常の関数名に
+`Instanced`(インスタンスド)という単語を追加した名前になります。
 
 ### 2.2 アクターにモデル行列を計算する関数を追加する
 
@@ -544,7 +567,8 @@ void glDrawElementsInstancedBaseVertex(プリミティブの種類,<br>
 
 そこで、インスタンシングを使ってメッシュを描画する、新しいレンダラクラスを追加します。インスタンシング用`SSBO`の管理は、このクラスの中で行います。
 
-クラス名は`InstancedMeshRenderer`(インスタンスド・メッシュ・レンダラ)とします。`Renderer.h`を開き、次のプログラムを追加してください。
+クラス名は`InstancedMeshRenderer`(インスタンスド・メッシュ・レンダラ)とします。
+`Renderer.h`を開き、次のプログラムを追加してください。
 
 ```diff
  #include "glad/glad.h"
@@ -743,7 +767,8 @@ void glDrawElementsInstancedBaseVertex(プリミティブの種類,<br>
 
 ### 2.7 UpdateInstanceTransforms関数を定義する
 
-最後に、インスタンスのモデル行列を`SSBO`にコピーする関数を定義します。名前は`UpdateInstanceTransforms`(アップデート・インスタンス・トランスフォームズ)としました。
+最後に、インスタンスのモデル行列を`SSBO`にコピーする関数を定義します。名前は
+`UpdateInstanceTransforms`(アップデート・インスタンス・トランスフォームズ)とします。
 
 `Draw`関数の定義の下に、次のプログラムを追加してください。
 
@@ -781,7 +806,8 @@ void glDrawElementsInstancedBaseVertex(プリミティブの種類,<br>
 +}
 ```
 
-最初に、死んでいるインスタンス(アクター)を配列から削除します。これには`remove_if`と`erase`の組み合わせを使います。
+最初に、死んでいるインスタンス(アクター)を配列から削除します。これには`remove_if`と
+`erase`の組み合わせを使います。
 
 `latestInstanceSize`(レイテスト・インスタンス・サイズ)変数には、「この関数でコピーしたモデル行列の数」が格納されます。この変数は`DrawInstanced`関数の引数になります。
 
@@ -807,7 +833,8 @@ void glDrawElementsInstancedBaseVertex(プリミティブの種類,<br>
 
 インスタンシングでは、実際の描画を行うアクターはひとつだけです。しかし、インスタンスの位置や衝突判定を扱うには、インスタンスごとにアクターを割り当てる必要があります。
 
-そこで、レンダラを持たないアクターを作るコンストラクタを追加します。`Actor.h`を開き、`Actor`クラスの定義に次のプログラムを追加してください。
+そこで、レンダラを持たないアクターを作るコンストラクタを追加します。`Actor.h`を開き、
+`Actor`クラスの定義に次のプログラムを追加してください。
 
 ```diff
      const glm::vec3& scale,
@@ -886,6 +913,8 @@ void glDrawElementsInstancedBaseVertex(プリミティブの種類,<br>
      engine->samplerUI.reset(new Sampler(GL_CLAMP_TO_EDGE));
 ```
 
+<div style="page-break-after: always"></div>
+
 ### 3.3 アクターが使うシェーダを設定できるようにする
 
 考えてみれば当然のことですが、シェーダの種類が増えると、シェーダを切り替える回数が増えます。そして、シェーダを切り替えるとき、GPUはシェーダに関するさまざまなパラメータを初期化します。
@@ -894,7 +923,8 @@ void glDrawElementsInstancedBaseVertex(プリミティブの種類,<br>
 
 そこで、アクターを使用するシェーダごとにグループ分けして、グループ単位で描画を行うようにします。最初にシェーダの種類を識別する機能を追加します。
 
-`Actor.h`を開き、`Layer`列挙型の定義の下に次のプログラムを追加してください(すでに`Shader`列挙型を定義している場合は、`InstacedMesh`と`shaderCount`だけ追加してください)。
+`Actor.h`を開き、`Layer`列挙型の定義の下に次のプログラムを追加してください(すでに
+`Shader`列挙型を定義している場合は、`InstacedMesh`と`shaderCount`だけ追加してください)。
 
 ```diff
    UI,
@@ -1082,7 +1112,8 @@ void glDrawElementsInstancedBaseVertex(プリミティブの種類,<br>
 +  if (!bulletRenderer) {
 +    bulletRenderer = std::make_shared<InstancedMeshRenderer>(100);
 +    bulletRenderer->SetMesh(engine.LoadMesh("Res/Bullet.obj"));
-+    bulletRenderer->SetMaterial(0, { "bullet", glm::vec4(1), engine.LoadTexture("Res/Bullet.tga") });
++    bulletRenderer->SetMaterial(0,
++      { "bullet", glm::vec4(1), engine.LoadTexture("Res/Bullet.tga") });
 +    std::shared_ptr<Actor> p = std::make_shared<Actor>("BulletInstancedActor");
 +    p->renderer = bulletRenderer;
 +    p->shader = Shader::InstancedMesh;
@@ -1128,7 +1159,7 @@ void glDrawElementsInstancedBaseVertex(プリミティブの種類,<br>
      engine.AddActor(bullet);
 ```
 
-アクターをインスタンシングで描画するには、プリミティブ(メッシュ)を持たないアクターとして作成します。その後、`AddInstance`関数を使って`InstancedMeshRenderer`に登録します。
+アクターをインスタンシング描画するには、プリミティブ(メッシュ)を持たないアクターとして作成します。その後、`AddInstance`関数を使って`InstancedMeshRenderer`に登録します。
 
 プログラムが書けたらビルドして実行してください。弾を発射して、これまで通りに表示されていたら成功です。
 
@@ -1191,7 +1222,8 @@ grass.mtl
 grass.tga
 </pre>
 
-続いて、草を生やす範囲を決めるためにマップサイズを取得できるようにします。`GameEngine.h`を開き、`GetWindowSize`メンバ関数の定義の下に次のプログラムを追加してください。
+続いて、草を生やす範囲を決めるために、マップサイズを取得できるようにします。
+`GameEngine.h`を開き、`GetWindowSize`メンバ関数の定義の下に、次のプログラムを追加してください。
 
 ```diff
    {
@@ -1213,7 +1245,8 @@ grass.tga
 >**【mapSizeメンバ変数が見つからない場合】**<br>
 >`mapSize`メンバを定義していない場合、代わりに`glm::ivec2(21, 21)`を返すようにしてください。
 
-それでは、インスタンシングによる草を追加しましょう。まず草を生やす関数を宣言します。`SpawnEnemies`メンバ関数宣言の下に、次のプログラムを追加してください。
+それでは、インスタンシングによる草を追加しましょう。まず草を生やす関数を宣言します。
+`SpawnEnemies`メンバ関数宣言の下に、次のプログラムを追加してください。
 
 ```diff
    GameManager& operator=(const GameManager&) = delete;
@@ -1226,9 +1259,18 @@ grass.tga
    std::shared_ptr<Actor> playerTank;
 ```
 
+>**【SpawnPlayer, SpawnEnemiesが見つからない場合】**<br>
+>MapEditor編をある程度実装している場合、これらはマップをロードするプログラムに置き換わっていると思います。その場合、どこでもいいのでプライベートメンバとして`SpawnGrass`を追加してください。
+
 `SpawnGrass`(スポーン・グラス)は草を生やすメンバ関数です。次に`GameManager.cpp`を開き、`SpawnEnemies`関数の定義の下に、次のプログラムを追加してください。
 
+>`SpawnEnemies`がない場合、`SpawnGrass`を追加する場所はどこでも構いません。
+
 ```diff
+     engine.AddActor(enemies[i]);
+   }
+ }
++
 +/**
 +* 草を生やす
 +*/
@@ -1241,7 +1283,8 @@ grass.tga
 +  InstancedMeshRendererPtr grassRenderer =
 +    std::make_shared<InstancedMeshRenderer>(mapSize.x * mapSize.y);
 +  grassRenderer->SetMesh(engine.LoadMesh("Res/grass.obj"));
-+  grassRenderer->SetMaterial(0, { "grass", glm::vec4(1), engine.LoadTexture("Res/grass.tga") });
++  grassRenderer->SetMaterial(0,
++    { "grass", glm::vec4(1), engine.LoadTexture("Res/grass.tga") });
 +
 +  // 草インスタンスのモデル行列を設定
 +  std::vector<glm::mat4> matGrassList(mapSize.x * mapSize.y, glm::mat4(1));
@@ -1274,8 +1317,7 @@ grass.tga
      SetState(State::playing);
 ```
 
->**【case startにSpawnPlayer, SpawnEnemiesが見つからない場合】**<br>
->MapEditor編をある程度実装している場合、これらはマップをロードするプログラムに置き換わっていると思います。その場合は、`SpawnGrass`の呼び出しを、マップをロードするプログラムの下に追加してください。
+>`SpawnPlayer`, `SpawnEnemies`がない場合、`start`ケースの早い段階で`SpawnGrass`を呼び出してください。
 
 プログラムが書けたらビルドして実行してください。地面に草が生えていたら成功です。
 
@@ -1286,12 +1328,13 @@ grass.tga
 <pre class="tnmai_assignment">
 <strong>【課題02】</strong>
 インスタンスごとに草丈が異なるように、モデル行列にランダムなサイズの拡大縮小行列を乗算しなさい。
-あるいは、地面マップを参照して、地面の種類によって草の長さを変えたり、道路には草を生やさないようにしてもいいでしょう。
+地面マップを参照して、地面の種類によって草の長さを変えたり、道路には草を生やさないようにしてもいいでしょう。
 </pre>
 
 ### 3.7 SSBOに構造体を指定する
 
-`SSBO`には構造体の配列を指定することもできます。`InstancedMesh.vert`を開き、`InstancedDataBuffer`の定義を次のように変更してください。
+`SSBO`には構造体の配列を指定することもできます。`InstancedMesh.vert`を開き、
+`InstancedDataBuffer`の定義を次のように変更してください。
 
 ```diff
  layout(location=10) uniform vec4 materialColor[10];
