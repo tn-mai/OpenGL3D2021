@@ -280,7 +280,7 @@ bool GameEngine::Initialize()
     }
 
     // glTFファイル用バッファを初期化
-    engine->gltfFileBuffer = std::make_shared<GitfFileBuffer>(256 * 1024 * 1024);
+    engine->gltfFileBuffer = std::make_shared<GltfFileBuffer>(256 * 1024 * 1024);
 
     // ImGuiの初期化
     ImGui::CreateContext();

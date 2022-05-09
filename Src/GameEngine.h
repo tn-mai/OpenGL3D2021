@@ -18,8 +18,8 @@
 // æséŒ¾
 struct GltfFile;
 using GltfFilePtr = std::shared_ptr<GltfFile>;
-class GitfFileBuffer;
-using GltfFileBufferPtr = std::shared_ptr<GitfFileBuffer>;
+class GltfFileBuffer;
+using GltfFileBufferPtr = std::shared_ptr<GltfFileBuffer>;
 
 using ActorList = std::vector<std::shared_ptr<Actor>>;
 using TextureBuffer = std::unordered_map<std::string, std::shared_ptr<Texture>>;

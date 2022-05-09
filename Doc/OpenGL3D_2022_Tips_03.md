@@ -1,6 +1,6 @@
 [OpenGL 3D 2022 Tips 第03回]
 
-# 
+# glTFファイル
 
 ## 習得目標
 
@@ -8,9 +8,9 @@
 * 
 * 
 
-## 1. 
+## 1. glTFとJSON
 
-### 1.1 
+### 1.1 glTFについて
 
 OBJファイルは仕様が比較的単純であり、しかもテキスト形式であることから、最初に扱う3Dモデル用のファイル形式としては優秀です。
 
@@ -1621,8 +1621,8 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 +// 先行宣言
 +struct GltfFile;
 +using GltfFilePtr = std::shared_ptr<GltfFile>;
-+class GitfFileBuffer;
-+using GltfFileBufferPtr = std::shared_ptr<GitfFileBuffer>;
++class GltfFileBuffer;
++using GltfFileBufferPtr = std::shared_ptr<GltfFileBuffer>;
  using ActorList = std::vector<std::shared_ptr<Actor>>;
  using TextureBuffer = std::unordered_map<std::string, std::shared_ptr<Texture>>;
 ```
@@ -1701,7 +1701,7 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
      }
 +
 +    // glTFファイル用バッファを初期化
-+    engine->gltfFileBuffer = std::make_shared<GitfFileBuffer>(128 * 1024 * 1024);
++    engine->gltfFileBuffer = std::make_shared<GltfFileBuffer>(128 * 1024 * 1024);
 
      // ImGuiの初期化
      ImGui::CreateContext();

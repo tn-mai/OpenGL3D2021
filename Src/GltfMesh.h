@@ -63,13 +63,13 @@ using GltfFilePtr = std::shared_ptr<GltfFile>;
 /**
 * メッシュを管理するクラス
 */
-class GitfFileBuffer
+class GltfFileBuffer
 {
 public:
-  explicit GitfFileBuffer(size_t maxBufferSize);
-  ~GitfFileBuffer();
-  GitfFileBuffer(const GitfFileBuffer&) = delete;
-  GitfFileBuffer& operator=(const GitfFileBuffer&) = delete;
+  explicit GltfFileBuffer(size_t maxBufferSize);
+  ~GltfFileBuffer();
+  GltfFileBuffer(const GltfFileBuffer&) = delete;
+  GltfFileBuffer& operator=(const GltfFileBuffer&) = delete;
 
   bool AddFromFile(const char* filename);
   GltfFilePtr GetFile(const char* filename) const;
@@ -83,6 +83,6 @@ private:
   // メッシュファイル管理用の連想配列
   std::unordered_map<std::string, GltfFilePtr> files;
 };
-using GltfFileBufferPtr = std::shared_ptr<GitfFileBuffer>;
+using GltfFileBufferPtr = std::shared_ptr<GltfFileBuffer>;
 
 #endif// GLTFMESH_H_INCLUDED

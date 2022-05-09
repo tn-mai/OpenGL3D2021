@@ -165,7 +165,7 @@ bool SetAttribute(VertexArrayObjectPtr& vao, int index, GLuint buffer,
 *
 * @param maxBufferSize メッシュ格納用バッファの最大バイト数
 */
-GitfFileBuffer::GitfFileBuffer(size_t maxBufferSize)
+GltfFileBuffer::GltfFileBuffer(size_t maxBufferSize)
 {
   // ダミーデータ
   static const struct {
@@ -186,7 +186,7 @@ GitfFileBuffer::GitfFileBuffer(size_t maxBufferSize)
 /**
 * デストラクタ
 */
-GitfFileBuffer::~GitfFileBuffer()
+GltfFileBuffer::~GltfFileBuffer()
 {
   glDeleteBuffers(1, &buffer);
 }
@@ -196,7 +196,7 @@ GitfFileBuffer::~GitfFileBuffer()
 *
 * @param filename glTFファイル名
 */
-bool GitfFileBuffer::AddFromFile(const char* filename)
+bool GltfFileBuffer::AddFromFile(const char* filename)
 {
   // glTFファイルを読み込む
   std::vector<char> buf = ReadFile(filename);
@@ -381,7 +381,7 @@ bool GitfFileBuffer::AddFromFile(const char* filename)
 /**
 * ファイルを取得する
 */
-GltfFilePtr GitfFileBuffer::GetFile(const char* filename) const
+GltfFilePtr GltfFileBuffer::GetFile(const char* filename) const
 {
   const auto itr = files.find(filename);
   if (itr == files.end()) {
