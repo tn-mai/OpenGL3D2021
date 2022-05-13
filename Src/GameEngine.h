@@ -20,6 +20,8 @@ struct GltfFile;
 using GltfFilePtr = std::shared_ptr<GltfFile>;
 class GltfFileBuffer;
 using GltfFileBufferPtr = std::shared_ptr<GltfFileBuffer>;
+class AnimatedMeshRenderer;
+using AnimatedMeshRendererPtr = std::shared_ptr<AnimatedMeshRenderer>;
 
 using ActorList = std::vector<std::shared_ptr<Actor>>;
 using TextureBuffer = std::unordered_map<std::string, std::shared_ptr<Texture>>;
@@ -211,6 +213,7 @@ private:
   std::shared_ptr<ProgramPipeline> pipelineDoF;
   std::shared_ptr<ProgramPipeline> pipelineInstancedMesh;
   std::shared_ptr<ProgramPipeline> pipelineStaticMesh;
+  std::shared_ptr<ProgramPipeline> pipelineAnimatedMesh;
   std::shared_ptr<Sampler> sampler;
   std::shared_ptr<Sampler> samplerUI;
   std::shared_ptr<Sampler> samplerDoF;
@@ -248,5 +251,6 @@ private:
 };
 
 void SetStaticMeshRenderer(Actor& actor, const char* filename, int index);
+AnimatedMeshRendererPtr SetAnimatedMeshRenderer(Actor& actor, const char* filename, int sceneNo);
 
 #endif // GAMEENGINE_H_INCLUDED

@@ -15,6 +15,68 @@ class Texture;
 using TexturePtr = std::shared_ptr<Texture>;
 class VertexArrayObject;
 using VertexArrayObjectPtr = std::shared_ptr<VertexArrayObject>;
+class ShaderStorageBuffer;
+using ShaderStorageBufferPtr = std::shared_ptr<ShaderStorageBuffer>;
+
+// スキンデータ
+struct GltfSkin
+{
+  std::string name;
+
+  struct Joint {
+    int nodeId;
+    glm::mat4 matInverseBindPose;
+  };
+  std::vector<Joint> joints;
+};
+
+// ノード
+struct GltfNode
+{
+  GltfNode* parent = nullptr;
+  int mesh = -1;
+  int skin = -1;
+  std::vector<GltfNode*> children;
+  glm::mat4 matLocal = glm::mat4(1);
+  glm::mat4 matGlobal = glm::mat4(1);
+};
+
+// アニメーションのキーフレーム
+template<typename T>
+struct GltfKeyFrame
+{
+  float frame;
+  T value;
+};
+
+// アニメーションのタイムライン
+template<typename T>
+struct GltfTimeline
+{
+  int targetNodeId;
+  std::vector<GltfKeyFrame<T>> timeline;
+};
+glm::vec3 Interporation(const GltfTimeline<glm::vec3>& data, float frame);
+glm::quat Interporation(const GltfTimeline<glm::quat>& data, float frame);
+
+// アニメーション
+struct GltfAnimation
+{
+  std::vector<GltfTimeline<glm::vec3>> translationList;
+  std::vector<GltfTimeline<glm::quat>> rotationList;
+  std::vector<GltfTimeline<glm::vec3>> scaleList;
+  float totalTime = 0;
+  std::string name;
+};
+
+/**
+* シーン
+*/
+struct GltfScene
+{
+  //std::vector<const GltfNode*> nodes;
+  std::vector<const GltfNode*> meshNodes;
+};
 
 /**
 * マテリアル
@@ -57,6 +119,12 @@ struct GltfFile
   std::string name; // ファイル名
   std::vector<GltfMesh> meshes;
   std::vector<GltfMaterial> materials;
+
+  // アニメーションメッシュ用データ
+  std::vector<GltfScene> scenes;
+  std::vector<GltfNode> nodes;
+  std::vector<GltfSkin> skins;
+  std::vector<GltfAnimation> animations;
 };
 using GltfFilePtr = std::shared_ptr<GltfFile>;
 

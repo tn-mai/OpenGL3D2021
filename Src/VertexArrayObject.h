@@ -4,6 +4,7 @@
 #ifndef VERTEXARRAYOBJECT_H_INCLUDED
 #define VERTEXARRAYOBJECT_H_INCLUDED
 #include "glad/glad.h"
+#include <glm/glm.hpp>
 #include <memory>
 
 /**

@@ -5,7 +5,9 @@
 #include "VertexArrayObject.h"
 #include "GLContext.h"
 #include "GameEngine.h"
+#include "ShaderStorageBuffer.h"
 #include "json11/json11.hpp"
+#include <glm/gtc/quaternion.hpp>
 #include <fstream>
 #include <filesystem>
 #include <iostream>
@@ -114,8 +116,29 @@ GLsizei GetBufferStride(const Json& accessor, const Json& bufferViews)
 }
 
 /**
+*
+*/
+const void* GetBuffer(const Json& accessor, const Json& bufferViews, const std::vector<std::vector<char>>& binData)
+{
+  // アクセッサから必要な情報を取得
+  const int byteOffset = accessor["byteOffset"].int_value();
+  const int bufferViewId = accessor["bufferView"].int_value();
+  const int count = accessor["count"].int_value();
+
+  // バッファビューから必要な情報を取得
+  const Json bufferView = bufferViews[bufferViewId];
+  const int bufferId = bufferView["buffer"].int_value();
+  const int baesByteOffset = bufferView["byteOffset"].int_value();
+  const int byteLength = bufferView["byteLength"].int_value();
+
+  // アクセッサが参照するデータの先頭を計算
+  return binData[bufferId].data() + baesByteOffset + byteOffset;
+
+}
+
+/**
 * 頂点アトリビュートを設定する
-* 
+*
 * @param vao         頂点アトリビュートを設定するVAO
 * @param index       頂点アトリビュート番号及びバインディングポイント
 * @param buffer      VBOとして扱うバッファオブジェクト
@@ -158,6 +181,148 @@ bool SetAttribute(VertexArrayObjectPtr& vao, int index, GLuint buffer,
   return true;
 }
 
+/**
+* 頂点アトリビュートのデフォルト値を設定する
+*
+* @param vao          頂点アトリビュートを設定するVAO
+* @param index        頂点アトリビュート番号及びバインディングポイント
+* @param buffer       VBOとして扱うバッファオブジェクト
+* @param elementCount 要素数
+* @param offset       buffer内のデータが配置位置(単位=バイト)
+*
+* シェーダが必要とする頂点アトリビュートについて、プリミティブが対応する頂点アトリビュートを
+* 持たない場合、この関数によってデフォルト値を設定する。
+*/
+void SetDefaultAttribute(VertexArrayObjectPtr& vao, int index, GLuint buffer,
+  GLint elementCount, GLsizeiptr offset)
+{
+  vao->SetAttribute(index, index, elementCount, GL_FLOAT, GL_FALSE, 0);
+  vao->SetVBO(index, buffer, offset, 0);
+}
+
+/**
+* JSONの配列データをglm::vec3に変換する
+*
+* @param json 変換元となる配列データ
+*
+* @return jsonを変換してできたvec3の値
+*/
+glm::vec3 GetVec3(const Json& json)
+{
+  const std::vector<Json>& a = json.array_items();
+  if (a.size() < 3) {
+    return glm::vec3(0);
+  }
+  return glm::vec3(a[0].number_value(), a[1].number_value(), a[2].number_value());
+}
+
+/**
+* JSONの配列データをglm::quatに変換する
+*
+* @param json 変換元となる配列データ
+*
+* @return jsonを変換してできたquatの値
+*/
+glm::quat GetQuat(const Json& json)
+{
+  const std::vector<Json>& a = json.array_items();
+  if (a.size() < 4) {
+    return glm::quat(0, 0, 0, 1);
+  }
+  return glm::quat(
+    static_cast<float>(a[3].number_value()),
+    static_cast<float>(a[0].number_value()),
+    static_cast<float>(a[1].number_value()),
+    static_cast<float>(a[2].number_value())
+  );
+}
+
+/**
+* JSONの配列データをglm::mat4に変換する
+*
+* @param json 変換元となる配列データ
+*
+* @return jsonを変換してできたmat4の値
+*/
+glm::mat4 GetMat4(const Json& json)
+{
+  const std::vector<Json>& a = json.array_items();
+  if (a.size() < 16) {
+    return glm::mat4(1);
+  }
+  glm::mat4 m;
+  for (int y = 0; y < 4; ++y) {
+    for (int x = 0; x < 4; ++x) {
+      m[y][x] = static_cast<float>(a[y * 4 + x].number_value());
+    }
+  }
+  return m;
+}
+
+/**
+* ノードのローカル姿勢行列を計算する
+*
+* @param node gltfノード
+*
+* @return nodeのローカル姿勢行列
+*/
+glm::mat4 CalcLocalMatrix(const Json& node)
+{
+  if (node["matrix"].is_array()) {
+    return GetMat4(node["matrix"]);
+  } else {
+    glm::mat4 m(1);
+    if (node["translation"].is_array()) {
+      m *= glm::translate(glm::mat4(1), GetVec3(node["translation"]));
+    }
+    if (node["rotation"].is_array()) {
+      m *= glm::mat4_cast(GetQuat(node["rotation"]));
+    }
+    if (node["scale"].is_array()) {
+      m *= glm::scale(glm::mat4(1), GetVec3(node["scale"]));
+    }
+    return m;
+  }
+}
+
+/**
+* メッシュを持つノードをリストアップする
+*/
+void GetMeshNodeList(const GltfNode* node, std::vector<const GltfNode*>& list)
+{
+  if (node->mesh >= 0) {
+    list.push_back(node);
+  }
+  for (const auto& child : node->children) {
+    GetMeshNodeList(child, list);
+  }
+}
+
+// バインディングポイント
+enum BindingPoint
+{
+  bpPosition,
+  bpColor,
+  bpTexcoord0,
+  bpNormal,
+  bpWeights0,
+  bpJoints0,
+};
+
+/**
+* デフォルト頂点データ
+*
+* 頂点データに対応する要素がない場合に使う汎用データ
+*/
+struct DefaultVertexData
+{
+  glm::vec4 color = glm::vec4(1);
+  glm::vec2 texcoord = glm::vec2(0);
+  glm::vec3 normal = glm::vec3(0, 0, -1);
+  glm::vec4 weights = glm::vec4(0, 0, 0, 0);
+  glm::vec4 joints = glm::vec4(0);
+};
+
 } // unnamed namespace
 
 /**
@@ -167,20 +332,15 @@ bool SetAttribute(VertexArrayObjectPtr& vao, int index, GLuint buffer,
 */
 GltfFileBuffer::GltfFileBuffer(size_t maxBufferSize)
 {
-  // ダミーデータ
-  static const struct {
-    glm::vec4 color = glm::vec4(1);
-    glm::vec4 texcoord = glm::vec4(0);
-    glm::vec4 normal = glm::vec4(0, 0, -1, 0);
-  } dummyData;
-  const GLsizei dummyDataSize = static_cast<GLsizei>(sizeof(dummyData));
+  const GLsizei defaultDataSize = static_cast<GLsizei>(sizeof(DefaultVertexData));
 
-  this->maxBufferSize = static_cast<GLsizei>(maxBufferSize + dummyDataSize);
+  this->maxBufferSize = static_cast<GLsizei>(maxBufferSize + defaultDataSize);
   buffer = GLContext::CreateBuffer(this->maxBufferSize, nullptr);
 
   // バッファの先頭にダミーデータを設定
-  CopyData(buffer, 1, 0, sizeof(dummyData), &dummyData);
-  curBufferSize = dummyDataSize;
+  const DefaultVertexData defaultData;
+  CopyData(buffer, 1, 0, defaultDataSize, &defaultData);
+  curBufferSize = defaultDataSize;
 }
 
 /**
@@ -226,6 +386,7 @@ bool GltfFileBuffer::AddFromFile(const char* filename)
   // バイナリファイルを読み込む
   const GLsizei prevBufferSize = curBufferSize;
   std::vector<GLsizeiptr> binOffset;
+  std::vector<std::vector<char>> binData;
   for (const Json& e : gltf["buffers"].array_items()) {
     const Json& uri = e["uri"];
     if (!uri.is_string()) {
@@ -233,16 +394,16 @@ bool GltfFileBuffer::AddFromFile(const char* filename)
       return false;
     }
     const std::string binPath = foldername + uri.string_value();
-    const std::vector<char> bin = ReadFile(binPath.c_str());
-    if (bin.empty()) {
+    binData.push_back(ReadFile(binPath.c_str()));
+    if (binData.back().empty()) {
       curBufferSize = prevBufferSize;
       return false;
     }
 
     // バイナリデータをGPUメモリにコピー
-    CopyData(buffer, 1, curBufferSize, bin.size(), bin.data());
+    CopyData(buffer, 1, curBufferSize, binData.back().size(), binData.back().data());
     binOffset.push_back(curBufferSize); // バイナリデータのオフセットを設定
-    curBufferSize += static_cast<GLsizei>(bin.size());
+    curBufferSize += static_cast<GLsizei>(binData.back().size());
   }
 
   // アクセッサからデータを取得してGPUへ転送
@@ -292,29 +453,41 @@ bool GltfFileBuffer::AddFromFile(const char* filename)
       const Json& attributes = currentPrim["attributes"];
       if (attributes["POSITION"].is_number()) {
         const int id = attributes["POSITION"].int_value();
-        SetAttribute(prim.vao, 0, buffer, accessors[id], bufferViews, binOffset);
+        SetAttribute(prim.vao, bpPosition, buffer, accessors[id], bufferViews, binOffset);
       }
       if (attributes["COLOR"].is_number()) {
         const int id = attributes["COLOR"].int_value();
-        SetAttribute(prim.vao, 1, buffer, accessors[id], bufferViews, binOffset);
+        SetAttribute(prim.vao, bpColor, buffer, accessors[id], bufferViews, binOffset);
       } else {
-        prim.vao->SetAttribute(1, 1, 4, GL_FLOAT, GL_FALSE, 0);
-        prim.vao->SetVBO(1, buffer, 0, 0);
+        SetDefaultAttribute(prim.vao, bpColor, buffer, 4, offsetof(DefaultVertexData, color));
       }
       if (attributes["TEXCOORD_0"].is_number()) {
         const int id = attributes["TEXCOORD_0"].int_value();
-        SetAttribute(prim.vao, 2, buffer, accessors[id], bufferViews, binOffset);
+        SetAttribute(prim.vao, bpTexcoord0, buffer, accessors[id], bufferViews, binOffset);
       } else {
-        prim.vao->SetAttribute(2, 2, 4, GL_FLOAT, GL_FALSE, 0);
-        prim.vao->SetVBO(2, buffer, 16, 0);
+        SetDefaultAttribute(prim.vao, bpTexcoord0, buffer, 2, offsetof(DefaultVertexData, texcoord));
       }
       if (attributes["NORMAL"].is_number()) {
         const int id = attributes["NORMAL"].int_value();
-        SetAttribute(prim.vao, 3, buffer, accessors[id], bufferViews, binOffset);
+        SetAttribute(prim.vao, bpNormal, buffer, accessors[id], bufferViews, binOffset);
       } else {
-        prim.vao->SetAttribute(3, 3, 4, GL_FLOAT, GL_FALSE, 0);
-        prim.vao->SetVBO(3, buffer, 32, 0);
+        SetDefaultAttribute(prim.vao, bpNormal, buffer, 3, offsetof(DefaultVertexData, normal));
       }
+
+      // スケルタルメッシュ用のデータ
+      if (attributes["WEIGHTS_0"].is_number()) {
+        const int id = attributes["WEIGHTS_0"].int_value();
+        SetAttribute(prim.vao, bpWeights0, buffer, accessors[id], bufferViews, binOffset);
+      } else {
+        SetDefaultAttribute(prim.vao, bpWeights0, buffer, 4, offsetof(DefaultVertexData, weights));
+      }
+      if (attributes["JOINTS_0"].is_number()) {
+        const int id = attributes["JOINTS_0"].int_value();
+        SetAttribute(prim.vao, bpJoints0, buffer, accessors[id], bufferViews, binOffset);
+      } else {
+        SetDefaultAttribute(prim.vao, bpJoints0, buffer, 4, offsetof(DefaultVertexData, joints));
+      }
+
       prim.materialNo = currentPrim["material"].int_value();
 
       // 作成したプリミティブを配列に追加
@@ -365,6 +538,171 @@ bool GltfFileBuffer::AddFromFile(const char* filename)
     file->materials.push_back({ baseColor, texBaseColor });
   }
 
+  // ノードツリー
+  {
+    const std::vector<Json>& nodes = gltf["nodes"].array_items();
+    file->nodes.resize(nodes.size());
+    for (size_t i = 0; i < nodes.size(); ++i) {
+      // 親子関係を構築
+      // NOTE: インデックスのほうが安全かつメモリ効率がいいかも？
+      const std::vector<Json>& children = nodes[i]["children"].array_items();
+      GltfNode& n = file->nodes[i];
+      n.children.reserve(children.size());
+      for (const auto& e : children) {
+        const int childJointId = e.int_value();
+        n.children.push_back(&file->nodes[childJointId]);
+        if (!file->nodes[childJointId].parent) {
+          file->nodes[childJointId].parent = &n;
+        }
+      }
+
+      // ローカル座標変換行列を計算.
+      n.matLocal = CalcLocalMatrix(nodes[i]);
+    }
+
+    // グローバル姿勢行列を計算
+    for (auto& e : file->nodes) {
+      e.matGlobal = e.matLocal;
+      GltfNode* parent = e.parent;
+      while (parent) {
+        e.matGlobal = parent->matLocal * e.matGlobal;
+        parent = parent->parent;
+      }
+    }
+  }
+
+  // スキンデータを取得
+  const std::vector<Json>& skins = gltf["skins"].array_items();
+  file->skins.reserve(skins.size());
+  for (const auto& skin : skins) {
+    GltfSkin tmpSkin;
+
+    const Json& accessor = accessors[skin["inverseBindMatrices"].int_value()];
+    if (accessor["type"].string_value() != "MAT4") {
+      std::cerr << "ERROR: バインドポーズのtypeはMAT4でなくてはなりません \n";
+      std::cerr << "  type = " << accessor["type"].string_value() << "\n";
+      return false;
+    }
+    if (accessor["componentType"].int_value() != GL_FLOAT) {
+      std::cerr << "ERROR: バインドポーズのcomponentTypeはGL_FLOATでなくてはなりません \n";
+      std::cerr << "  type = 0x" << std::hex << accessor["componentType"].string_value() << "\n";
+      return false;
+    }
+
+    // 逆バインドポーズ行列を取得
+    // @note glTFのバッファデータはリトルエンディアン. 仕様に書いてある
+    //       実行環境によっては変換の必要あり
+    const glm::mat4* inverseBindPoseList =
+      static_cast<const glm::mat4*>(GetBuffer(accessor, bufferViews, binData));
+
+    // 関節データを取得
+    const std::vector<Json>& joints = skin["joints"].array_items();
+    tmpSkin.joints.resize(joints.size());
+    for (size_t i = 0; i < joints.size(); ++i) {
+      tmpSkin.joints[i].nodeId = joints[i].int_value();
+      tmpSkin.joints[i].matInverseBindPose = inverseBindPoseList[i];
+    }
+    tmpSkin.name = skin["name"].string_value();
+    file->skins.push_back(tmpSkin);
+  }
+
+  {
+    const std::vector<Json>& nodes = gltf["nodes"].array_items();
+    for (size_t i = 0; i < nodes.size(); ++i) {
+      const Json& meshId = nodes[i]["mesh"];
+      if (meshId.is_number()) {
+        file->nodes[i].mesh = meshId.int_value();
+      }
+      const Json& skinId = nodes[i]["skin"];
+      if (skinId.is_number()) {
+        file->nodes[i].skin = skinId.int_value();
+      }
+    }
+
+    // シーンに含まれるメッシュノードを取得
+    // @note メッシュノードだけを描画すればよいので、scenesのnodes配列に
+    //       対応するノードを保持する必要はない。
+    //       ノード行列の更新は親ノードを辿ることで実現できる。
+    const std::vector<Json>& scenes = gltf["scenes"].array_items();
+    file->scenes.resize(scenes.size());
+    for (size_t i = 0; i < scenes.size(); ++i) {
+      const std::vector<Json>& nodes = scenes[i]["nodes"].array_items();
+      auto& scene = file->scenes[i];
+      for (auto& e : nodes) {
+        auto node = &file->nodes[e.int_value()];
+        //scene.nodes.push_back(node);
+        GetMeshNodeList(node, scene.meshNodes);
+      }
+    }
+  }
+
+  // アニメーションデータを取得
+  for (const auto& animation : gltf["animations"].array_items()) {
+    GltfAnimation anime;
+    anime.translationList.reserve(32);
+    anime.rotationList.reserve(32);
+    anime.scaleList.reserve(32);
+    anime.name = animation["name"].string_value();
+
+    const std::vector<Json>& channels = animation["channels"].array_items();
+    const std::vector<Json>& samplers = animation["samplers"].array_items();
+    for (const Json& e : channels) {
+      const int samplerId = e["sampler"].int_value();
+      const Json& sampler = samplers[samplerId];
+      const Json& target = e["target"];
+      const int targetNodeId = target["node"].int_value();
+      if (targetNodeId < 0) {
+        continue;
+      }
+
+      const int inputAccessorId = sampler["input"].int_value();
+      const int inputCount = accessors[inputAccessorId]["count"].int_value();
+      const void* pInput = GetBuffer(accessors[inputAccessorId], bufferViews, binData);
+
+      const int outputAccessorId = sampler["output"].int_value();
+      const int outputCount = accessors[outputAccessorId]["count"].int_value();
+      const void* pOutput = GetBuffer(accessors[outputAccessorId], bufferViews, binData);
+
+      const std::string& path = target["path"].string_value();
+      anime.totalTime = 0;
+      if (path == "translation") {
+        const GLfloat* pKeyFrame = static_cast<const GLfloat*>(pInput);
+        const glm::vec3* pData = static_cast<const glm::vec3*>(pOutput);
+        GltfTimeline<glm::vec3> timeline;
+        timeline.timeline.reserve(inputCount);
+        for (int i = 0; i < inputCount; ++i) {
+          anime.totalTime = std::max(anime.totalTime, pKeyFrame[i]);
+          timeline.timeline.push_back({ pKeyFrame[i], pData[i] });
+        }
+        timeline.targetNodeId = targetNodeId;
+        anime.translationList.push_back(timeline);
+      } else if (path == "rotation") {
+        const GLfloat* pKeyFrame = static_cast<const GLfloat*>(pInput);
+        const glm::quat* pData = static_cast<const glm::quat*>(pOutput);
+        GltfTimeline<glm::quat> timeline;
+        timeline.timeline.reserve(inputCount);
+        for (int i = 0; i < inputCount; ++i) {
+          anime.totalTime = std::max(anime.totalTime, pKeyFrame[i]);
+          timeline.timeline.push_back({ pKeyFrame[i], pData[i] });
+        }
+        timeline.targetNodeId = targetNodeId;
+        anime.rotationList.push_back(timeline);
+      } else if (path == "scale") {
+        const GLfloat* pKeyFrame = static_cast<const GLfloat*>(pInput);
+        const glm::vec3* pData = static_cast<const glm::vec3*>(pOutput);
+        GltfTimeline<glm::vec3> timeline;
+        timeline.timeline.reserve(inputCount);
+        for (int i = 0; i < inputCount; ++i) {
+          anime.totalTime = std::max(anime.totalTime, pKeyFrame[i]);
+          timeline.timeline.push_back({ pKeyFrame[i], pData[i] });
+        }
+        timeline.targetNodeId = targetNodeId;
+        anime.scaleList.push_back(timeline);
+      }
+    }
+    file->animations.push_back(anime);
+  }
+
   // 作成したメッシュを連想配列に追加
   file->name = filename;
   files.emplace(filename, file);
@@ -372,7 +710,16 @@ bool GltfFileBuffer::AddFromFile(const char* filename)
   // 読み込んだメッシュ名をデバッグ情報として出力
   std::cout << "[情報]" << __func__ << ": '" << filename << "'を読み込みました\n";
   for (size_t i = 0; i < file->meshes.size(); ++i) {
-    std::cout << "  [" << i << "] " << file->meshes[i].name << "\n";
+    std::cout << "  meshes[" << i << "]=\"" << file->meshes[i].name << "\"\n";
+  }
+  for (size_t i = 0; i < file->animations.size(); ++i) {
+    std::string name = file->animations[i].name;
+    if (name.size() <= 0) {
+      name = "<NO NAME>";
+    } else {
+      name = std::string("\"") + name + "\"";
+    }
+    std::cout << "  animations[" << i << "]=" << name << "\n";
   }
 
   return true;
@@ -388,5 +735,41 @@ GltfFilePtr GltfFileBuffer::GetFile(const char* filename) const
     return nullptr;
   }
   return itr->second;
+}
+
+/**
+* アニメーションタイムライン上の指定した時間の値を求める
+*/
+glm::vec3 Interporation(const GltfTimeline<glm::vec3>& data, float frame)
+{
+  const auto maxFrame = std::lower_bound(data.timeline.begin(), data.timeline.end(), frame,
+    [](const GltfKeyFrame<glm::vec3>& keyFrame, float frame) { return keyFrame.frame < frame; });
+  if (maxFrame == data.timeline.begin()) {
+    return data.timeline.front().value;
+  }
+  if (maxFrame == data.timeline.end()) {
+    return data.timeline.back().value;
+  }
+  const auto minFrame = maxFrame - 1;
+  const float ratio = glm::clamp((frame - minFrame->frame) / (maxFrame->frame - minFrame->frame), 0.0f, 1.0f);
+  return glm::mix(minFrame->value, maxFrame->value, ratio);
+}
+
+/**
+* アニメーションタイムライン上の指定した時間の値を求める
+*/
+glm::quat Interporation(const GltfTimeline<glm::quat>& data, float frame)
+{
+  const auto maxFrame = std::lower_bound(data.timeline.begin(), data.timeline.end(), frame,
+    [](const GltfKeyFrame<glm::quat>& keyFrame, float frame) { return keyFrame.frame < frame; });
+  if (maxFrame == data.timeline.begin()) {
+    return data.timeline.front().value;
+  }
+  if (maxFrame == data.timeline.end()) {
+    return data.timeline.back().value;
+  }
+  const auto minFrame = maxFrame - 1;
+  const float ratio = glm::clamp((frame - minFrame->frame) / (maxFrame->frame - minFrame->frame), 0.0f, 1.0f);
+  return glm::slerp(minFrame->value, maxFrame->value, ratio);
 }
 

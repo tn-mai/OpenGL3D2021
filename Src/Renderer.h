@@ -24,8 +24,13 @@ using MeshRendererPtr = std::shared_ptr<MeshRenderer>;
 using InstancedMeshRendererPtr = std::shared_ptr<InstancedMeshRenderer>;
 using ActorPtr = std::shared_ptr<Actor>;
 
+struct GltfNode;
+struct GltfAnimation;
+struct GltfScene;
 struct GltfFile;
 using GltfFilePtr = std::shared_ptr<GltfFile>;
+class GltfMeshBuffer;
+using GltfMeshBufferPtr = std::shared_ptr<GltfMeshBuffer>;
 
 /**
 * 描画機能の基本クラス
@@ -48,6 +53,7 @@ public:
   virtual RendererPtr Clone() const = 0;
   virtual void Draw(const Actor& actor,
     const ProgramPipeline& pipeline, const glm::mat4& matVP) = 0;
+  virtual void Update(const Actor& actor, float deltaTime) {}
 };
 
 /**
@@ -177,5 +183,88 @@ private:
   GltfFilePtr file;
   int meshIndex = -1;
 };
+
+/**
+* アニメーションするメッシュ描画クラス
+*/
+class AnimatedMeshRenderer : public Renderer
+{
+public:
+  // アニメーションの再生状態
+  enum class State {
+    stop, ///< 停止中
+    play, ///< 再生中
+    pause, ///< 一時停止中
+  };
+
+  AnimatedMeshRenderer() = default;
+  virtual ~AnimatedMeshRenderer() = default;
+  virtual RendererPtr Clone() const override;
+  virtual void Draw(const Actor& actor,
+    const ProgramPipeline& pipeline,
+    const glm::mat4& matVP) override;
+  virtual void Update(const Actor& actor, float deltaTime) override;
+
+  void SetScene(const GltfFilePtr& f, int sceneNo);
+
+  const std::vector<GltfAnimation>& GetAnimationList() const;
+  const std::string& GetAnimation() const;
+  float GetTotalAnimationTime() const;
+  State GetState() const;
+  bool Play(const std::string& name, bool isLoop = true);
+  bool Play(size_t index, bool isLoop = true);
+  bool Stop();
+  bool Pause();
+  bool Resume();
+  void SetAnimationSpeed(float speed);
+  float GetAnimationSpeed() const;
+  void SetPosition(float);
+  float GetPosition() const;
+  bool IsFinished() const;
+  bool IsLoop() const;
+  void SetLoop(bool isLoop);
+
+private:
+  GltfFilePtr file;
+  int sceneNo = -1;
+  const GltfScene* scene = nullptr;
+  const GltfAnimation* animation = nullptr;
+  std::vector<int> nonAnimatedNodeList;
+  struct Range {
+    GLintptr offset;
+    GLsizeiptr size;
+  };
+  std::vector<Range> ssboRangeList;
+
+  State state = State::stop;
+  float frame = 0;
+  float animationSpeed = 1;
+  bool isLoop = true;
+};
+using AnimatedMeshRendererPtr = std::shared_ptr<AnimatedMeshRenderer>;
+
+namespace GlobalAnimatedMeshState {
+
+/**
+* アニメーションするメッシュの描画用データ
+*
+* SSBOのオフセットアライメント条件を満たすために、256バイト境界に配置すること。
+* 256はOpenGL仕様で許される最大値(GeForce系がこの値を使っている)。
+*/
+struct Data
+{
+  glm::mat4 matRoot;
+  std::vector<glm::mat4> matBones;
+};
+
+bool Initialize(size_t maxCount);
+void Finalize();
+void ClearData();
+GLintptr AddData(const Data& data);
+void Upload();
+void Bind(GLuint bindingPoint, GLintptr offset, GLsizeiptr size);
+void Unbind(GLuint bindingPoint);
+
+} // namespace GlobalAnimatedMeshState
 
 #endif // RENDERER_H_INCLUDED

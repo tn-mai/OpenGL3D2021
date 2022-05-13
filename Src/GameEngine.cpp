@@ -226,6 +226,8 @@ bool GameEngine::Initialize()
       "Res/InstancedMesh.vert", "Res/FragmentLighting.frag"));
     engine->pipelineStaticMesh.reset(new ProgramPipeline(
       "Res/StaticMesh.vert", "Res/StaticMesh.frag"));
+    engine->pipelineAnimatedMesh.reset(new ProgramPipeline(
+      "Res/SkeletalMesh.vert", "Res/StaticMesh.frag"));
 
     engine->sampler = std::shared_ptr<Sampler>(new Sampler(GL_REPEAT));
     engine->samplerUI.reset(new Sampler(GL_CLAMP_TO_EDGE));
@@ -280,6 +282,7 @@ bool GameEngine::Initialize()
     }
 
     // glTFファイル用バッファを初期化
+    GlobalAnimatedMeshState::Initialize(256 * 128);
     engine->gltfFileBuffer = std::make_shared<GltfFileBuffer>(256 * 1024 * 1024);
 
     // ImGuiの初期化
@@ -333,6 +336,8 @@ void GameEngine::Finalize()
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+    GlobalAnimatedMeshState::Finalize();
 
     // GLFWの終了.
     glfwTerminate();
@@ -409,6 +414,10 @@ void GameEngine::UpdateActors(float deltaTime)
       }
 
       actors[i]->OnUpdate(deltaTime);
+
+      if (actors[i]->renderer) {
+        actors[i]->renderer->Update(*actors[i], deltaTime);
+      }
 
       // TODO: テキスト未実装
       if (actors[i]->animation) {
@@ -558,6 +567,8 @@ void GameEngine::NewFrame()
 #else
   Audio::Get().Update();
 #endif
+
+  GlobalAnimatedMeshState::ClearData();
 }
 
 /**
@@ -578,6 +589,8 @@ void GameEngine::RemoveDeadActors()
 */
 void GameEngine::RenderDefault()
 {
+  GlobalAnimatedMeshState::Upload();
+
   // シェーダの切り替えによる描画効率の低下を防ぐため、アクターをシェーダ別に分ける
   std::vector<std::vector<Actor*>> shaderGroup;
   shaderGroup.resize(shaderCount);
@@ -643,6 +656,7 @@ void GameEngine::RenderDefault()
       { Shader::FragmentLighting, pipeline.get() },
       { Shader::GroundMap, pipelineGround.get() },
       { Shader::StaticMesh, pipelineStaticMesh.get() },
+      { Shader::AnimatedMesh, pipelineAnimatedMesh.get() },
     };
     RenderShaderGroups(shaderGroup, renderingList, matShadowProj * matShadowView);
 
@@ -699,6 +713,7 @@ void GameEngine::RenderDefault()
     { Shader::InstancedMesh, pipelineInstancedMesh.get() },
     { Shader::FragmentLighting, pipeline.get() },
     { Shader::StaticMesh, pipelineStaticMesh.get() },
+    { Shader::AnimatedMesh, pipelineAnimatedMesh.get() },
   };
   RenderShaderGroups(shaderGroup, renderingList, matProj * matView);
 
@@ -756,6 +771,8 @@ void GameEngine::RenderDefault()
     texCollider->Unbind(0);
     pipelineCollider->Unbind();
   }
+
+  GlobalAnimatedMeshState::Unbind(0);
 }
 
 /**
@@ -951,7 +968,8 @@ void GameEngine::RenderShaderGroups(const ShaderGroupList& shaderGroups,
   for (const RenderingData& e : renderingList) {
     // 前処理
     if (e.shaderType == Shader::InstancedMesh ||
-      e.shaderType == Shader::StaticMesh) {
+      e.shaderType == Shader::StaticMesh ||
+      e.shaderType == Shader::AnimatedMesh) {
       e.pipeline->SetUniform(Renderer::locMatTRS, matVP);
     } else if (e.shaderType == Shader::GroundMap) {
       texMap->Bind(2);
@@ -986,6 +1004,18 @@ void SetStaticMeshRenderer(Actor& actor, const char* filename, int index)
   actor.shader = Shader::StaticMesh;
 }
 
+/**
+*
+*/
+AnimatedMeshRendererPtr SetAnimatedMeshRenderer(Actor& actor, const char* filename, int sceneNo)
+{
+  auto renderer = std::make_shared<AnimatedMeshRenderer>();
+  GltfFilePtr p = GameEngine::Get().LoadGltfFile(filename);
+  renderer->SetScene(p, sceneNo);
+  actor.renderer = renderer;
+  actor.shader = Shader::AnimatedMesh;
+  return renderer;
+}
 /**
 * テクスチャを読み込む
 */
