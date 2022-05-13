@@ -405,7 +405,7 @@ GLintptr AddData(const Data& data)
 */
 void Upload()
 {
-  ssbo->BufferSubData(0, dataBuffer.size() * sizeof(Data), dataBuffer.data());
+  ssbo->BufferSubData(0, dataBuffer.size() * sizeof(glm::mat4), dataBuffer.data());
   ssbo->SwapBuffers();
 }
 
