@@ -25,7 +25,6 @@ layout(location=10) uniform vec4 materialColor;
 
 layout(std430, binding=0) buffer MeshMatrixData
 {
-  mat4 matMeshModel;
   mat4 matBones[];
 };
 
@@ -46,7 +45,7 @@ void main()
     // ウェイトが正規化されていない場合の対策([3][3]が1.0になるとは限らない)
     matModel[3][3] = dot(vWeights, vec4(1));
   } else {
-    matModel = matMeshModel;
+    matModel = matBones[0];
   }
 
   mat3 matNormal = transpose(inverse(mat3(matModel)));

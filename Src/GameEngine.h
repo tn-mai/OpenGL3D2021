@@ -20,8 +20,6 @@ struct GltfFile;
 using GltfFilePtr = std::shared_ptr<GltfFile>;
 class GltfFileBuffer;
 using GltfFileBufferPtr = std::shared_ptr<GltfFileBuffer>;
-class AnimatedMeshRenderer;
-using AnimatedMeshRendererPtr = std::shared_ptr<AnimatedMeshRenderer>;
 
 using ActorList = std::vector<std::shared_ptr<Actor>>;
 using TextureBuffer = std::unordered_map<std::string, std::shared_ptr<Texture>>;
@@ -189,12 +187,15 @@ public:
     return nullptr;
   }
 
+  const GltfFileBufferPtr& GetGltfFileBuffer() const { return gltfFileBuffer; }
+
 private:
   GameEngine() = default;
   ~GameEngine() = default;
   GameEngine(const GameEngine&) = delete;
   GameEngine& operator=(const GameEngine&) = delete;
 
+  // シェーダの種類とプログラムパイプラインを対応づける構造体
   struct RenderingData {
     Shader shaderType;
     ProgramPipeline* pipeline;
@@ -249,8 +250,5 @@ private:
   // glTFファイル管理オブジェクト
   GltfFileBufferPtr gltfFileBuffer;
 };
-
-void SetStaticMeshRenderer(Actor& actor, const char* filename, int index);
-AnimatedMeshRendererPtr SetAnimatedMeshRenderer(Actor& actor, const char* filename, int sceneNo);
 
 #endif // GAMEENGINE_H_INCLUDED

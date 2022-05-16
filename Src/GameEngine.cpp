@@ -227,7 +227,7 @@ bool GameEngine::Initialize()
     engine->pipelineStaticMesh.reset(new ProgramPipeline(
       "Res/StaticMesh.vert", "Res/StaticMesh.frag"));
     engine->pipelineAnimatedMesh.reset(new ProgramPipeline(
-      "Res/SkeletalMesh.vert", "Res/StaticMesh.frag"));
+      "Res/AnimatedMesh.vert", "Res/StaticMesh.frag"));
 
     engine->sampler = std::shared_ptr<Sampler>(new Sampler(GL_REPEAT));
     engine->samplerUI.reset(new Sampler(GL_CLAMP_TO_EDGE));
@@ -282,8 +282,7 @@ bool GameEngine::Initialize()
     }
 
     // glTFファイル用バッファを初期化
-    GlobalAnimatedMeshState::Initialize(256 * 128);
-    engine->gltfFileBuffer = std::make_shared<GltfFileBuffer>(256 * 1024 * 1024);
+    engine->gltfFileBuffer = std::make_shared<GltfFileBuffer>(256 * 1024 * 1024, sizeof(glm::mat4) * 64 * 32);
 
     // ImGuiの初期化
     ImGui::CreateContext();
@@ -336,8 +335,6 @@ void GameEngine::Finalize()
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-
-    GlobalAnimatedMeshState::Finalize();
 
     // GLFWの終了.
     glfwTerminate();
@@ -568,7 +565,7 @@ void GameEngine::NewFrame()
   Audio::Get().Update();
 #endif
 
-  GlobalAnimatedMeshState::ClearData();
+  gltfFileBuffer->ClearAnimationBuffer();
 }
 
 /**
@@ -589,7 +586,7 @@ void GameEngine::RemoveDeadActors()
 */
 void GameEngine::RenderDefault()
 {
-  GlobalAnimatedMeshState::Upload();
+  gltfFileBuffer->UploadAnimationBuffer();
 
   // シェーダの切り替えによる描画効率の低下を防ぐため、アクターをシェーダ別に分ける
   std::vector<std::vector<Actor*>> shaderGroup;
@@ -771,8 +768,6 @@ void GameEngine::RenderDefault()
     texCollider->Unbind(0);
     pipelineCollider->Unbind();
   }
-
-  GlobalAnimatedMeshState::Unbind(0);
 }
 
 /**
@@ -989,33 +984,6 @@ void GameEngine::RenderShaderGroups(const ShaderGroupList& shaderGroups,
   }
 }
 
-/**
-* アクターにスタティックメッシュレンダラを設定する
-*
-* @param actor    レンダラを設定するアクター
-* @param filename glTFファイル名
-* @param index    glTFに含まれるメッシュのインデックス
-*/
-void SetStaticMeshRenderer(Actor& actor, const char* filename, int index)
-{
-  auto renderer = std::make_shared<StaticMeshRenderer>();
-  renderer->SetMesh(GameEngine::Get().LoadGltfFile(filename), index);
-  actor.renderer = renderer;
-  actor.shader = Shader::StaticMesh;
-}
-
-/**
-*
-*/
-AnimatedMeshRendererPtr SetAnimatedMeshRenderer(Actor& actor, const char* filename, int sceneNo)
-{
-  auto renderer = std::make_shared<AnimatedMeshRenderer>();
-  GltfFilePtr p = GameEngine::Get().LoadGltfFile(filename);
-  renderer->SetScene(p, sceneNo);
-  actor.renderer = renderer;
-  actor.shader = Shader::AnimatedMesh;
-  return renderer;
-}
 /**
 * テクスチャを読み込む
 */

@@ -24,13 +24,13 @@ using MeshRendererPtr = std::shared_ptr<MeshRenderer>;
 using InstancedMeshRendererPtr = std::shared_ptr<InstancedMeshRenderer>;
 using ActorPtr = std::shared_ptr<Actor>;
 
-struct GltfNode;
 struct GltfAnimation;
+using GltfAnimationPtr = std::shared_ptr<GltfAnimation>;
 struct GltfScene;
 struct GltfFile;
 using GltfFilePtr = std::shared_ptr<GltfFile>;
-class GltfMeshBuffer;
-using GltfMeshBufferPtr = std::shared_ptr<GltfMeshBuffer>;
+class GltfFileBuffer;
+using GltfFileBufferPtr = std::shared_ptr<GltfFileBuffer>;
 
 /**
 * 描画機能の基本クラス
@@ -183,6 +183,7 @@ private:
   GltfFilePtr file;
   int meshIndex = -1;
 };
+using StaticMeshRendererPtr = std::shared_ptr<StaticMeshRenderer>;
 
 /**
 * アニメーションするメッシュ描画クラス
@@ -205,31 +206,38 @@ public:
     const glm::mat4& matVP) override;
   virtual void Update(const Actor& actor, float deltaTime) override;
 
-  void SetScene(const GltfFilePtr& f, int sceneNo);
-
-  const std::vector<GltfAnimation>& GetAnimationList() const;
-  const std::string& GetAnimation() const;
-  float GetTotalAnimationTime() const;
-  State GetState() const;
+  void SetFileBuffer(const GltfFileBufferPtr& p) { fileBuffer = p; }
+  void SetFile(const GltfFilePtr& f, int sceneNo = 0);
+  bool Play(const GltfAnimationPtr& animation, bool isLoop = true);
   bool Play(const std::string& name, bool isLoop = true);
   bool Play(size_t index, bool isLoop = true);
   bool Stop();
   bool Pause();
   bool Resume();
-  void SetAnimationSpeed(float speed);
-  float GetAnimationSpeed() const;
+
+  const GltfFilePtr& GetFile() const { return file; }
+  State GetState() const { return state; }
+  const GltfAnimationPtr& GetAnimation() const { return animation; }
+
+  // @note 再生速度(1.0f=等速, 2.0f=2倍速, 0.5f=1/2倍速)
+  void SetAnimationSpeed(float speed) { animationSpeed = speed; }
+  float GetAnimationSpeed() const { return animationSpeed; }
+
+  // @note true=ループする, false=ループしない
+  void SetLoopFlag(bool isLoop) { this->isLoop = isLoop; }
+  bool IsLoop() const { return isLoop; }
+
   void SetPosition(float);
   float GetPosition() const;
   bool IsFinished() const;
-  bool IsLoop() const;
-  void SetLoop(bool isLoop);
 
 private:
+  GltfFileBufferPtr fileBuffer;
   GltfFilePtr file;
-  int sceneNo = -1;
   const GltfScene* scene = nullptr;
-  const GltfAnimation* animation = nullptr;
+  GltfAnimationPtr animation;
   std::vector<int> nonAnimatedNodeList;
+
   struct Range {
     GLintptr offset;
     GLsizeiptr size;
@@ -243,28 +251,10 @@ private:
 };
 using AnimatedMeshRendererPtr = std::shared_ptr<AnimatedMeshRenderer>;
 
-namespace GlobalAnimatedMeshState {
+StaticMeshRendererPtr SetStaticMeshRenderer(
+  Actor& actor, const char* filename, int index = 0);
 
-/**
-* アニメーションするメッシュの描画用データ
-*
-* SSBOのオフセットアライメント条件を満たすために、256バイト境界に配置すること。
-* 256はOpenGL仕様で許される最大値(GeForce系がこの値を使っている)。
-*/
-struct Data
-{
-  glm::mat4 matRoot;
-  std::vector<glm::mat4> matBones;
-};
-
-bool Initialize(size_t maxCount);
-void Finalize();
-void ClearData();
-GLintptr AddData(const Data& data);
-void Upload();
-void Bind(GLuint bindingPoint, GLintptr offset, GLsizeiptr size);
-void Unbind(GLuint bindingPoint);
-
-} // namespace GlobalAnimatedMeshState
+AnimatedMeshRendererPtr SetAnimatedMeshRenderer(
+  Actor& actor, const char* filename, int sceneNo = 0);
 
 #endif // RENDERER_H_INCLUDED

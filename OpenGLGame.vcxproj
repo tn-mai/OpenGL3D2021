@@ -208,8 +208,7 @@
     <None Include="Res\InstancedMesh.vert" />
     <None Include="Res\Simple.frag" />
     <None Include="Res\Simple.vert" />
-    <None Include="Res\SkeletalMesh.frag" />
-    <None Include="Res\SkeletalMesh.vert" />
+    <None Include="Res\AnimatedMesh.vert" />
     <None Include="Res\StaticMesh.frag" />
     <None Include="Res\StaticMesh.vert" />
     <None Include="Res\VertexLighting.vert" />
