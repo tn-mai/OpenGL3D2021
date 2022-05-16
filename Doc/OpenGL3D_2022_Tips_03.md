@@ -1,12 +1,12 @@
 [OpenGL 3D 2022 Tips 第03回]
 
-# glTFファイル
+# glTFファイルとJSON形式
 
 ## 習得目標
 
-* 
-* 
-* 
+* JSONファイルから必要なデータを取り出すことができる。
+* glTFのバッファ、バッファビュー、アクセッサから、頂点アトリビュートを設定することができる。
+* glTFファイルを読み込んで表示することができる。
 
 ## 1. glTFとJSON
 
@@ -37,30 +37,31 @@ JSONは、人間にとってもコンピューターにとっても比較的簡�
 
 JSONには６種類のデータ型が存在します。６種類のうち２つは構造を作るためのデータ型で、以下の２種類があります。
 
->* オブジェクト(名前/値のペアの集まり)。`{ "身長" : 129, "体重" : 24, "血液型" : "O" }`のように書き、名前と値を「：(コロン)」で、ペア同士を「，(かんま)」で区切り、全体を「｛」と「｝」で囲う。
+>* オブジェクト(名前/値のペアの集まり)。<br>`{ "身長" : 129, "体重" : 24, "血液型" : "O" }`<br>のように書き、名前と値を「：(コロン)」で、ペア同士を「，(カンマ)」で区切り、全体を「｛」と「｝」で囲う。
 >* 配列。`[ 2, 7, 1, 8, 2, 8 ]`のように、データ型同士を「，」で区切り、全体を「［」と「］」で囲う。
 
 残りは数値や文字列などを直接に表すデータ型で、以下の４種類があります。
 
->* 文字列。`"これは文字列です"`のように、「”(だぶる・くぉーてーしょん)」で囲う(つまりC++言語と同じ)。
+>* 文字列。`"これは文字列です"`のように、「”(ダブル・クォーテーション)」で囲う(つまりC++言語と同じ)。
 >* 数値。`57`や`3.14159`、のように、数値そのものを書く。小数も書ける。
 >* 真偽値。`true`と`false`のこと(これもC++言語と同じ)。
 >* null値。C++言語では`nullptr`と書くが、JSONでは単に`null`と書く。
 
-JSONでは、これらを組み合わせて多様なデータを表現します。
+JSONでは、これらを組み合わせて多様なデータを表現します。「配列の配列」や「オブジェクトの配列」「オブジェクトや配列の値を持つオブジェクト」なども作成可能です。
 
 >本テキストの主題はglTFなので、JSONの詳しい説明は行いません。詳細は以下のサイトを参照してください。<br>
 >`https://www.json.org/json-ja.html`
 
-ただ、いくらJSONが単純な言語だとはいっても、それを読み込むプログラムを書くにはある程度のプログラミングの知識と経験が必要となります。
+このように、JSONの文法規則はかなり少ないです。とはいえ、JSONを読み込むプログラムを書くには、ある程度のプログラミングの知識と経験が必要となります。
 
-それに、今回の目的はglTFを読み込むことで、JSONはそのための手段に過ぎません。そこで、JSONの取り扱いはライブラリに一任することにします。
+それに、今回の目的はglTFを読み込むことで、JSONはそのための手段に過ぎません。そこで、既存のJSONライブラリを使って読み込むことにします。
 
 JSONライブラリはいくつも存在しますが、今回は「json11」というライブラリを使います。以下のGitHubリポジトリから「Clone or download」ボタンでzipファイルをダウンロードしてください。
 
 `https://github.com/dropbox/json11`
 
-ダウンロードしたzipファイルをプロジェクトの`Src`フォルダに展開し、フォルダ名を`json11-master`から`json11`に改名してください。
+ダウンロードしたzipファイルをプロジェクトの`Src`フォルダに展開し、フォルダ名を
+`json11-master`から`json11`に改名してください。
 
 次に、`json11`フォルダにある`json11.cpp`と`json11.hpp`の２つのファイルを、Visual Studioのプロジェクトに追加してください。
 
@@ -83,11 +84,10 @@ JSONのデータは、JavaScriptで表現可能な型として定義されてい
 
 `map`クラスは「キー(鍵)」と「値」のペアの集まりで、「連想配列」や「辞書」と呼ばれるデータ構造を表すクラスです。
 
-JSONは名前と値のペアしか許されませんが、std::mapではどんな型でもキーとして指定できます。json11ではJSONのデータ型として使うので、キーはstd::stringクラスが指定されています。
+`map`クラスの特徴は、キーに対応する値をすばやく見つけ出せることです。例えば`vector`
+クラスの場合、「1234番目の値」などは簡単に取り出せます。
 
-`map`クラスの特徴は、キーに対応する値をすばやく見つけ出せることです。例えば`vector`クラスの場合、「10番目の値」などは簡単に取り出せます。
-
-しかし、「名前が"吉良上野介"の値」を取り出そうと思ったら、先頭から(あるいは末尾から)ひとつずつデータの名前を調べていくしかありません。
+しかし、「名前が"吉良上野介"の値」を取り出そうと思ったら、先頭から(あるいは末尾から)ひとつずつ要素を調べていくしかありません。
 
 これに対して`map`クラスでは、名前をキーとして設定しておけば、どんなにデータ数が多くても、非常に高速に目的の値を取り出すことが可能です。
 
@@ -115,15 +115,20 @@ std::cout << k << "のニックネームは" << soldiers[k].nickname << "です\
 
 このように、`map`クラスでは`[]`演算子を使うだけで対応する値が見つけられます。名前を検索する`for`を書く必要はありません。
 
-もちろん、良いことばかりではありません。まず、キーを記録するために追加のメモリが必要です。
+もちろん、良い点ばかりではありません。まず、キーを記録するために追加のメモリが必要です。
 
-また、`vector`クラスは必要なメモリをひとつの連続した領域として確保します。対して、`map`クラスではキー/値のペアごとにメモリ領域が確保されるため、データがメモリ内でバラバラに配置されます。
+また、`vector`クラスは必要なメモリをひとつの連続した領域として確保します。対して、
+`map`クラスではキー/値のペアごとにメモリ領域が確保されるため、データがメモリ内でバラバラに配置されます。
 
-これが問題なのは、現代のコンピューターは「データが近くに配置されているほど効率的に処理できる」設計になっているからです。
+なぜこれが問題なのかというと、現代のコンピューターは
 
-データ量が少ない場合は比較回数も少なくなるため、`vector`クラスを使うほうが効率が良くなります。
+>メモリ上で近くに配置されているデータには素早くアクセスできるが、離れていると時間がかかる
+
+設計になっているからです。データ量が少ない場合、比較回数よりメモリアクセスの速度のほうが影響が大きいため、`vector`クラスを使うほうが効率が良くなります。
 
 逆にデータ量が多くなると、`vector`クラスでは比較回数が飛躍的に増加します。この場合、比較回数がほとんど増えない`map`クラスが有利になります。
+
+`map`クラスの「キー」にはどんな型でも指定できますが、JSONオブジェクトの「名前」要素は文字列なので、キーには`std::string`クラスを指定します。
 
 ### 1.5 json11の使い方
 
@@ -149,9 +154,10 @@ json11.hを開き、ライブラリで使える関数、定数について確認
 
 >**【1章のまとめ】**
 >
->* 
->* 
->* 
+>* glTFはOpenGLから扱いやすい構造になっている3Dモデル用ファイル。
+>* glTFはJSON(ジェイソン)というデータ記述言語で定義する。
+>* JSONはJavaScriptの文法を簡略化したもので、人間とコンピュータのどちらにとっても比較的扱いやすい。
+>* `map`クラスを使うと、特定の属性を持つデータを素早く検索できる。
 
 <div style="page-break-after: always"></div>
 
@@ -214,7 +220,8 @@ json11.hを開き、ライブラリで使える関数、定数について確認
 
 ### 2.2 コンストラクタ、デストラクタを定義する
 
-それでは、メンバ関数を定義していきましょう。プロジェクトの`Src`フォルダに`VertexArrayObject.cpp`というCPPファイルを追加してください。追加したファイルを開き、次のプログラムを追加してください。
+それでは、メンバ関数を定義していきましょう。プロジェクトの`Src`フォルダに
+`VertexArrayObject.cpp`というCPPファイルを追加してください。追加したファイルを開き、次のプログラムを追加してください。
 
 ```diff
 +/**
@@ -239,7 +246,7 @@ json11.hを開き、ライブラリで使える関数、定数について確認
 +}
 ```
 
-コンストラクタでVAOを作成し、デストラクタでVAOを削除するようにしています。
+コンストラクタでVAOを作成、デストラクタでVAOを削除するだけのプログラムです。
 
 ### 2.3 SetAttribute関数を定義する
 
@@ -304,7 +311,9 @@ json11.hを開き、ライブラリで使える関数、定数について確認
 +}
 ```
 
-それぞれ`glVertexArrayVertexBuffer`と`glVertexArrayElementBuffer`を呼び出すだけです。このような、ある関数を呼び出すことを主目的とする関数は「ラッパー関数」と呼ばれます。
+これらの関数は、`glVertexArrayVertexBuffer`または`glVertexArrayElementBuffer`を呼び出すだけです。
+
+このような、ある関数を呼び出すことを主目的とする関数は「ラッパー関数」と呼ばれます。ラッパー関数は、元になった関数に「特定の意味や文脈を与える」ために定義することが多いです。
 
 ### 2.5 Bind, Unbind関数を定義する
 
@@ -331,19 +340,27 @@ json11.hを開き、ライブラリで使える関数、定数について確認
 +}
 ```
 
-これらは`glBindVertexArray`を呼び出すだけです。
+この2つも`glBindVertexArray`を呼び出すだけなので、ラッパー関数です。プログラムに
+
+`glBindVertexArray(0)`
+
+と書いてあるよりも、
+
+`vao.Unbind()`
+
+のほうが意図を読み取りやいと思いませんか？ このように、ラッパー関数を定義するのは「プログラムの意図を理解しやすくする」ためなのです。
 
 ### 2.6 glTFの構造を表すクラスを定義する
 
-それでは、本丸のglTFを扱う機能を作っていきます。glTFは以下のような階層構造を持っています。本テキストでは、`mesh`(メッシュ)配下のオブジェクトだけを扱います。
+それでは、glTFを扱う機能を作っていきましょう。glTFは以下のような階層構造を持っています。下図において、矢印の根本のオブジェクトが、矢印の指すオブジェクトを参照しています。
 
 <p align="center">
-<img src="images/Tips_03_gltf_concept_view.png" width="33%" />
+<img src="images/Tips_03_gltf_concept_view.png" width="50%" />
 </p>
 
-上図において、矢印の根本のオブジェクトが、矢印の指すオブジェクトを参照しています。
+中心となるのは`node`(ノード)オブジェクトです。いきなりこの全てのオブジェクトを扱うのは大変なので、本テキストでは`mesh`(メッシュ)配下のオブジェクトだけを扱います。
 
->これは概要図なので、ここに書かれていないオブジェクトがある点には注意してください。<br>
+>この概要図は重要なオブジェクトだけを表している点に注意してください。<br>
 >glTFの概要については、以下のURLで公開されている「glTF 2.0の概要図の日本語訳」が参考になるでしょう。<br>
 >`https://qiita.com/randall2835/items/ec911cb6b0f10677559b`
 
@@ -371,9 +388,10 @@ json11.hを開き、ライブラリで使える関数、定数について確認
 +#endif// GLTFMESH_H_INCLUDED
 ```
 
-手始めに、マテリアル、プリミティブ、メッシュ、そしてこの3つをまとめて管理するファイル、という4つのクラスを定義します。
+手始めに、`GltfMaterial`(マテリアル)クラス、`GltfPrimitive`(プリミティブ)クラス、
+`GltfMesh`(メッシュ)クラス、そしてこの3つをまとめて管理する`GltfFile`(ファイル)クラスを定義します。
 
-プリミティブはメッシュの内部データです。メッシュは複数のプリミティブを含むことができます。それでは、先行宣言の下に、次のプログラムを追加してください。
+glTFにおけるプリミティブはメッシュの内部データです。メッシュは複数のプリミティブを含むことができます。それでは、先行宣言の下に、次のプログラムを追加してください。
 
 ```diff
  using TexturePtr = std::shared_ptr<Texture>;
@@ -476,7 +494,8 @@ glTFのマテリアルデータは、2010年代からゲームでの利用が進
 
 glTFファイルの読み込みは`AddFromFile`(アド・フロム・ファイル)メンバ関数で行います。読み込んだファイルを取得するには`GetFile`(ゲット・ファイル)メンバ関数を使います。
 
-メッシュの管理には`unordered_map`(アンオーダード・マップ)クラスを使います。`unordered_map`は前に説明した`map`クラスの改良版で、C++11から追加されました。
+メッシュの管理には`unordered_map`(アンオーダード・マップ)クラスを使います。
+`unordered_map`は前に説明した`map`クラスの改良版で、C++11から追加されました。
 
 ### 2.8 GltfFileBufferコンストラクタを定義する
 
@@ -498,18 +517,69 @@ glTFファイルの読み込みは`AddFromFile`(アド・フロム・ファイ�
 +using namespace json11;
 ```
 
-とりあえず、glTFファイルからメッシュを作成するために必要なヘッダファイルをインクルードします。それから`using`指令によって、`json11`名前空間のメンバを修飾不要にしておきます。
+とりあえず、glTFファイルを読み込むために必要なヘッダファイルをインクルードします。それと、`using`指令を使って`json11`名前空間のメンバを修飾不要にしておきます。
 
 json11ライブラリのメンバはすべて`json11`名前空間に格納されています。さらに、大半の機能は`Json`クラスのメンバなので、通常は毎回`json11::Json::parse`のように書く必要があります。
 
 `using`指令を使うと、同じことを`Json::parse`と書けるようになります。これによって、コードが見やすくなり、さらにタイピング量を減らすことができます。
 
-それでは、コンストラクタから定義していきましょう。`using`指令の下に、次のプログラムを追加してください。
+>**【using namespace stdについて】**<br>
+>C++標準ライブラリのクラスや関数には汎用的な名前が多いので、`std::`を省略するとライブラリ以外で定義された名前と見分けが付きません。そのため、`std`を`using`指令の対象にするかどうかは慎重に判断する必要があります。<br>
+>しかしjson11ライブラリの場合、`json11::`を省略しても、他の型や変数と混同する可能性は非常に低いです。そのため、`using`指令を使う価値が高くなります。
+
+次に、バインディングポイントとデフォルト頂点データ(頂点データが存在しない場合に使うデータ)を定義します。`using`指令の下に、次のプログラムを追加してください。
 
 ```diff
  #include <iostream>
 
  using namespace json11;
++
++namespace { // unnamed
++
++// バインディングポイント
++enum BindingPoint
++{
++  bpPosition,
++  bpColor,
++  bpTexcoord0,
++  bpNormal,
++};
++
++/**
++* デフォルト頂点データ
++*
++* 頂点データに対応する要素がない場合に使う汎用データ
++*/
++struct DefaultVertexData
++{
++  glm::vec4 color = glm::vec4(1);
++  glm::vec2 texcoord = glm::vec2(0);
++  glm::vec3 normal = glm::vec3(0, 0, -1);
++};
++
++} // unnamed namespace
+```
+
+`BindingPoint`(バインディング・ポイント)列挙型は、頂点アトリビュートのバインディングポイント番号です。後で作成するglTF描画用のシェーダと一致するように定義します。
+
+`DefaultVertexData`(デフォルト・バーテックス・データ)は、頂点データが存在しない場合に使われるダミーデータです。
+
+これらの定義が他のファイルから見えないように、「無名名前空間」を使っています。名前を指定しない名前空間はすべて「無名名前空間」となり、コンパイラによってCPPファイルごとに自動的に異なる名前が付けられます。
+
+C++の定義、変数、関数は「グローバル名前空間」に作られます。そのため、異なるCPPファイルであっても同じ名前を使うことができません。
+
+無名名前空間はCPPファイルごとに異なるため、同じ名前の定義や関数を書いても重複することはありません。
+
+>無名名前空間のコメントに`unnamed`(アンネームド)と書いているのは、名前を付け忘れたわけではないことを示すためです。<br>
+>`unnamed`は「<ruby>無名<rt>むめい</rt></ruby>、名前のない」という意味です。
+
+それでは、コンストラクタを定義しましょう。無名名前空間の定義の下に、次のプログラムを追加してください。
+
+```diff
+   glm::vec3 normal = glm::vec3(0, 0, -1);
+ };
+
+ } // unnamed namespace
 +
 +/**
 +* コンストラクタ
@@ -518,34 +588,29 @@ json11ライブラリのメンバはすべて`json11`名前空間に格納され
 +*/
 +GltfFileBuffer::GltfFileBuffer(size_t maxBufferSize)
 +{
-+  // ダミーデータ
-+  static const struct {
-+    glm::vec4 color = glm::vec4(1);
-+    glm::vec4 texcoord = glm::vec4(0);
-+    glm::vec4 normal = glm::vec4(0, 0, -1, 0);
-+  } dummyData;
-+  const GLsizei dummyDataSize = static_cast<GLsizei>(sizeof(dummyData));
++  const GLsizei defaultDataSize = static_cast<GLsizei>(sizeof(DefaultVertexData));
 +
-+  this->maxBufferSize = static_cast<GLsizei>(maxBufferSize + dummyDataSize);
++  this->maxBufferSize = static_cast<GLsizei>(maxBufferSize + defaultDataSize);
 +  buffer = GLContext::CreateBuffer(this->maxBufferSize, nullptr);
 +
 +  // バッファの先頭にダミーデータを設定
-+  CopyData(buffer, 1, 0, sizeof(dummyData), &dummyData);
-+  curBufferSize = dummyDataSize;
++  const DefaultVertexData defaultData;
++  CopyData(buffer, 1, 0, defaultDataSize, &defaultData);
++  curBufferSize = defaultDataSize;
 +}
 ```
 
 コンストラクタでは、メッシュデータを格納するバッファオブジェクトを作成します。このバッファオブジェクトには、VBOとIBOの両方が格納されます。
 
-また、バッファオブジェクトの先頭にダミーデータを追加しています。このダミーデータは、色やテクスチャ座標を持たないメッシュのVAOに割り当てるためのものです。
+また、バッファオブジェクトの先頭にデフォルト頂点データを追加しています。色やテクスチャ座標などを持たないglTFファイルを読み込んだとき、VAOに割り当てるために使います。
 
 ### 2.9 GltfFileBufferデストラクタを定義する
 
 コンストラクタの次は、デストラクタを定義します。コンストラクタの定義の下に、次のプログラムを追加してください。
 
 ```diff
-   CopyData(buffer, 1, 0, sizeof(dummyData), &dummyData);
-   curBufferSize = dummyDataSize;
+   CopyData(buffer, 1, 0, defaultDataSize, &defaultData);
+   curBufferSize = defaultDataSize;
  }
 +
 +/**
@@ -561,14 +626,12 @@ json11ライブラリのメンバはすべて`json11`名前空間に格納され
 
 ### 2.10 ファイルを読み込む関数を定義する
 
-次は`AddFromFile`関数を定義するのですが、その前に「ファイルを読み込む」関数を定義しておきます。`GltfMesh.cpp`を開き、`iostream`のインクルード文の下に、次のプログラムを追加してください。
+次は`AddFromFile`関数を定義するのですが、その前に「ファイルを読み込む」関数を定義しておきます。`GltfMesh.cpp`を開き、無名名前空間の先頭に次のプログラムを追加してください。
 
 ```diff
- #include <iostream>
-
  using namespace json11;
 
-+namespace { // unnamed
+ namespace { // unnamed
 +
 +/**
 +* ファイルを読み込む
@@ -586,24 +649,12 @@ json11ライブラリのメンバはすべて`json11`名前空間に格納され
 +  file.read(buf.data(), buf.size());
 +  return buf;
 +}
-+
-+} // unnamed namespace
 
- /**
- * メッシュを描画する
+ // バインディングポイント
+ enum BindingPoint
 ```
 
 この関数は、指定されたファイルを`ifstream`で開き、`vector`配列に読み込む、という処理を行います。これはシェーダやテクスチャの読み込みとほぼ同じです。
-
-関数が他のファイルから見えないように「無名名前空間」に入れています。名前を指定しない名前空間はすべて「無名名前空間」となり、コンパイラによってCPPファイルごとに自動的に異なる名前が付けられます。
-
-C++の変数や関数は「グローバル名前空間」に作られます。そのため、異なるCPPファイルであっても同じ名前を使うことができません。
-
-無名名前空間はCPPファイルごとに異なるため、同じ名前の変数や関数を書いても重複することはありません。
-
-なお、プログラムからは、コンパイラが付けた名前を参照することはできません。また、無名名前空間のコメントに`unnamed`(アンネームド)と書いているのは、名前を付け忘れたわけではないことを示すためです。
-
->`unnamed`は「<ruby>無名<rt>むめい</rt></ruby>、名前のない」という意味です。
 
 ### 2.11 バッファのオフセットを計算する関数を定義する
 
@@ -615,12 +666,10 @@ glTFでは、頂点データやインデックスデータはglTFとは別のバ
 
 「バッファビュー」は、バイナリファイル内の「同じ性質を持つデータをまとめた領域」を表します。ひとつのバイナリファイルには、ひとつまたは複数のバッファビューが含まれます。
 
-「アクセッサ」は、バッファビュー内の「個々のデータ領域」を表します(バイナリにアクセスするためのデータなので、アクセス+erで「アクセッサ」という名前になっている)。
-
-一つのバッファビュー領域には、ひとつまたは複数のアクセッサが含まれます。
+「アクセッサ」は、バッファビュー内の「個々のデータ領域」を表します(バイナリにアクセスするためのデータなので、アクセス+erで「アクセッサ」という名前になっている)。ひとつのバッファビューには、ひとつまたは複数のアクセッサが含まれます。
 
 <p align="center">
-<img src="images/Tips_03_gltf_buffers_bufferviews_accessors.png" width="25%" />
+<img src="images/Tips_03_gltf_buffers_bufferviews_accessors.png" width="33%" />
 </p>
 
 アクセッサとバッファビューを参照することで、例えば頂点データがバイナリファイルの先頭から何バイト目にあるか(=オフセット)を知ることができます。
@@ -629,19 +678,25 @@ glTFでは、頂点データやインデックスデータはglTFとは別のバ
 
 総バイト数は`byteLength`(バイト・レングス)で示されるので、バッファビューの範囲は「`byteOffset`から`byteOffset+byteLength`まで」ということになります。
 
-さらに、アクセッサにも`byteOffset`があります。こちらは「バッファビューの先頭からのバイト位置」を示しています。
+さらに、アクセッサにも`byteOffset`があります。こちらは「バッファビューの先頭からのバイト位置」を示しています。つまり、データの開始位置は
 
-つまり、データの開始位置は「バッファビューの`byteOffset`＋アクセッサの`byteOffset`」になります。
+> バッファビューの`byteOffset`＋アクセッサの`byteOffset`
 
-また、アクセッサが示すデータの総バイト数は、アクセッサの`componentType`(コンポーネント・タイプ)と`count`(カウント)、それから`type`(タイプ)の3つを使って計算します。
+になります。また、アクセッサが示すデータの総バイト数は、アクセッサの`componentType`
+(コンポーネント・タイプ)と`count`(カウント)、それから`type`(タイプ)の3つを使って計算します。
 
-`type`はデータがスカラーなのか、ベクトルなのか、あるいは行列なのかを示します。`componentType`は、`type`で示されたデータの各要素が`int`なのか`float`なのかを示します。
+`type`はデータがスカラーなのか、ベクトルなのか、あるいは行列なのかを示します。
+`componentType`は、`type`で示されたデータの各要素が`int`なのか`float`なのかを示します。
 
 例えば`type`がVEC3で`componentType`がGL_FLOATだった場合、「`float`型の3要素ベクトル」が格納されている、といった具合です。そして、`count`にはデータの個数が記録されています。
 
-この3つのパラメータをかけ合わせることで、アクセッサの総バイト数が計算できます。つまり、「`count`×`typeが示す要素数`×`componentTypeが示す型のバイト数`」とするわけです。
+アクセッサの総バイト数は、この3つのパラメータをかけ合わせて求めます。計算式は
 
-このように、オフセットの計算方法はすこし複雑です。そのうえ、オフセットは様々な場面で必要となります。そこで、オフセットを計算する関数を作成することにします。
+>`count`×`typeが示す要素数`×`componentTypeが示す型のバイト数`
+
+となります。
+
+このように、オフセットやバイト数の計算方法はすこし複雑です。特にオフセットは、様々な場面で必要となります。そこで、オフセットを計算する関数を作成することにします。
 
 関数名は`GetBufferOffset`(ゲット・バッファ・オフセット)とします。`ReadFile`関数の定義の下に、次のプログラムを追加してください。
 
@@ -650,15 +705,23 @@ glTFでは、頂点データやインデックスデータはglTFとは別のバ
    return buf;
  }
 +
++// バイナリデータ
++struct BinaryData
++{
++  GLsizeiptr offset;
++  std::vector<char> bin;
++};
++using BinaryList = std::vector<BinaryData>;
++
 +/**
 +* アクセッサが示すバッファのオフセットを取得する
 +*
 +* @param accessor    アクセッサ
 +* @param bufferViews バッファビュー配列
-+* @param binOffset   バイナリデータの先頭オフセット配列
++* @param binaryList  バイナリデータ配列
 +*/
 +GLsizeiptr GetBufferOffset(const Json& accessor,
-+  const Json& bufferViews, const std::vector<GLsizeiptr>& binOffset)
++  const Json& bufferViews, const BinaryList& binaryList)
 +{
 +  // アクセッサから必要な情報を取得
 +  const int byteOffset = accessor["byteOffset"].int_value();
@@ -670,14 +733,20 @@ glTFでは、頂点データやインデックスデータはglTFとは別のバ
 +  const int baesByteOffset = bufferView["byteOffset"].int_value();
 +
 +  // オフセットを計算
-+  return binOffset[bufferId] + baesByteOffset + byteOffset;
++  return binaryList[bufferId].offset + baesByteOffset + byteOffset;
 +}
 
- } // unnamed namespace
-
- /**
- * メッシュを描画する
+ // バインディングポイント
+ enum BindingPoint
 ```
+
+`BinaryData`(バイナリ・データ)構造体は、glTFファイルに付随するバイナリファイルから読み取ったデータを管理します。
+
+今回作成するプログラムでは、すべてのバイナリファイルを単一のバッファオブジェクトへコピーします。そして、頂点アトリビュートは、バッファオブジェクトのどこかにコピーされている頂点データを参照します。
+
+頂点データの位置を知るためには、バイナリファイルがどこにコピーされたのかを覚えておく必要があります。`BinaryData`はそのために使います。
+
+`BinaryList`(バイナリ・リスト)は`BinaryData`の配列です。`BinaryData`の作成はあとで行います。
 
 ### 2.12 バッファビューのストライドを計算する関数を定義する
 
@@ -691,7 +760,7 @@ glTFでは、頂点データやインデックスデータはglTFとは別のバ
 
 ```diff
    // オフセットを計算
-   return binOffset[bufferId] + baesByteOffset + byteOffset;
+   return binaryList[bufferId].offset + baesByteOffset + byteOffset;
  }
 +
 +/**
@@ -713,17 +782,15 @@ glTFでは、頂点データやインデックスデータはglTFとは別のバ
 +  // byteStrideが未定義または0だった場合、データ1個分のサイズを計算して返す
 +}
 
- } // unnamed namespace
-
- /**
- * メッシュを描画する
+ // バインディングポイント
+ enum BindingPoint
 ```
 
-ストライドは`byteStride`(バイト・ストライド)という名前で取得できます。ただし、`byteStride`は定義されていないことも多いです。
+ストライドは`byteStride`(バイト・ストライド)という名前で取得できます。
 
-定義されていない場合は、アクセッサに定義されている情報からデータ1個分のサイズを計算し、そのサイズを使う必要があります。
+ただし、`byteStride`が常に定義されているとは限りません。glTFでは、`byteStride`が定義されていない場合、アクセッサに定義されている情報からデータ1個分のサイズを計算し、そのサイズを使うことになっているからです。
 
-まず要素型のサイズを計算します。「byteStrideが未定義または0だった場合～」のコメントの下に、次のプログラムを追加してください。
+それではプログラムを追加しましょう。まず要素型のサイズを計算します。「byteStrideが未定義または0だった場合～」のコメントの下に、次のプログラムを追加してください。
 
 ```diff
      return stride;
@@ -746,10 +813,11 @@ glTFでは、頂点データやインデックスデータはglTFとは別のバ
 +  }
  }
 
- } // unnamed namespace
+ // バインディングポイント
+ enum BindingPoint
 ```
 
-glTFバージョン2.0では上記の6種類の要素型を使うことができます。ご覧のとおり、`GL_INT`と`GL_DOUBLE`は使えません(将来のバージョンで追加される可能性はあります)。
+glTFバージョン2.0では上記の6種類の要素型を使うことができます。気づいたかもしれませんが`GL_INT`と`GL_DOUBLE`は使えません(将来のバージョンで追加される可能性はあります)。
 
 次に要素数を求めます。要素型のサイズを求めるプログラムの下に、次のプログラムを追加してください。
 
@@ -782,10 +850,11 @@ glTFバージョン2.0では上記の6種類の要素型を使うことができ
 +  return componentSize * elementCount;
  }
 
- } // unnamed namespace
+ // バインディングポイント
+ enum BindingPoint
 ```
 
-glTFバージョン2.0では上記の7種類の型名を使うことができます。
+glTFバージョン2.0では、スカラー1種、ベクトル3種、行列3種の合計7種類の型名を使うことができます。`mat4x3`のような非正方行列は使えません(将来のバージョンで追加される可能性はあります)。
 
 型名はアクセッサに`type`という名前で定義されていますので、`elementCountList`から同じ名前の要素を探して要素数を取得します。
 
@@ -812,11 +881,11 @@ glTFのプリミティブには頂点アトリビュートに関する情報が�
 +* @param buffer      VBOとして扱うバッファオブジェクト
 +* @param accessor    頂点アトリビュートデータを持つアクセッサ
 +* @param bufferViews バッファビュー配列
-+* @param binOffset   バイナリデータのオフセット配列
++* @param binaryList  バイナリデータ配列
 +*/
 +bool SetAttribute(VertexArrayObjectPtr& vao, int index, GLuint buffer,
 +  const Json& accessor, const Json& bufferViews,
-+  const std::vector<GLsizeiptr>& binOffset)
++  const BinaryList& binaryList)
 +{
 +  // 型名と要素数の対応表(頂点アトリビュート用)
 +  const struct {
@@ -826,6 +895,7 @@ glTFのプリミティブには頂点アトリビュートに関する情報が�
 +    { "SCALAR", 1 }, { "VEC2", 2 }, { "VEC3", 3 }, { "VEC4", 4 },
 +  };
 +
++  // 対応表から要素数を取得
 +  const std::string& type = accessor["type"].string_value();
 +  int elementCount = -1;
 +  for (const auto& e : elementCountList) {
@@ -835,13 +905,14 @@ glTFのプリミティブには頂点アトリビュートに関する情報が�
 +    }
 +  }
 +  if (elementCount < 0) {
-+    std::cerr << "[エラー]" << __func__ << ": " << type << "は頂点属性に設定できません.\n";
++    std::cerr << "[エラー]" << __func__ << ": " << type <<
++      "は頂点属性に設定できません.\n";
 +    return false;
 +  }
 +
 +  // VAOに頂点アトリビュートを設定する
 +  const GLsizei byteStride = GetBufferStride(accessor, bufferViews);
-+  const GLsizeiptr offset = GetBufferOffset(accessor, bufferViews, binOffset);
++  const GLsizeiptr offset = GetBufferOffset(accessor, bufferViews, binaryList);
 +  const GLenum componentType = accessor["componentType"].int_value();
 +  vao->SetAttribute(index, index, elementCount, componentType, GL_FALSE, 0);
 +  vao->SetVBO(index, buffer, offset, byteStride);
@@ -849,15 +920,48 @@ glTFのプリミティブには頂点アトリビュートに関する情報が�
 +  return true;
 +}
 
- } // unnamed namespace
-
- /**
- * メッシュを描画する
+ // バインディングポイント
+ enum BindingPoint
 ```
 
 この関数では、頂点アトリビュートの番号とバインディングポイントを同じ数値にしています。glTFはこの2つを個別に指定する機能を持たないので、同じ番号を使うほうが合理的です。
 
 なお、頂点アトリビュートには行列型を指定できません。そのため、`elementCountList`配列には行列を入れていません。これは、glTFというよりOpenGLの仕様です。
+
+頂点座標以外の頂点データは存在しない場合があります。そこで、データが無い場合はダミーデータを参照させるようにします。`SetAttribute`関数の定義の下に、次のプログラムを追加してください。
+
+```diff
+   vao->SetVBO(index, buffer, offset, byteStride);
+ 
+   return true;
+ }
++
++/**
++* 頂点アトリビュートのデフォルト値を設定する
++*
++* @param vao          頂点アトリビュートを設定するVAO
++* @param index        頂点アトリビュート番号及びバインディングポイント
++* @param buffer       VBOとして扱うバッファオブジェクト
++* @param elementCount 要素数
++* @param offset       buffer内のデータが配置位置(単位=バイト)
++*
++* シェーダが必要とする頂点アトリビュートについて、プリミティブが対応する頂点データを
++* 持たない場合、この関数によってデフォルト値を設定する。
++*/
++void SetDefaultAttribute(VertexArrayObjectPtr& vao, int index, GLuint buffer,
++  GLint elementCount, GLsizeiptr offset)
++{
++  vao->SetAttribute(index, index, elementCount, GL_FLOAT, GL_FALSE, 0);
++  vao->SetVBO(index, buffer, offset, 0);
++}
+
+ // バインディングポイント
+ enum BindingPoint
+```
+
+`SetDefaultAttribute`(セット・デフォルト・アトリビュート)関数は、頂点アトリビュートにダミーの頂点データを指定します。
+
+`SetVBO`関数のストライド引数を`0`にしている点に注目してください。ストライドを0にすると、すべての頂点に対して同じ頂点データが繰り返し参照されます。これによって、ひとつのダミーデータをすべての頂点に対応させています。
 
 ### 2.14 AddFromFile関数を定義する
 
@@ -891,7 +995,7 @@ glTFのプリミティブには頂点アトリビュートに関する情報が�
 +  if (buf.empty()) {
 +    return false;
 +  }
-+  buf.push_back('\0');
++  buf.push_back('\0'); // 文字列用に0終端を追加
 +
 +  return true;
 +}
@@ -906,13 +1010,14 @@ glTFのプリミティブには頂点アトリビュートに関する情報が�
 ```diff
      return false;
    }
-   buf.push_back('\0');
+   buf.push_back('\0'); // 文字列用に0終端を追加
 +
 +  // JSON解析
 +  std::string err;
 +  const Json gltf = Json::parse(buf.data(), err);
 +  if (!err.empty()) {
-+    std::cerr << "[エラー]" << __func__ << " '" << filename << "'の読み込みに失敗しました.\n";
++    std::cerr << "[エラー]" << __func__ << " '" << filename <<
++      "'の読み込みに失敗しました.\n";
 +    std::cerr << err << "\n";
 +    return false;
 +  }
@@ -940,7 +1045,7 @@ JSON解析を行うプログラムの下に、次のプログラムを追加し�
 +
 +  // フォルダ名を取り出す
 +  std::string foldername(filename);
-+  const size_t lastSlashPos = foldername.find_last_of("/￥￥");
++  const size_t lastSlashPos = foldername.find_last_of("/￥￥"); // 半角円記号2個
 +  if (lastSlashPos == std::string::npos) {
 +    foldername.clear();
 +  } else {
@@ -982,26 +1087,31 @@ JSONの解析が完了したので、これらのファイル名を取得でき�
 +
 +  // バイナリファイルを読み込む
 +  const GLsizei prevBufferSize = curBufferSize;
-+  std::vector<GLsizeiptr> binOffset;
-+  for (const Json& e : gltf["buffers"].array_items()) {
-+    const Json& uri = e["uri"];
++  const std::vector<Json>& buffers = gltf["buffers"].array_items();
++  BinaryList binaryList(buffers.size());
++  for (size_t i = 0; i < buffers.size(); ++i) {
++    const Json& uri = buffers[i]["uri"];
 +    if (!uri.is_string()) {
-+      std::cerr << "[エラー]" << __func__ << ": " << filename << "に不正なURIがあります.\n";
++      std::cerr << "[エラー]" << __func__ << ": " << filename <<
++        "に不正なURIがあります.\n";
 +      return false;
 +    }
 +
 +    // ファイルを読み込む
 +    const std::string binPath = foldername + uri.string_value();
-+    const std::vector<char> bin = ReadFile(binPath.c_str());
-+    if (bin.empty()) {
-+      curBufferSize = prevBufferSize;
++    binaryList[i].bin = ReadFile(binPath.c_str());
++    if (binaryList[i].bin.empty()) {
++      curBufferSize = prevBufferSize; // 読み込んだデータをなかったことにする
 +      return false; // バイナリファイルの読み込みに失敗
 +    }
 +
 +    // バイナリデータをGPUメモリにコピー
-+    CopyData(buffer, 1, curBufferSize, bin.size(), bin.data());
-+    binOffset.push_back(curBufferSize); // バイナリデータのオフセットを設定
-+    curBufferSize += static_cast<GLsizei>(bin.size());
++    CopyData(buffer, 1, curBufferSize,
++      binaryList[i].bin.size(), binaryList[i].bin.data());
++
++    // オフセットを更新
++    binaryList[i].offset = curBufferSize;
++    curBufferSize += static_cast<GLsizei>(binaryList[i].bin.size());
 +  }
 
    return true;
@@ -1020,7 +1130,7 @@ JSONの解析が完了したので、これらのファイル名を取得でき�
 
 `curBufferSize`はglTFファイルを読み込むたびに増加することになります。
 
-`binOffset`(ビン・オフセット)配列には、バッファオブジェクト先頭からバイナリファイルまでの距離が格納されます。N番目のバイナリデータの位置は`binOffset[N]`で取得できます。
+`binaryList`(バイナリ・リスト)配列には、読み込んだデータと共に、バッファオブジェクト先頭からバイナリファイルまでの距離(=オフセット)が格納されます。
 
 ### 2.18 プリミティブ配列にアクセスする
 
@@ -1037,7 +1147,7 @@ JSONの解析が完了したので、これらのファイル名を取得でき�
 バイナリデータをGPUメモリにコピーするプログラムの下に、次のプログラムを追加してください。
 
 ```diff
-     binOffset.push_back(curBufferSize); // バイナリデータのオフセットを設定
+     binaryList[i].offset = curBufferSize;
      curBufferSize += static_cast<GLsizei>(bin.size());
    }
 +
@@ -1058,7 +1168,7 @@ JSONの解析が完了したので、これらのファイル名を取得でき�
 +    // プリミティブを作成
 +    const std::vector<Json>& primitiveArray = currentMesh["primitives"].array_items();
 +    mesh.primitives.reserve(primitiveArray.size());
-+    for (const Json& currentPrim : primitiveArray.size()) {
++    for (const Json& currentPrim : primitiveArray) {
 +      GltfPrimitive prim;
 +
 +      // 作成したプリミティブを配列に追加
@@ -1085,15 +1195,17 @@ JSONの解析が完了したので、これらのファイル名を取得でき�
 
 ```diff
      mesh.primitives.reserve(primitiveArray.size());
-     for (const Json& currentPrim : primitiveArray.size()) {
+     for (const Json& currentPrim : primitiveArray) {
        GltfPrimitive prim;
 +
 +      // インデックスデータ
 +      {
 +        const int id = currentPrim["indices"].int_value();
 +        const Json& accessor = accessors[id];
-+        if (accessor["type"].string_value() != "SCALAR") {
-+          std::cerr << "[エラー]" << __func__ << "インデックスデータ・タイプはSCALARでなくてはなりません\n";
++        const std::string type = accessor["type"].string_value();
++        if ( != "SCALAR") {
++          std::cerr << "[エラー]" << __func__ <<
++            "インデックスデータ・タイプはSCALARでなくてはなりません\n";
 +          std::cerr << "  type = " << accessor["type"].string_value() << "\n";
 +          return false;
 +        }
@@ -1111,7 +1223,7 @@ JSONの解析が完了したので、これらのファイル名を取得でき�
 +        prim.type = accessor["componentType"].int_value();
 +
 +        // オフセット
-+        const GLsizeiptr offset = GetBufferOffset(accessor, bufferViews, binOffset);
++        const GLsizeiptr offset = GetBufferOffset(accessor, bufferViews, binaryList);
 +        prim.indices = reinterpret_cast<const GLvoid*>(offset);
 +      }
 
@@ -1129,7 +1241,7 @@ glTFの`indices`要素に格納されているのは整数なので、`int_value
 続いて、頂点アトリビュートを設定していきます。インデックスデータを読み取るプログラムの下に、次のプログラムを追加してください。
 
 ```diff
-         const GLsizeiptr offset = GetBufferOffset(accessor, bufferViews, binOffset);
+         const GLsizeiptr offset = GetBufferOffset(accessor, bufferViews, binaryList);
          prim.indices = reinterpret_cast<const GLvoid*>(offset);
        }
 +
@@ -1138,7 +1250,8 @@ glTFの`indices`要素に格納されているのは整数なので、`int_value
 +      const Json& attributes = currentPrim["attributes"];
 +      if (attributes["POSITION"].is_number()) {
 +        const int id = attributes["POSITION"].int_value();
-+        SetAttribute(prim.vao, 0, buffer, accessors[id], bufferViews, binOffset);
++        SetAttribute(prim.vao, bpPosition, buffer,
++          accessors[id], bufferViews, binaryList);
 +      }
 
        // 作成したプリミティブを配列に追加
@@ -1150,43 +1263,41 @@ glTFの`indices`要素に格納されているのは整数なので、`int_value
 
 頂点アトリビュートのバインディングポイントは、シェーダと一致させるために`0`を指定しています。
 
-さらに、`COLOR`(カラー)、`TEXCOORD_0`(テックスコード・ゼロ)、`NORMAL`(ノーマル)の3つの頂点アトリビュートを設定します。
-
-頂点座標の頂点アトリビュートを設定するプログラムの下に、次のプログラムを追加してください。
+さらに、`COLOR`(カラー)、`TEXCOORD_0`(テックスコード・ゼロ)、`NORMAL`(ノーマル)の3つの頂点アトリビュートを設定します。頂点座標の頂点アトリビュートを設定するプログラムの下に、次のプログラムを追加してください。
 
 ```diff
-         const int id = attributes["POSITION"].int_value();
-         SetAttribute(prim.vao, 0, buffer, accessors[id], bufferViews, binOffset);
+         SetAttribute(prim.vao, bpPosition, buffer,
+           accessors[id], bufferViews, binaryList);
        }
 +
 +      // 頂点アトリビュート(頂点の色)
 +      if (attributes["COLOR"].is_number()) {
 +        const int id = attributes["COLOR"].int_value();
-+        SetAttribute(prim.vao, 1, buffer, accessors[id], bufferViews, binOffset);
++        SetAttribute(prim.vao, bpColor, buffer,
++          accessors[id], bufferViews, binaryList);
 +      } else {
-+        // 属性が未定義なのでダミーデータを使う
-+        prim.vao->SetAttribute(1, 1, 4, GL_FLOAT, GL_FALSE, 0);
-+        prim.vao->SetVBO(1, buffer, 0, 0);
++        SetDefaultAttribute(prim.vao, bpColor, buffer,
++          4, offsetof(DefaultVertexData, color));
 +      }
 +
 +      // 頂点アトリビュート(テクスチャ座標)
 +      if (attributes["TEXCOORD_0"].is_number()) {
 +        const int id = attributes["TEXCOORD_0"].int_value();
-+        SetAttribute(prim.vao, 2, buffer, accessors[id], bufferViews, binOffset);
++        SetAttribute(prim.vao, bpTexcoord0, buffer,
++          accessors[id], bufferViews, binaryList);
 +      } else {
-+        // 属性が未定義なのでダミーデータを使う
-+        prim.vao->SetAttribute(2, 2, 4, GL_FLOAT, GL_FALSE, 0);
-+        prim.vao->SetVBO(2, buffer, 16, 0);
++        SetDefaultAttribute(prim.vao, bpTexcoord0, buffer,
++          2, offsetof(DefaultVertexData, texcoord));
 +      }
 +
 +      // 頂点アトリビュート(法線)
 +      if (attributes["NORMAL"].is_number()) {
 +        const int id = attributes["NORMAL"].int_value();
-+        SetAttribute(prim.vao, 3, buffer, accessors[id], bufferViews, binOffset);
++        SetAttribute(prim.vao, bpNormal, buffer,
++          accessors[id], bufferViews, binaryList);
 +      } else {
-+        // 属性が未定義なのでダミーデータを使う
-+        prim.vao->SetAttribute(3, 3, 4, GL_FLOAT, GL_FALSE, 0);
-+        prim.vao->SetVBO(3, buffer, 32, 0);
++        SetDefaultAttribute(prim.vao, bpNormal, buffer,
++          3, offsetof(DefaultVertexData, normal));
 +      }
 
        // 作成したプリミティブを配列に追加
@@ -1194,11 +1305,9 @@ glTFの`indices`要素に格納されているのは整数なので、`int_value
      }
 ```
 
-これらの頂点アトリビュートのバインディングポイント番号
-
 頂点座標以外の頂点アトリビュートは、プリミティブによっては定義されていないことがあります。しかし、定義されている頂点アトリビュートごとに異なるシェーダを使うことは現実的とはいえません。
 
-そこで、定義されていない場合はダミーデータを設定するようにしています。このとき、ストライドを`0`に設定することで、すべての頂点に対して同じデータを使わせるようにしています。
+そこで、定義されていない場合はデフォルト頂点データを設定します。`offsetof`(オフセット・オブ)マクロは、メンバ変数のオフセットを返します。ここではデータの位置を指定するために使っています。
 
 ### 2.21 IBOとマテリアル番号を設定する
 
@@ -1288,15 +1397,18 @@ glTFのマテリアル情報は`pbrMetallicRoughness`(ピービーアール・�
 
 マテリアルにはさまざまな情報が含まれますが、今回は`baseColorTexture`(ベースカラーテクスチャ)と`baseColorFactor`(ベースカラーファクター)の2つだけを取り出します。
 
-この2つはマテリアルの最も基本的な色を決める情報です。マテリアルの色は`baseColorFactor`(ベース・カラー・ファクター)から取得します。ベースカラーファクターはRGBAの4要素の配列になっています。
+この2つはマテリアルの最も基本的な色を決める情報です。マテリアルの色は
+`baseColorFactor`(ベース・カラー・ファクター)から取得します。ベースカラーファクターはRGBAの4要素の配列になっています。
 
 マテリアルのテクスチャは`baseeColorTexture`(ベース・カラー・テクスチャ)で取得しますが、ここにはテクスチャのインデックスしか記録されていません。
 
-画像ファイル名は、このインデックスを添え字にして、`images`(イメージズ)で取得できる画像データ配列から取得します。ただ、glTFバージョン2.0で使える画像形式はPNG, JPGだけです。
+画像ファイル名は、このインデックスを添え字にして、`images`(イメージズ)で取得できる画像データ配列から取得します。C++風に書くと次のようになるでしょうか。
 
-しかし、本テキストで作成したプログラムはTGA形式にしか対応していません。そこで、拡張子を無理やり`.tga`に変更することで対処しています。
+`filename = images[textures[textureNo].source].uri`
 
->画像形式をTGAに変換するのを忘れないようにしてください。
+ただし、glTFバージョン2.0で使える画像形式はPNG, JPGだけです。しかし、本テキストで作成したプログラムはTGA形式にしか対応していません。そこで、拡張子を無理やり`.tga`に変更することで対処しています。
+
+>ダウンロードした画像の形式をTGAに変換して、glTFファイルと同じフォルダに保存しておくこと。
 
 ### 2.23 メッシュをメッシュバッファに追加する
 
@@ -1314,14 +1426,15 @@ glTFのマテリアル情報は`pbrMetallicRoughness`(ピービーアール・�
 +  // 読み込んだメッシュ名をデバッグ情報として出力
 +  std::cout << "[情報]" << __func__ << ": '" << filename << "'を読み込みました\n";
 +  for (size_t i = 0; i < file->meshes.size(); ++i) {
-+    std::cout << "  [" << i << "] " << file->meshes[i].name << "\n";
++    std::cout << "  meshes[" << i << "]=\"" << file->meshes[i].name << "\"\n";
 +  }
 
    return true;
  }
 ```
 
-`unordered_map`クラスに要素を追加する方法は複数ありますが、最も簡単なのは`emplace`(エンプレイス)メンバ関数を使うことでしょう。
+`unordered_map`クラスに要素を追加する方法は複数ありますが、最も簡単なのは`emplace`
+(エンプレイス)メンバ関数を使うことでしょう。
 
 <pre class="tnmai_code"><strong>【書式】</strong><code>
 std::pair std::unordered_map::emplace(キー, 値);
@@ -1329,11 +1442,13 @@ std::pair std::unordered_map::emplace(キー, 値);
 
 `emplace`関数にキーと値の2つを指定することで、「キーによって検索可能な値」を追加できます。戻り値は`pair`(ペア)クラスです。
 
-`pair`クラスは2つの値を保持するための汎用のクラステンプレートで、1個目の値は`first`(ファースト)メンバ変数、2個目の値は`second`(セカンド)で設定、取得できるようになっています。
+`pair`クラスは2つの値を保持するための汎用のクラステンプレートで、1個目の値は`first`
+(ファースト)メンバ変数、2個目の値は`second`(セカンド)で設定、取得できるようになっています。
 
 `emplace`関数の場合、`first`には追加した要素を指すイテレータ、`second`は新規に追加した場合は`true`、既に同じキーの値が存在した場合は`false`が返されます。
 
-ややこしいですが、`unordered_map`クラスの要素も`pair`型で、`first`にはキー、`second`には値が格納されています。
+ややこしいですが、`unordered_map`クラスの要素も`pair`型で、`first`にはキー、
+`second`には値が格納されています。
 
 上記のプログラムの`first->second`の部分は、最初の`first`が`emplace`の戻り値のイテレータ、次の`second`はイテレータが指す要素の値を示します。
 
@@ -1370,13 +1485,16 @@ std::pair std::unordered_map::emplace(キー, 値);
 
 >**【読み込めないglTFについて】**<br>
 >本テキストでは、glTFのあまり重要ではない機能は実装していません(「サンプラ」、「アルファモード」、「スパースアクセッサ」など)。
->そのため、それらの機能を使ったファイルは、正常に読み込めない可能性があります。
+>そのため、それらの機能を使ったファイルは正常に読み込めない可能性があります。
+
+<br>
 
 >**【2章のまとめ】**
 >
->* 
->* 
->* 
+>* glTFではプリミティブごとにVAOを作成する。
+>* glTFファイルにはさまざまなオブジェクトが含まれるが、メッシュを表示するだけなら`mesh`配下のオブジェクトを読み込めれば十分。
+>* 頂点データは、glTFファイルと一緒に作成される「バイナリファイル」に含まれている。
+>* テクスチャファイルは、glTFファイルとは別に用意する必要がある。
 
 <div style="page-break-after: always"></div>
 
@@ -1425,6 +1543,7 @@ glTFファイルから読み込んだメッシュを表示するために、レ�
 +  GltfFilePtr file;
 +  int meshIndex = -1;
 +};
++using StaticMeshRendererPtr = std::shared_ptr<StaticMeshRenderer>;
 
  #endif // RENDERER_H_INCLUDED
 ```
@@ -1531,8 +1650,10 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 +{
 +  outColor = vColor * materialColor;
 +  outTexcoord = vTexcoord;
++
 +  mat3 matNormal = transpose(inverse(mat3(matModel)));
 +  outNormal = normalize(matNormal * vNormal);
++
 +  outPosition = vec3(matModel * vec4(vPosition, 1.0));
 +  gl_Position = matVP * vec4(outPosition, 1.0);
 +}
@@ -1542,11 +1663,13 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 
 ### 3.5 フラグメントシェーダを追加する
 
-次にフラグメントシェーダを追加します。プロジェクトの`Res`フォルダに`StaticMesh.frag`というテキストファイルを追加してください。
+次にフラグメントシェーダを追加します。プロジェクトの`Res`フォルダに
+`StaticMesh.frag`というテキストファイルを追加してください。
 
-やることは基本的に`FragmentLighting.frag`と同じなので、追加したファイルを開き、`FragmentLighting.frag`の内容をコピペしてください。
+やることは基本的に`FragmentLighting.frag`と同じです。追加したファイルを開き、
+`FragmentLighting.frag`の内容をコピペしてください。
 
-コピペしたら、glTFファイル用に修正をしていきます。まずテクスチャは1枚だけなので、2枚目以降のテクスチャに関する変数を削除します。
+コピペしたら、glTFファイル用に修正をしていきます。使うテクスチャは1枚だけなので、2枚目以降のテクスチャに関する変数を削除します。
 
 ```diff
  layout(location=2) in vec3 inNormal;
@@ -1592,7 +1715,8 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 
 ### 3.6 シェーダの種類を追加する
 
-それから、`Shader`列挙型に「glTFファイル用シェーダを示す列挙値」を追加します。`Actor.h`を開き、`Shader`列挙型に次の列挙値を追加してください。
+それから、`Shader`列挙型に「glTFファイル用シェーダを示す列挙値」を追加します。
+`Actor.h`を開き、`Shader`列挙型に次の列挙値を追加してください。
 
 ```diff
  enum class Shader
@@ -1611,7 +1735,8 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 
 ### 3.7 GameEngineクラスにglTFファイルを扱う機能を追加する
 
-残る作業は、ゲームエンジンにglTFファイルを扱う機能を追加することです。`GameEngine.h`を開き、次の先行宣言を追加してください。
+残る作業は、ゲームエンジンにglTFファイルを扱う機能を追加することです。
+`GameEngine.h`を開き、次の先行宣言を追加してください。
 
 ```diff
  #include <GLFW/glfw3.h>
@@ -1754,9 +1879,11 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 
 ### 3.9 描画機能を整理する
 
-現在は、シェーダの種類ごとに`for`ループを実行するプログラムを書いています。しかし、`Shader`列挙型の値が増えてきたため、種類ごとに同じようなプログラムを書くのは非合理的になってきました。
+現在は、シェーダの種類ごとに`for`ループを実行するプログラムを書いています。しかし、
+`Shader`列挙型の値が増えてきたため、種類ごとに同じようなプログラムを書くのは非合理的になってきました。
 
-そこで、`RenderDefault`関数にある「アクターの描画処理」を整理することにします。`GameEngine.h`を開き、`GameEngine`クラスの定義に次のプログラムを追加してください。
+そこで、`RenderDefault`関数にある「アクターの描画処理」を整理することにします。
+`GameEngine.h`を開き、`GameEngine`クラスの定義に次のプログラムを追加してください。
 
 ```diff
    GameEngine(const GameEngine&) = delete;
@@ -1792,7 +1919,8 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 +{
 +  for (const RenderingData& e : renderingList) {
 +    // 前処理
-+    if (e.shaderType == Shader::InstancedMesh || e.shaderType == Shader::StaticMesh) {
++    if (e.shaderType == Shader::InstancedMesh ||
++      e.shaderType == Shader::StaticMesh) {
 +      e.pipeline->SetUniform(Renderer::locMatTRS, matVP);
 +    } else if (e.shaderType == Shader::GroundMap) {
 +      texMap->Bind(2);
@@ -1818,13 +1946,15 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 
 `RenderShaderGroups`(レンダー・シェーダ・グループス)関数は、`renderingList`(レンダリング・リスト)引数に指定されたシェーダグループに含まれるアクターを描画します。
 
-シェーダグループは、特定のシェーダを使うアクターをまとめたものです。`shaderGroups`(シェーダ・グループス)引数はシェーダグループの配列です。
+シェーダグループは、特定のシェーダを使うアクターをまとめたものです。
+`shaderGroups`(シェーダ・グループス)引数はシェーダグループの配列です。
 
 >**【レンダラクラスの機能を拡大するべき？】**<br>
 >理想的には、`Renderer`の派生クラスが`ProgramPipeline`を管理するように変更し、さらに「前処理」、「後処理」も`Renderer`派生クラスに組み込むべきでしょう。
->そうすれば、上記のループはもっと単純化されると思われます。`Renderer`派生クラスが複雑化することになりますが、`Renderer`クラスの目的(「プリミティブ/メッシュを描画する」)を考慮するならば、大きな問題とはいえないでしょう。とはいえ、そのような設計変更はプログラムの広い範囲に影響が及ぶと考えられるため、今回はそこまでの変更は行っていません。
+>そうすれば、上記のループはもっと単純にすることができます。`Renderer`派生クラスが複雑化することになりますが、`Renderer`クラスの目的(「プリミティブ/メッシュを描画する」)を考慮するならば、大きな問題とはいえないでしょう。とはいえ、そのような設計変更はプログラムの広い範囲に影響が及ぶと考えられるため、今回はそこまでの変更は行っていません。
 
-それでは、作成した`RenderShaderGroups`関数を使って、影の描画を変更しましょう。`RenderDefault`関数にある「影を描画」するプログラムを、次のように変更してください。
+それでは、作成した`RenderShaderGroups`関数を使って、影の描画を変更しましょう。
+`RenderDefault`関数にある「影を描画」するプログラムを、次のように変更してください。
 
 ```diff
      glDisable(GL_BLEND);     // アルファブレンドを無効にする
@@ -1900,7 +2030,7 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
    fboShadow->UnbindDepthTexture(1);
 ```
 
-シェーダの種類単位で描画する機能を関数化したので、同じようなプログラムを2箇所に書く必要がなくなってすっきりしました。
+シェーダの種類単位で描画する機能を関数化した結果、同じようなプログラムを2箇所に書く必要がなくなってすっきりしました。
 
 `RenderShaderGroups`関数はVAOとプログラムパイプラインのバインドも実行します。なので、`RenderDefault`にある不要なバインドプログラムを削除しましょう。
 
@@ -1910,10 +2040,6 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
    glClearColor(0.5f, 0.5f, 0.1f, 1.0f);
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-+  // 半透明合成を有効にする
-+  glEnable(GL_BLEND);
-+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 -  primitiveBuffer->BindVertexArray();
 -  pipeline->Bind();
    sampler->Bind(0);
@@ -1921,30 +2047,59 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
    const glm::mat4& matProj = mainCamera.GetProjectionMatrix();
 ```
 
+それから、もし半透明合成用の設定プログラムを書いていいない場合、ここに半透明合成の設定を追加します。`glClear`関数の下に、次のプログラムを追加してください。
+
 >もし既に「半透明合成」プログラムを追加している場合、同じプログラムを追加する必要はありません。
+
+```diff
+   glClearColor(0.5f, 0.5f, 0.1f, 1.0f);
+   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
++
++  // 半透明合成を有効にする
++  glEnable(GL_BLEND);
++  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+   sampler->Bind(0);
+
+   const glm::mat4& matProj = mainCamera.GetProjectionMatrix();
+```
+
+> 半透明合成を有効にすると描画速度が低下します。そのため、多くのゲームエンジンでは半透明を「使う・使わない」で描画ループを分けています。とはいえ、大量の描画を行わない限りはあまり気にしなくてよいでしょう。
 
 ### 3.10 レンダラを設定する関数を追加する
 
 アクターに`StaticMeshRenderer`を設定する場合、同時にシェーダの種類も設定する必要があります。また、毎回glTFファイルを取得する関数を書くのも面倒です。
 
-そこで、アクターに`StaticMeshRenderer`を設定する関数を定義しておきましょう。`GameEngine.h`を開き、`GameEngine`クラスの定義の下に、次のプログラムを追加してください。
+そこで、アクターに`StaticMeshRenderer`を設定する関数を定義しておきましょう。
+`Renderer.h`を開き、`StaticMesh`クラスの定義の下に、次のプログラムを追加してください。
 
 ```diff
-   // glTFファイル管理オブジェクト
-   GltfFileBufferPtr gltfFileBuffer;
+   int meshIndex = -1;
  };
+ using StaticMeshRendererPtr = std::shared_ptr<StaticMeshRenderer>;
 +
-+void SetStaticMeshRenderer(Actor& actor, const char* filename, int index);
++StaticMeshRendererPtr SetStaticMeshRenderer(
++  Actor& actor, const char* filename, int index);
 
  #endif // GAMEENGINE_H_INCLUDED
 ```
 
-次に`GameEngine.cpp`を開き、`RenderShaderGroups`関数の定義の下に、次のプログラムを追加してください。
+次に`Renderer.cpp`を開き、`GameEngine.h`をインクルードしてください。
 
 ```diff
-       texMap->Unbind(2);
-     }
+ #include "Texture.h"
+ #include "Actor.h"
++#include "GameEngine.h"
+ #include "GltfMesh.h"
+ #include "VertexArrayObject.h"
+```
+
+続いて、`StaticMeshRenderer::Draw`関数の定義の下に、次のプログラムを追加してください。
+
+```diff
+       prim.indices, prim.baseVertex);
    }
+   glBindVertexArray(0);
  }
 +
 +/**
@@ -1952,18 +2107,18 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 +*
 +* @param actor    レンダラを設定するアクター
 +* @param filename glTFファイル名
-+* @param index    glTFに含まれるメッシュのインデックス
++* @param meshNo   描画するメッシュのインデックス
 +*/
-+void SetStaticMeshRenderer(Actor& actor, const char* filename, int index)
++StaticMeshRendererPtr SetStaticMeshRenderer(
++  Actor& actor, const char* filename, int index)
 +{
++  GameEngine& engine = GameEngine::Get();
 +  auto renderer = std::make_shared<StaticMeshRenderer>();
-+  renderer->SetMesh(GameEngine::Get().LoadGltfFile(filename), index);
++  renderer->SetMesh(engine.LoadGltfFile(filename), meshNo);
 +  actor.renderer = renderer;
 +  actor.shader = Shader::StaticMesh;
++  return renderer;
 +}
-
- /**
- * テクスチャを読み込む
 ```
 
 ### 3.11 glTFファイルを表示する
@@ -1974,12 +2129,13 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 <strong>【課題02】</strong>
 以下のURLでglTFの動作確認用モデルが公開されています。
 <code>https://github.com/KhronosGroup/glTF-Sample-Models</code>
-このサイトから<code>2.0/Cube/glTF</code>にあるCube.glTF, Cube.bin, Cube_BaseColor.pngをダウンロードし、
-プロジェクトの<code>Res</code>フォルダに保存しなさい。
+このサイトから<code>2.0/Cube/glTF</code>にあるCube.glTF, Cube.bin, Cube_BaseColor.pngを
+ダウンロードし、プロジェクトの<code>Res</code>フォルダに保存しなさい。
 画像ファイルCube_BaseColor.pngはTGA形式に変換しておくこと。
 </pre>
 
-glTFファイルをダウンロードしたら、`GameManager.cpp`を開き、`Update`関数にある`playerTank`に値を設定するプログラムの下に、次のプログラムを追加してください。
+glTFファイルをダウンロードしたら、`GameManager.cpp`を開き、`Update`関数にある
+`playerTank`に値を設定するプログラムの下に、次のプログラムを追加してください。
 
 ```diff
      // プレイヤーが操作するアクターを取得する
@@ -2011,6 +2167,6 @@ glTFファイルをダウンロードしたら、`GameManager.cpp`を開き、`U
 
 >**【3章のまとめ】**
 >
->* 
->* 
->* 
+>* 3Dモデルファイルによって、シェーダの書き方が変わる。
+>* シェーダを切り替えるとGPUのパラメータの初期化が行われるため、描画効率が低下する。
+>* 同じシェーダを使うメッシュをまとめて描画するなど、パラメータの変更が少なくなるように工夫をすると、描画効率を維持することができる。
