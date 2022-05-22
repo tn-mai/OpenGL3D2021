@@ -62,17 +62,17 @@ TransformationList CalcAnimatedTransformations(const GltfFile& file,
     transList[e].m = file.nodes[e].matLocal;
   }
 
-  for (const auto& e : animation.translationList) {
+  for (const auto& e : animation.translations) {
     auto& trans = transList[e.targetNodeId];
     const glm::vec3 translation = Interporation(e, keyFrame);
     trans.m *= glm::translate(glm::mat4(1), translation);
   }
-  for (const auto& e : animation.rotationList) {
+  for (const auto& e : animation.rotations) {
     auto& trans = transList[e.targetNodeId];
     const glm::quat rotation = Interporation(e, keyFrame);
     trans.m *= glm::mat4_cast(rotation);
   }
-  for (const auto& e : animation.scaleList) {
+  for (const auto& e : animation.scales) {
     auto& trans = transList[e.targetNodeId];
     const glm::vec3 scale = Interporation(e, keyFrame);
     trans.m *= glm::scale(glm::mat4(1), scale);
@@ -91,13 +91,13 @@ TransformationList CalcAnimatedTransformations(const GltfFile& file,
 * @param file      アニメーションとノードを所有するファイルオブジェクト
 * @param node      スキニング対象のノード
 * @param animation 計算の元になるアニメーション
-* @param frame     アニメーションの再生位置
+* @param time     アニメーションの再生位置
 *
 * @return アニメーションを適用した座標変換行列リスト
 */
 GltfFileBuffer::AnimationMatrices CalculateTransform(const GltfFilePtr& file,
   const GltfNode* meshNode, const GltfAnimation* animation,
-  const std::vector<int>& nonAnimatedNodeList, float frame)
+  const std::vector<int>& nonAnimatedNodeList, float time)
 {
   GltfFileBuffer::AnimationMatrices matBones;
   if (!file || !meshNode) {
@@ -105,7 +105,7 @@ GltfFileBuffer::AnimationMatrices CalculateTransform(const GltfFilePtr& file,
   }
 
   if (animation) {
-    const TransformationList transList = CalcAnimatedTransformations(*file, *animation, nonAnimatedNodeList, frame);
+    const TransformationList transList = CalcAnimatedTransformations(*file, *animation, nonAnimatedNodeList, time);
     if (meshNode->skin >= 0) {
       // アニメーションあり+スキンあり
       // @note jointsにはノード番号が格納されているが、頂点データのJOINTS_nには
@@ -491,7 +491,7 @@ void AnimatedMeshRenderer::SetFile(const GltfFilePtr& f, int sceneNo)
   ssboRangeList.clear();
 
   state = State::stop;
-  frame = 0;
+  time = 0;
   animationSpeed = 1;
   isLoop = true;
 }
@@ -506,19 +506,19 @@ void AnimatedMeshRenderer::Update(const Actor& actor, float deltaTime)
 {
   // 再生フレーム更新
   if (animation && state == State::play) {
-    frame += deltaTime * animationSpeed;
+    time += deltaTime * animationSpeed;
     if (isLoop) {
-      if (frame >= animation->totalTime) {
-        frame -= animation->totalTime;
-      } else if (frame < 0) {
-        const float n = std::ceil(-frame / animation->totalTime);
-        frame += animation->totalTime * n;
+      if (time >= animation->totalTime) {
+        time -= animation->totalTime;
+      } else if (time < 0) {
+        const float n = std::ceil(-time / animation->totalTime);
+        time += animation->totalTime * n;
       }
     } else {
-      if (frame >= animation->totalTime) {
-        frame = animation->totalTime;
-      } else if (frame < 0) {
-        frame = 0;
+      if (time >= animation->totalTime) {
+        time = animation->totalTime;
+      } else if (time < 0) {
+        time = 0;
       }
     }
   }
@@ -527,7 +527,7 @@ void AnimatedMeshRenderer::Update(const Actor& actor, float deltaTime)
   const glm::mat4 matModel = actor.GetModelMatrix();
   ssboRangeList.clear();
   for (const auto e : scene->meshNodes) {
-    auto matBones = CalculateTransform(file, e, animation.get(), nonAnimatedNodeList, frame);
+    auto matBones = CalculateTransform(file, e, animation.get(), nonAnimatedNodeList, time);
     for (auto& m : matBones) {
       m = matModel * m;
     }
@@ -542,7 +542,7 @@ void AnimatedMeshRenderer::Update(const Actor& actor, float deltaTime)
     case State::stop:
       break;
     case State::play:
-      if (!isLoop && (frame >= animation->totalTime)) {
+      if (!isLoop && (time >= animation->totalTime)) {
         state = State::stop;
       }
       break;
@@ -621,17 +621,17 @@ bool AnimatedMeshRenderer::Play(const GltfAnimationPtr& animation, bool isLoop)
     std::iota(nonAnimatedNodeList.begin(), nonAnimatedNodeList.end(), 0);
 
     // アニメーション対象のノード番号を「アニメーションなし」で置き換える
-    for (const auto& e : animation->scaleList) {
+    for (const auto& e : animation->scales) {
       if (e.targetNodeId < size) {
         nonAnimatedNodeList[e.targetNodeId] = noAnimation;
       }
     }
-    for (const auto& e : animation->rotationList) {
+    for (const auto& e : animation->rotations) {
       if (e.targetNodeId < size) {
         nonAnimatedNodeList[e.targetNodeId] = noAnimation;
       }
     }
-    for (const auto& e : animation->translationList) {
+    for (const auto& e : animation->translations) {
       if (e.targetNodeId < size) {
         nonAnimatedNodeList[e.targetNodeId] = noAnimation;
       }
@@ -643,7 +643,7 @@ bool AnimatedMeshRenderer::Play(const GltfAnimationPtr& animation, bool isLoop)
     nonAnimatedNodeList.erase(itr, nonAnimatedNodeList.end());
   }
 
-  frame = 0;
+  time = 0;
   state = State::play;
   this->isLoop = isLoop;
 
@@ -750,20 +750,20 @@ bool AnimatedMeshRenderer::Resume()
 */
 void AnimatedMeshRenderer::SetPosition(float position)
 {
-  frame = position;
+  time = position;
   if (animation) {
     if (isLoop) {
-      if (frame >= animation->totalTime) {
-        frame -= animation->totalTime;
-      } else if (frame < 0) {
-        const float n = std::ceil(-frame / animation->totalTime);
-        frame += animation->totalTime * n;
+      if (time >= animation->totalTime) {
+        time -= animation->totalTime;
+      } else if (time < 0) {
+        const float n = std::ceil(-time / animation->totalTime);
+        time += animation->totalTime * n;
       }
     } else {
-      if (frame >= animation->totalTime) {
-        frame = animation->totalTime;
-      } else if (frame < 0) {
-        frame = 0;
+      if (time >= animation->totalTime) {
+        time = animation->totalTime;
+      } else if (time < 0) {
+        time = 0;
       }
     }
   }
@@ -776,7 +776,7 @@ void AnimatedMeshRenderer::SetPosition(float position)
 */
 float AnimatedMeshRenderer::GetPosition() const
 {
-  return frame;
+  return time;
 }
 
 /**
@@ -792,7 +792,7 @@ bool AnimatedMeshRenderer::IsFinished() const
   if (!file || !animation) {
     return false;
   }
-  return animation->totalTime <= frame;
+  return animation->totalTime <= time;
 }
 
 /**

@@ -245,7 +245,7 @@ private:
   std::vector<Range> ssboRangeList;
 
   State state = State::stop;
-  float frame = 0;
+  float time = 0;
   float animationSpeed = 1;
   bool isLoop = true;
 };

@@ -19,26 +19,37 @@ class ShaderStorageBuffer;
 using ShaderStorageBufferPtr = std::shared_ptr<ShaderStorageBuffer>;
 
 /**
-* アニメーションのキーフレーム
+* アニメーションの補間方法
 */
-template<typename T>
-struct GltfKeyFrame
+enum class GltfInterpolation
 {
-  float frame;
-  T value;
+  step,        // 補間なし
+  linear,      // 線形補間
+  cubicSpline, // 3次スプライン補間
 };
 
 /**
-* アニメーションのタイムライン
+* アニメーションのキーフレーム
 */
 template<typename T>
-struct GltfTimeline
+struct GltfKeyframe
 {
-  int targetNodeId;
-  std::vector<GltfKeyFrame<T>> timeline;
+  float time; // 時間
+  T value;    // 適用する値
 };
-glm::vec3 Interporation(const GltfTimeline<glm::vec3>& data, float frame);
-glm::quat Interporation(const GltfTimeline<glm::quat>& data, float frame);
+
+/**
+* アニメーションのチャネル
+*/
+template<typename T>
+struct GltfChannel
+{
+  int targetNodeId;                       // 値を適用するノードID
+  GltfInterpolation interpolation;        // 補間方法
+  std::vector<GltfKeyframe<T>> keyframes; // キーフレーム配列
+};
+glm::vec3 Interporation(const GltfChannel<glm::vec3>& channel, float frame);
+glm::quat Interporation(const GltfChannel<glm::quat>& channel, float frame);
 
 /**
 * アニメーション
@@ -46,9 +57,9 @@ glm::quat Interporation(const GltfTimeline<glm::quat>& data, float frame);
 struct GltfAnimation
 {
   std::string name; // アニメーション名
-  std::vector<GltfTimeline<glm::vec3>> translationList;
-  std::vector<GltfTimeline<glm::quat>> rotationList;
-  std::vector<GltfTimeline<glm::vec3>> scaleList;
+  std::vector<GltfChannel<glm::vec3>> translations; // 平行移動チャネルの配列
+  std::vector<GltfChannel<glm::quat>> rotations;    // 回転チャネルの配列
+  std::vector<GltfChannel<glm::vec3>> scales;       // 拡大縮小チャネルの配列
   float totalTime = 0;
 };
 using GltfAnimationPtr = std::shared_ptr<GltfAnimation>;

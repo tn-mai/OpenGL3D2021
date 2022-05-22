@@ -60,10 +60,10 @@ GLsizeiptr GetBufferOffset(const Json& accessor,
   // バッファビューから必要な情報を取得
   const Json bufferView = bufferViews[bufferViewId];
   const int bufferId = bufferView["buffer"].int_value();
-  const int baesByteOffset = bufferView["byteOffset"].int_value();
+  const int baseByteOffset = bufferView["byteOffset"].int_value();
 
   // オフセットを計算
-  return binaryList[bufferId].offset + baesByteOffset + byteOffset;
+  return binaryList[bufferId].offset + baseByteOffset + byteOffset;
 }
 
 /**
@@ -139,16 +139,14 @@ const void* GetBuffer(const Json& accessor, const Json& bufferViews, const Binar
   // アクセッサから必要な情報を取得
   const int byteOffset = accessor["byteOffset"].int_value();
   const int bufferViewId = accessor["bufferView"].int_value();
-  const int count = accessor["count"].int_value();
 
   // バッファビューから必要な情報を取得
-  const Json bufferView = bufferViews[bufferViewId];
+  const Json& bufferView = bufferViews[bufferViewId];
   const int bufferId = bufferView["buffer"].int_value();
-  const int baesByteOffset = bufferView["byteOffset"].int_value();
-  const int byteLength = bufferView["byteLength"].int_value();
+  const int baseByteOffset = bufferView["byteOffset"].int_value();
 
   // アクセッサが参照するデータの先頭を計算
-  return binaryList[bufferId].bin.data() + baesByteOffset + byteOffset;
+  return binaryList[bufferId].bin.data() + baseByteOffset + byteOffset;
 }
 
 /**
@@ -313,9 +311,38 @@ void GetMeshNodeList(const GltfNode* node, std::vector<const GltfNode*>& list)
   if (node->mesh >= 0) {
     list.push_back(node);
   }
-  for (const auto& child : node->children) {
+  for (const GltfNode* child : node->children) {
     GetMeshNodeList(child, list);
   }
+}
+
+/**
+* アニメーションチャネルを作成する
+*
+* @param pTimes       時刻の配列のアドレス
+* @param pValues      値の配列のアドレス
+* @param inputCount   配列の要素数
+* @param targetNodeId 値の適用対象となるノードID
+* @param interp       補間方法
+* @param totalTime    総再生時間を格納する変数のアドレス
+*
+* @return 作成したアニメーションチャネル
+*/
+template<typename T>
+GltfChannel<T> MakeAnimationChannel(
+  const GLfloat* pTimes, const void* pValues, size_t inputCount,
+  int targetNodeId, GltfInterpolation interp, float* totalTime)
+{
+  GltfChannel<T> channel;
+  const T* pData = static_cast<const T*>(pValues);
+  channel.keyframes.resize(inputCount);
+  for (int i = 0; i < inputCount; ++i) {
+    *totalTime = std::max(*totalTime, pTimes[i]);
+    channel.keyframes[i] = { pTimes[i], pData[i] };
+  }
+  channel.targetNodeId = targetNodeId;
+  channel.interpolation = interp;
+  return channel;
 }
 
 // バインディングポイント
@@ -593,90 +620,59 @@ bool GltfFileBuffer::AddFromFile(const char* filename)
     file->materials.push_back({ baseColor, texBaseColor });
   }
 
-  // ノードツリー
+  // ノード
   {
     const std::vector<Json>& nodes = gltf["nodes"].array_items();
     file->nodes.resize(nodes.size());
     for (size_t i = 0; i < nodes.size(); ++i) {
-      // 親子関係を構築
-      // NOTE: ポインタよりインデックスのほうが安全かつメモリ効率がいいかも？
       const Json& node = nodes[i];
       GltfNode& n = file->nodes[i];
+
+      // ノード名を設定
       n.name = node["name"].string_value();
 
+      // メッシュIDを取得
+      const Json& meshId = node["mesh"];
+      if (meshId.is_number()) {
+        n.mesh = meshId.int_value();
+      }
+
+      // スキンIDを取得
+      const Json& skinId = node["skin"];
+      if (skinId.is_number()) {
+        n.skin = skinId.int_value();
+      }
+
+      // 自分の子ノードに対して親ノードポインタを設定
+      // NOTE: ポインタよりインデックスのほうが安全かつメモリ効率がいいかも？
       const std::vector<Json>& children = node["children"].array_items();
       n.children.reserve(children.size());
-      for (const auto& e : children) {
-        const int childJointId = e.int_value();
-        n.children.push_back(&file->nodes[childJointId]);
-        if (!file->nodes[childJointId].parent) {
-          file->nodes[childJointId].parent = &n;
+      for (const Json& e : children) {
+        GltfNode& childNode = file->nodes[e.int_value()];
+        n.children.push_back(&childNode);
+        if (!childNode.parent) {
+          childNode.parent = &n;
         }
       }
 
-      // ローカル座標変換行列を計算.
-      n.matLocal = CalcLocalMatrix(nodes[i]);
+      // ローカル座標変換行列を計算
+      n.matLocal = CalcLocalMatrix(node);
     }
 
-    // グローバル座標変換行列を計算
-    for (auto& e : file->nodes) {
+    // すべてのノードの親子関係とローカル座標行列を設定したので、
+    // 親をたどってグローバル座標変換行列を計算する
+    for (GltfNode& e : file->nodes) {
       e.matGlobal = e.matLocal;
-      GltfNode* parent = e.parent;
+      const GltfNode* parent = e.parent;
       while (parent) {
         e.matGlobal = parent->matLocal * e.matGlobal;
         parent = parent->parent;
       }
     }
-  }
+  } // ノード
 
-  // スキンデータを取得
-  const std::vector<Json>& skins = gltf["skins"].array_items();
-  file->skins.reserve(skins.size());
-  for (const auto& skin : skins) {
-    GltfSkin tmpSkin;
-
-    const Json& accessor = accessors[skin["inverseBindMatrices"].int_value()];
-    if (accessor["type"].string_value() != "MAT4") {
-      std::cerr << "ERROR: バインドポーズのtypeはMAT4でなくてはなりません \n";
-      std::cerr << "  type = " << accessor["type"].string_value() << "\n";
-      return false;
-    }
-    if (accessor["componentType"].int_value() != GL_FLOAT) {
-      std::cerr << "ERROR: バインドポーズのcomponentTypeはGL_FLOATでなくてはなりません \n";
-      std::cerr << "  type = 0x" << std::hex << accessor["componentType"].string_value() << "\n";
-      return false;
-    }
-
-    // 逆バインドポーズ行列を取得
-    // @note glTFのバッファデータはリトルエンディアン. 仕様に書いてある
-    //       実行環境によっては変換の必要あり
-    const glm::mat4* inverseBindPoseList =
-      static_cast<const glm::mat4*>(GetBuffer(accessor, bufferViews, binaryList));
-
-    // 関節データを取得
-    const std::vector<Json>& joints = skin["joints"].array_items();
-    tmpSkin.joints.resize(joints.size());
-    for (size_t i = 0; i < joints.size(); ++i) {
-      tmpSkin.joints[i].nodeId = joints[i].int_value();
-      tmpSkin.joints[i].matInverseBindPose = inverseBindPoseList[i];
-    }
-    tmpSkin.name = skin["name"].string_value();
-    file->skins.push_back(tmpSkin);
-  }
-
+  // シーン
   {
-    const std::vector<Json>& nodes = gltf["nodes"].array_items();
-    for (size_t i = 0; i < nodes.size(); ++i) {
-      const Json& meshId = nodes[i]["mesh"];
-      if (meshId.is_number()) {
-        file->nodes[i].mesh = meshId.int_value();
-      }
-      const Json& skinId = nodes[i]["skin"];
-      if (skinId.is_number()) {
-        file->nodes[i].skin = skinId.int_value();
-      }
-    }
-
     // シーンに含まれるメッシュノードを取得
     // @note メッシュノードだけを描画すればよいので、scenesのnodes配列に
     //       対応するノードを保持する必要はない。
@@ -684,82 +680,129 @@ bool GltfFileBuffer::AddFromFile(const char* filename)
     const std::vector<Json>& scenes = gltf["scenes"].array_items();
     file->scenes.resize(scenes.size());
     for (size_t i = 0; i < scenes.size(); ++i) {
+      GltfScene& s = file->scenes[i];
       const std::vector<Json>& nodes = scenes[i]["nodes"].array_items();
-      auto& scene = file->scenes[i];
-      for (auto& e : nodes) {
-        auto node = &file->nodes[e.int_value()];
-        scene.nodes.push_back(node);
-        GetMeshNodeList(node, scene.meshNodes);
+      s.nodes.resize(nodes.size());
+      for (size_t j = 0; j < nodes.size(); ++j) {
+        const int nodeId = nodes[j].int_value();
+        const GltfNode* n = &file->nodes[nodeId];
+        s.nodes[j] = n;
+        GetMeshNodeList(n, s.meshNodes);
       }
     }
-  }
+  } // シーン
 
-  // アニメーションデータを取得
-  for (const auto& animation : gltf["animations"].array_items()) {
-    GltfAnimationPtr anime = std::make_shared<GltfAnimation>();
-    anime->translationList.reserve(32);
-    anime->rotationList.reserve(32);
-    anime->scaleList.reserve(32);
-    anime->name = animation["name"].string_value();
+  // スキン
+  {
+    const std::vector<Json>& skins = gltf["skins"].array_items();
+    file->skins.resize(skins.size());
+    for (size_t i = 0; i < skins.size(); ++i) {
+      const Json& skin = skins[i];
+      GltfSkin& s = file->skins[i];
 
-    const std::vector<Json>& channels = animation["channels"].array_items();
-    const std::vector<Json>& samplers = animation["samplers"].array_items();
-    for (const Json& e : channels) {
-      const int samplerId = e["sampler"].int_value();
-      const Json& sampler = samplers[samplerId];
-      const Json& target = e["target"];
-      const int targetNodeId = target["node"].int_value();
-      if (targetNodeId < 0) {
-        continue;
+      // スキン名を設定
+      s.name = skin["name"].string_value();
+
+      // 逆バインドポーズ行列アクセッサの取得
+      const int inverseBindMatricesAccessorId = skin["inverseBindMatrices"].int_value();
+      const Json& accessor = accessors[inverseBindMatricesAccessorId];
+      if (accessor["type"].string_value() != "MAT4") {
+        std::cerr << "ERROR: バインドポーズのtypeはMAT4でなくてはなりません \n";
+        std::cerr << "  type = " << accessor["type"].string_value() << "\n";
+        return false;
+      }
+      if (accessor["componentType"].int_value() != GL_FLOAT) {
+        std::cerr << "ERROR: バインドポーズのcomponentTypeはGL_FLOATでなくてはなりません \n";
+        std::cerr << "  type = 0x" << std::hex << accessor["componentType"].string_value() << "\n";
+        return false;
       }
 
-      const int inputAccessorId = sampler["input"].int_value();
-      const int inputCount = accessors[inputAccessorId]["count"].int_value();
-      const void* pInput = GetBuffer(accessors[inputAccessorId], bufferViews, binaryList);
+      // 逆バインドポーズ行列の配列を取得
+      // @note glTFのバッファデータはリトルエンディアン. 仕様に書いてある
+      //       実行環境によっては変換の必要あり
+      const glm::mat4* inverseBindMatrices =
+        static_cast<const glm::mat4*>(GetBuffer(accessor, bufferViews, binaryList));
 
-      const int outputAccessorId = sampler["output"].int_value();
-      const int outputCount = accessors[outputAccessorId]["count"].int_value();
-      const void* pOutput = GetBuffer(accessors[outputAccessorId], bufferViews, binaryList);
-
-      const std::string& path = target["path"].string_value();
-      anime->totalTime = 0;
-      if (path == "translation") {
-        const GLfloat* pKeyFrame = static_cast<const GLfloat*>(pInput);
-        const glm::vec3* pData = static_cast<const glm::vec3*>(pOutput);
-        GltfTimeline<glm::vec3> timeline;
-        timeline.timeline.reserve(inputCount);
-        for (int i = 0; i < inputCount; ++i) {
-          anime->totalTime = std::max(anime->totalTime, pKeyFrame[i]);
-          timeline.timeline.push_back({ pKeyFrame[i], pData[i] });
-        }
-        timeline.targetNodeId = targetNodeId;
-        anime->translationList.push_back(timeline);
-      } else if (path == "rotation") {
-        const GLfloat* pKeyFrame = static_cast<const GLfloat*>(pInput);
-        const glm::quat* pData = static_cast<const glm::quat*>(pOutput);
-        GltfTimeline<glm::quat> timeline;
-        timeline.timeline.reserve(inputCount);
-        for (int i = 0; i < inputCount; ++i) {
-          anime->totalTime = std::max(anime->totalTime, pKeyFrame[i]);
-          timeline.timeline.push_back({ pKeyFrame[i], pData[i] });
-        }
-        timeline.targetNodeId = targetNodeId;
-        anime->rotationList.push_back(timeline);
-      } else if (path == "scale") {
-        const GLfloat* pKeyFrame = static_cast<const GLfloat*>(pInput);
-        const glm::vec3* pData = static_cast<const glm::vec3*>(pOutput);
-        GltfTimeline<glm::vec3> timeline;
-        timeline.timeline.reserve(inputCount);
-        for (int i = 0; i < inputCount; ++i) {
-          anime->totalTime = std::max(anime->totalTime, pKeyFrame[i]);
-          timeline.timeline.push_back({ pKeyFrame[i], pData[i] });
-        }
-        timeline.targetNodeId = targetNodeId;
-        anime->scaleList.push_back(timeline);
+      // 関節データを取得
+      const std::vector<Json>& joints = skin["joints"].array_items();
+      s.joints.resize(joints.size());
+      for (size_t jointId = 0; jointId < joints.size(); ++jointId) {
+        s.joints[jointId].nodeId = joints[jointId].int_value();
+        s.joints[jointId].matInverseBindPose = inverseBindMatrices[jointId];
       }
     }
-    file->animations.push_back(anime);
-  }
+  } // スキン
+
+  // アニメーション
+  {
+    const std::vector<Json>& animations = gltf["animations"].array_items();
+    file->animations.resize(animations.size());
+    for (size_t i = 0; i < animations.size(); ++i) {
+      const Json& animation = animations[i];
+      const std::vector<Json>& channels = animation["channels"].array_items();
+      const std::vector<Json>& samplers = animation["samplers"].array_items();
+
+      // 名前を設定
+      GltfAnimationPtr a = std::make_shared<GltfAnimation>();
+      a->name = animation["name"].string_value();
+
+      // チャネル配列の容量を予約
+      const size_t predictedSize = channels.size() / 3 + 1; // 予測サイズ
+      a->translations.reserve(predictedSize);
+      a->rotations.reserve(predictedSize);
+      a->scales.reserve(predictedSize);
+
+      // チャネル配列を設定
+      a->totalTime = 0;
+      for (const Json& e : channels) {
+        const int samplerId = e["sampler"].int_value();
+        const Json& sampler = samplers[samplerId];
+        const Json& target = e["target"];
+        const int targetNodeId = target["node"].int_value();
+        if (targetNodeId < 0) {
+          continue; // 対象ノードIDが無効
+        }
+
+        // 時刻の配列を取得
+        const int inputAccessorId = sampler["input"].int_value();
+        const Json& inputAccessor = accessors[inputAccessorId];
+        const int inputCount = inputAccessor["count"].int_value();
+        const GLfloat* pTimes = static_cast<const GLfloat*>(
+          GetBuffer(inputAccessor, bufferViews, binaryList));
+
+        // 値の配列を取得
+        const int outputAccessorId = sampler["output"].int_value();
+        //const int outputCount = accessors[outputAccessorId]["count"].int_value();
+        const void* pValues =
+          GetBuffer(accessors[outputAccessorId], bufferViews, binaryList);
+
+        // 補間方法を取得
+        const std::string& interpolation = target["interpolation"].string_value();
+        GltfInterpolation interp = GltfInterpolation::linear;
+        if (interpolation != "LINEAR") {
+          if (interpolation == "STEP") {
+            interp = GltfInterpolation::step;
+          } else if (interpolation == "CUBICSPLINE") {
+            interp = GltfInterpolation::cubicSpline;
+          }
+        }
+
+        // 時刻と値の配列からチャネルを作成し、pathに対応する配列に追加
+        const std::string& path = target["path"].string_value();
+        if (path == "translation") {
+          a->translations.push_back(MakeAnimationChannel<glm::vec3>(
+            pTimes, pValues, inputCount, targetNodeId, interp, &a->totalTime));
+        } else if (path == "rotation") {
+          a->rotations.push_back(MakeAnimationChannel<glm::quat>(
+            pTimes, pValues, inputCount, targetNodeId, interp, &a->totalTime));
+        } else if (path == "scale") {
+          a->scales.push_back(MakeAnimationChannel<glm::vec3>(
+            pTimes, pValues, inputCount, targetNodeId, interp, &a->totalTime));
+        }
+      }
+      file->animations[i] = a;
+    }
+  } // アニメーション
 
   // 作成したメッシュを連想配列に追加
   file->name = filename;
@@ -847,36 +890,36 @@ void GltfFileBuffer::UnbindAnimationBuffer(GLuint bindingPoint)
 /**
 * アニメーションタイムライン上の指定した時間の値を求める
 */
-glm::vec3 Interporation(const GltfTimeline<glm::vec3>& data, float frame)
+glm::vec3 Interporation(const GltfChannel<glm::vec3>& channel, float time)
 {
-  const auto maxFrame = std::lower_bound(data.timeline.begin(), data.timeline.end(), frame,
-    [](const GltfKeyFrame<glm::vec3>& keyFrame, float frame) { return keyFrame.frame < frame; });
-  if (maxFrame == data.timeline.begin()) {
-    return data.timeline.front().value;
+  const auto maxFrame = std::lower_bound(channel.keyframes.begin(), channel.keyframes.end(), time,
+    [](const GltfKeyframe<glm::vec3>& keyFrame, float time) { return keyFrame.time < time; });
+  if (maxFrame == channel.keyframes.begin()) {
+    return channel.keyframes.front().value;
   }
-  if (maxFrame == data.timeline.end()) {
-    return data.timeline.back().value;
+  if (maxFrame == channel.keyframes.end()) {
+    return channel.keyframes.back().value;
   }
   const auto minFrame = maxFrame - 1;
-  const float ratio = glm::clamp((frame - minFrame->frame) / (maxFrame->frame - minFrame->frame), 0.0f, 1.0f);
+  const float ratio = glm::clamp((time - minFrame->time) / (maxFrame->time - minFrame->time), 0.0f, 1.0f);
   return glm::mix(minFrame->value, maxFrame->value, ratio);
 }
 
 /**
 * アニメーションタイムライン上の指定した時間の値を求める
 */
-glm::quat Interporation(const GltfTimeline<glm::quat>& data, float frame)
+glm::quat Interporation(const GltfChannel<glm::quat>& channel, float time)
 {
-  const auto maxFrame = std::lower_bound(data.timeline.begin(), data.timeline.end(), frame,
-    [](const GltfKeyFrame<glm::quat>& keyFrame, float frame) { return keyFrame.frame < frame; });
-  if (maxFrame == data.timeline.begin()) {
-    return data.timeline.front().value;
+  const auto maxFrame = std::lower_bound(channel.keyframes.begin(), channel.keyframes.end(), time,
+    [](const GltfKeyframe<glm::quat>& keyFrame, float time) { return keyFrame.time < time; });
+  if (maxFrame == channel.keyframes.begin()) {
+    return channel.keyframes.front().value;
   }
-  if (maxFrame == data.timeline.end()) {
-    return data.timeline.back().value;
+  if (maxFrame == channel.keyframes.end()) {
+    return channel.keyframes.back().value;
   }
   const auto minFrame = maxFrame - 1;
-  const float ratio = glm::clamp((frame - minFrame->frame) / (maxFrame->frame - minFrame->frame), 0.0f, 1.0f);
+  const float ratio = glm::clamp((time - minFrame->time) / (maxFrame->time - minFrame->time), 0.0f, 1.0f);
   return glm::slerp(minFrame->value, maxFrame->value, ratio);
 }
 
