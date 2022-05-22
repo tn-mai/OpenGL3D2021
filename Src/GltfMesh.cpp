@@ -856,6 +856,8 @@ GLintptr GltfFileBuffer::AddAnimationData(const AnimationMatrices& matBones)
 
   // SSBOのオフセットアライメント条件を満たすために、256バイト境界に配置する。
   // 256はOpenGL仕様で許される最大値(GeForce系がこの値を使っている)。
+  // https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf
+  // の表23.64を参照
   dataBuffer.resize(((dataBuffer.size() + 3) / 4) * 4);
   return offset;
 }
