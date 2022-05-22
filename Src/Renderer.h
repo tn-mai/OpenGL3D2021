@@ -51,9 +51,10 @@ public:
   Renderer() = default;
   virtual ~Renderer() = default;
   virtual RendererPtr Clone() const = 0;
+  virtual void Update(Actor& actor, float deltaTime) {}
+  virtual void PreDraw(const Actor& actor) {}
   virtual void Draw(const Actor& actor,
     const ProgramPipeline& pipeline, const glm::mat4& matVP) = 0;
-  virtual void Update(const Actor& actor, float deltaTime) {}
 };
 
 /**
@@ -201,10 +202,11 @@ public:
   AnimatedMeshRenderer() = default;
   virtual ~AnimatedMeshRenderer() = default;
   virtual RendererPtr Clone() const override;
+  virtual void Update(Actor& actor, float deltaTime) override;
+  virtual void PreDraw(const Actor& actor) override;
   virtual void Draw(const Actor& actor,
     const ProgramPipeline& pipeline,
     const glm::mat4& matVP) override;
-  virtual void Update(const Actor& actor, float deltaTime) override;
 
   void SetFileBuffer(const GltfFileBufferPtr& p) { fileBuffer = p; }
   void SetFile(const GltfFilePtr& f, int sceneNo = 0);

@@ -282,7 +282,10 @@ bool GameEngine::Initialize()
     }
 
     // glTFファイル用バッファを初期化
-    engine->gltfFileBuffer = std::make_shared<GltfFileBuffer>(256 * 1024 * 1024, sizeof(glm::mat4) * 64 * 32);
+    const size_t maxAnimeActorCount = 64;   // アニメーションするアクター数
+    const size_t maxAnimeMatrixCount = 256; // アクターのボーン数
+    engine->gltfFileBuffer = std::make_shared<GltfFileBuffer>(256 * 1024 * 1024,
+      sizeof(glm::mat4) * maxAnimeActorCount * maxAnimeMatrixCount);
 
     // ImGuiの初期化
     ImGui::CreateContext();
@@ -410,15 +413,16 @@ void GameEngine::UpdateActors(float deltaTime)
         }
       }
 
-      actors[i]->OnUpdate(deltaTime);
-
-      if (actors[i]->renderer) {
-        actors[i]->renderer->Update(*actors[i], deltaTime);
-      }
-
-      // TODO: テキスト未実装
+      // アニメーションを実行
       if (actors[i]->animation) {
         actors[i]->animation->Update(deltaTime);
+      }
+
+      actors[i]->OnUpdate(deltaTime);
+
+      // レンダラの状態を更新
+      if (actors[i]->renderer) {
+        actors[i]->renderer->Update(*actors[i], deltaTime);
       }
 
       // 速度に重力加速度を加える
@@ -586,6 +590,14 @@ void GameEngine::RemoveDeadActors()
 */
 void GameEngine::RenderDefault()
 {
+  // レンダラの前処理を実行
+  for (auto& e : actors[static_cast<int>(Layer::Default)]) {
+    if (e->renderer) {
+      e->renderer->PreDraw(*e);
+    }
+  }
+
+  // アニメーションバッファをGPUメモリにコピーする
   gltfFileBuffer->UploadAnimationBuffer();
 
   // シェーダの切り替えによる描画効率の低下を防ぐため、アクターをシェーダ別に分ける

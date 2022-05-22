@@ -502,7 +502,7 @@ void AnimatedMeshRenderer::SetFile(const GltfFilePtr& f, int sceneNo)
 * @param deltaTime 前回の更新からの経過時間
 * @param actor     描画対象のアクター
 */
-void AnimatedMeshRenderer::Update(const Actor& actor, float deltaTime)
+void AnimatedMeshRenderer::Update(Actor& actor, float deltaTime)
 {
   // 再生フレーム更新
   if (animation && state == State::play) {
@@ -523,19 +523,6 @@ void AnimatedMeshRenderer::Update(const Actor& actor, float deltaTime)
     }
   }
 
-  // SSBOにコピーするデータを追加
-  const glm::mat4 matModel = actor.GetModelMatrix();
-  ssboRangeList.clear();
-  for (const auto e : scene->meshNodes) {
-    auto matBones = CalculateTransform(file, e, animation.get(), nonAnimatedNodeList, time);
-    for (auto& m : matBones) {
-      m = matModel * m;
-    }
-    const GLintptr offset = fileBuffer->AddAnimationData(matBones);
-    const GLsizeiptr size = static_cast<GLsizeiptr>(matBones.size() * sizeof(glm::mat4));
-    ssboRangeList.push_back({ offset, size });
-  }
-
   // 状態を更新
   if (animation) {
     switch (state) {
@@ -549,6 +536,25 @@ void AnimatedMeshRenderer::Update(const Actor& actor, float deltaTime)
     case State::pause:
       break;
     }
+  }
+}
+
+/**
+* 描画の前処理を実行
+*/
+void AnimatedMeshRenderer::PreDraw(const Actor& actor)
+{
+  // SSBOにコピーするデータを追加
+  const glm::mat4 matModel = actor.GetModelMatrix();
+  ssboRangeList.clear();
+  for (const auto e : scene->meshNodes) {
+    auto matBones = CalculateTransform(file, e, animation.get(), nonAnimatedNodeList, time);
+    for (auto& m : matBones) {
+      m = matModel * m;
+    }
+    const GLintptr offset = fileBuffer->AddAnimationData(matBones);
+    const GLsizeiptr size = static_cast<GLsizeiptr>(matBones.size() * sizeof(glm::mat4));
+    ssboRangeList.push_back({ offset, size });
   }
 }
 
