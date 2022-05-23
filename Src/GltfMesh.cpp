@@ -469,7 +469,7 @@ struct DefaultVertexData
 */
 GltfAnimationMatrices CalcAnimationMatrices(const GltfFilePtr& file,
   const GltfNode* meshNode, const GltfAnimation* animation,
-  const std::vector<int>& nonAnimatedNodeList, float time)
+  const std::vector<int>& nonAnimatedNodes, float time)
 {
   GltfAnimationMatrices matBones;
   if (!file || !meshNode) {
@@ -493,7 +493,7 @@ GltfAnimationMatrices CalcAnimationMatrices(const GltfFilePtr& file,
   matrices.resize(nodes.size());
 
   // アニメーションしないノードのローカル姿勢行列を設定
-  for (const auto e : nonAnimatedNodeList) {
+  for (const auto e : nonAnimatedNodes) {
     matrices[e].m = nodes[e].matLocal;
   }
 

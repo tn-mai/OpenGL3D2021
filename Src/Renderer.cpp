@@ -356,22 +356,6 @@ RendererPtr AnimatedMeshRenderer::Clone() const
 }
 
 /**
-* 表示するファイルを設定する
-*/
-void AnimatedMeshRenderer::SetFile(const GltfFilePtr& f, int sceneNo)
-{
-  file = f;
-  scene = &f->scenes[sceneNo];
-  animation = nullptr;
-  ssboRangeList.clear();
-
-  state = State::stop;
-  time = 0;
-  animationSpeed = 1;
-  isLoop = true;
-}
-
-/**
 * アニメーション状態を更新する
 *
 * @param deltaTime 前回の更新からの経過時間
@@ -383,18 +367,9 @@ void AnimatedMeshRenderer::Update(Actor& actor, float deltaTime)
   if (animation && state == State::play) {
     time += deltaTime * animationSpeed;
     if (isLoop) {
-      if (time >= animation->totalTime) {
-        time -= animation->totalTime;
-      } else if (time < 0) {
-        const float n = std::ceil(-time / animation->totalTime);
-        time += animation->totalTime * n;
-      }
+      time -= animation->totalTime * std::floor(time / animation->totalTime);
     } else {
-      if (time >= animation->totalTime) {
-        time = animation->totalTime;
-      } else if (time < 0) {
-        time = 0;
-      }
+      time = std::clamp(time, 0.0f, animation->totalTime);
     }
   }
 
@@ -419,16 +394,23 @@ void AnimatedMeshRenderer::Update(Actor& actor, float deltaTime)
 */
 void AnimatedMeshRenderer::PreDraw(const Actor& actor)
 {
-  // SSBOにコピーするデータを追加
+  // 全メッシュのアニメーション行列を更新
   const glm::mat4 matModel = actor.GetModelMatrix();
   ssboRangeList.clear();
-  for (const auto e : scene->meshNodes) {
-    auto matBones = CalcAnimationMatrices(file, e, animation.get(), nonAnimatedNodeList, time);
+  for (const GltfNode* e : scene->meshNodes) {
+    // アニメーション行列を計算
+    auto matBones = CalcAnimationMatrices(
+      file, e, animation.get(), nonAnimatedNodes, time);
+
+    // アニメーション行列にモデル行列を合成
     for (auto& m : matBones) {
       m = matModel * m;
     }
+
+    // アニメーション行列をバッファに追加し、追加先のオフセットとサイズを記録
     const GLintptr offset = fileBuffer->AddAnimationMatrices(matBones);
-    const GLsizeiptr size = static_cast<GLsizeiptr>(matBones.size() * sizeof(glm::mat4));
+    const GLsizeiptr size =
+      static_cast<GLsizeiptr>(matBones.size() * sizeof(glm::mat4));
     ssboRangeList.push_back({ offset, size });
   }
 }
@@ -443,14 +425,15 @@ void AnimatedMeshRenderer::Draw(const Actor& actor,
     return;
   }
 
-  // モデル行列をGPUメモリにコピーする
-  //pipeline.SetUniform(locMatModel, actor.GetModelMatrix());
-
+  // ノードに含まれる全てのメッシュを描画
   for (size_t i = 0; i < scene->meshNodes.size(); ++i) {
     const glm::uint meshNo = scene->meshNodes[i]->mesh;
     const GltfMesh& meshData = file->meshes[meshNo];
+
+    // SSBOをバインド
     fileBuffer->BindAnimationBuffer(0, ssboRangeList[i].offset, ssboRangeList[i].size);
-    //pipeline.SetUniform(11, &meshNo, 1);
+
+    // メッシュに含まれる全てのプリミティブを描画
     for (const auto& prim : meshData.primitives) {
       // マテリアルデータを設定
       const GltfMaterial& m = file->materials[prim.materialNo];
@@ -466,81 +449,108 @@ void AnimatedMeshRenderer::Draw(const Actor& actor,
         prim.indices, prim.baseVertex);
     }
   }
+
+  // SSBOとVAOのバインドを解除
   fileBuffer->UnbindAnimationBuffer(0);
   glBindVertexArray(0);
 }
 
 /**
-* アニメーションを再生する
+* 表示するファイルを設定する
+*/
+void AnimatedMeshRenderer::SetFile(const GltfFilePtr& f, int sceneNo)
+{
+  file = f;
+  scene = &f->scenes[sceneNo];
+  animation = nullptr;
+  ssboRangeList.clear();
+
+  state = State::stop;
+  time = 0;
+  animationSpeed = 1;
+  isLoop = true;
+}
+
+/**
+* アニメーションを設定する
 *
 * @param animation 再生するアニメーション
 * @param isLoop    ループ再生の指定(true=ループする false=ループしない)
 *
-* @retval true  再生開始
-* @retval false 再生失敗
+* @retval true  設定成功
+* @retval false 設定失敗
 */
-bool AnimatedMeshRenderer::Play(const GltfAnimationPtr& animation, bool isLoop)
+bool AnimatedMeshRenderer::SetAnimation(const GltfAnimationPtr& animation, bool isLoop)
 {
+  // ファイルが設定されていなければ何もしない
   if (!file) {
     return false;
   }
 
-  if (this->animation != animation) {
-    this->animation = animation;
-    if (!animation) {
-      state = State::stop;
-      return false;
-    }
+  // 同じアニメーションが指定された場合は何もしない
+  if (this->animation == animation) {
+    return true;
+  }
 
-    // アニメーションを行わないノードのリストを作る
+  // アニメーションを設定
+  this->animation = animation;
 
-    const int noAnimation = -1; // 「アニメーションなし」を表す値
+  // アニメーションがnullptrの場合は再生状態をを「停止」にする
+  if (!animation) {
+    state = State::stop;
+    return false;
+  }
+
+  // アニメーションを行わないノードのリストを作る
+  {
+    const int withAnimation = -1; // 「アニメーションあり」を表す値
 
     // 全ノード番号のリストを作成
     const size_t size = file->nodes.size();
-    nonAnimatedNodeList.resize(size);
-    std::iota(nonAnimatedNodeList.begin(), nonAnimatedNodeList.end(), 0);
+    nonAnimatedNodes.resize(size);
+    std::iota(nonAnimatedNodes.begin(), nonAnimatedNodes.end(), 0);
 
-    // アニメーション対象のノード番号を「アニメーションなし」で置き換える
+    // アニメーション対象のノード番号を「アニメーションあり」で置き換える
     for (const auto& e : animation->scales) {
       if (e.targetNodeId < size) {
-        nonAnimatedNodeList[e.targetNodeId] = noAnimation;
+        nonAnimatedNodes[e.targetNodeId] = withAnimation;
       }
     }
     for (const auto& e : animation->rotations) {
       if (e.targetNodeId < size) {
-        nonAnimatedNodeList[e.targetNodeId] = noAnimation;
+        nonAnimatedNodes[e.targetNodeId] = withAnimation;
       }
     }
     for (const auto& e : animation->translations) {
       if (e.targetNodeId < size) {
-        nonAnimatedNodeList[e.targetNodeId] = noAnimation;
+        nonAnimatedNodes[e.targetNodeId] = withAnimation;
       }
     }
 
-    // 「アニメーションなし」をリストから削除する
+    // 「アニメーションあり」をリストから削除する
     const auto itr = std::remove(
-      nonAnimatedNodeList.begin(), nonAnimatedNodeList.end(), noAnimation);
-    nonAnimatedNodeList.erase(itr, nonAnimatedNodeList.end());
+      nonAnimatedNodes.begin(), nonAnimatedNodes.end(), withAnimation);
+    nonAnimatedNodes.erase(itr, nonAnimatedNodes.end());
   }
 
+  // 状態を「停止中」に設定
   time = 0;
-  state = State::play;
+  state = State::stop;
   this->isLoop = isLoop;
 
   return true;
 }
 
 /**
-* アニメーションを再生する
+* アニメーションを設定する
 *
 * @param name   再生するアニメーションの名前
 * @param isLoop ループ再生の指定(true=ループする false=ループしない)
 *
-* @retval true  再生開始
-* @retval false 再生失敗
+* @retval true  設定成功
+* @retval false 設定失敗
 */
-bool AnimatedMeshRenderer::Play(const std::string& name, bool isLoop)
+bool AnimatedMeshRenderer::SetAnimation(const std::string& name, bool isLoop)
 {
   if (!file) {
     return false;
@@ -548,28 +558,47 @@ bool AnimatedMeshRenderer::Play(const std::string& name, bool isLoop)
 
   for (const auto& e : file->animations) {
     if (e->name == name) {
-      return Play(e, isLoop);
+      return SetAnimation(e, isLoop);
     }
   }
   return false;
 }
 
 /**
-* アニメーションを再生する
+* アニメーションを設定する
 *
 * @param index  再生するアニメーション番号
 * @param isLoop ループ再生の指定(true=ループする false=ループしない)
 *
-* @retval true  再生開始
-* @retval false 再生失敗
+* @retval true  設定成功
+* @retval false 設定失敗
 */
-bool AnimatedMeshRenderer::Play(size_t index, bool isLoop)
+bool AnimatedMeshRenderer::SetAnimation(size_t index, bool isLoop)
 {
   if (!file || index >= file->animations.size()) {
     return false;
   }
-  return Play(file->animations[index], isLoop);
+  return SetAnimation(file->animations[index], isLoop);
 }
+
+/**
+* アニメーションの再生を開始・再開する
+*
+* @retval true  成功
+* @retval false 失敗(アニメーションが設定されていない)
+*/
+bool AnimatedMeshRenderer::Play()
+{
+  if (animation) {
+    switch (state) {
+    case State::play:  return true;
+    case State::stop:  state = State::play; return true;
+    case State::pause: state = State::play; return true;
+    }
+  }
+  return false;
+}
+
 /**
 * アニメーションの再生を停止する
 *
@@ -607,24 +636,6 @@ bool AnimatedMeshRenderer::Pause()
 }
 
 /**
-* アニメーションの再生を再開する
-*
-* @retval true  成功
-* @retval false 失敗(アニメーションが停止している、またはアニメーションが設定されていない)
-*/
-bool AnimatedMeshRenderer::Resume()
-{
-  if (animation) {
-    switch (state) {
-    case State::play:  return true;
-    case State::stop:  return false;
-    case State::pause: state = State::play; return true;
-    }
-  }
-  return false;
-}
-
-/**
 * アニメーションの再生位置を設定する
 *
 * @param position 再生位置(秒)
@@ -634,20 +645,11 @@ void AnimatedMeshRenderer::SetPosition(float position)
   time = position;
   if (animation) {
     if (isLoop) {
-      if (time >= animation->totalTime) {
-        time -= animation->totalTime;
-      } else if (time < 0) {
-        const float n = std::ceil(-time / animation->totalTime);
-        time += animation->totalTime * n;
-      }
+      time -= animation->totalTime * std::floor(time / animation->totalTime);
     } else {
-      if (time >= animation->totalTime) {
-        time = animation->totalTime;
-      } else if (time < 0) {
-        time = 0;
-      }
+      time = std::clamp(time, 0.0f, animation->totalTime);
     }
-  }
+  } // animation
 }
 
 /**
@@ -670,10 +672,15 @@ float AnimatedMeshRenderer::GetPosition() const
 */
 bool AnimatedMeshRenderer::IsFinished() const
 {
-  if (!file || !animation) {
+  if (!file || !animation || isLoop) {
     return false;
   }
-  return animation->totalTime <= time;
+
+  // 再生速度(方向)によって終了判定を変える
+  if (animationSpeed < 0) {
+    return time <= 0;
+  }
+  return time >= animation->totalTime;
 }
 
 /**

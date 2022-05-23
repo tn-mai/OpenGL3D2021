@@ -162,11 +162,12 @@ void GameManager::Update(float deltaTime)
       actor->position = playerTank->position + glm::vec3(4, 0, 0);
       engine.AddActor(actor);
     }
-    {
+    if (0) {
       ActorPtr actor = std::make_shared<Actor>("AnimatedMeshTest");
       auto renderer = SetAnimatedMeshRenderer(*actor, "Res/glTF/CesiumMilkTruck.gltf", 0);
-      //renderer->Play(0);
+      //renderer->SetAnimation(0);
       //renderer->SetAnimationSpeed(2);
+      //renderer->Play();
       actor->scale = glm::vec3(2);
       actor->rotation = glm::radians(90.0f);
       actor->position = playerTank->position + glm::vec3(-4, 0, 0);
@@ -175,17 +176,19 @@ void GameManager::Update(float deltaTime)
     {
       ActorPtr actor = std::make_shared<Actor>("SkeletalMeshTest");
       auto renderer = SetAnimatedMeshRenderer(*actor, "Res/glTF/CesiumMan.gltf", 0);
-      renderer->Play(0);
+      renderer->SetAnimation(0);
       //renderer->SetAnimationSpeed(2);
-      actor->scale = glm::vec3(5);
+      renderer->Play();
+      actor->scale = glm::vec3(4);
       actor->position = playerTank->position + glm::vec3(4, 0, -4);
       engine.AddActor(actor);
     }
-    {
+    if (0) {
       ActorPtr actor = std::make_shared<Actor>("SkeletalMeshTest2");
       auto renderer = SetAnimatedMeshRenderer(*actor, "Res/glTF/BrainStem.gltf", 0);
-      renderer->Play(0);
-      //renderer->SetAnimationSpeed(2);
+      renderer->SetAnimation(0);
+      //renderer->SetAnimationSpeed(-0.5f);
+      renderer->Play();
       actor->scale = glm::vec3(5);
       actor->position = playerTank->position + glm::vec3(-4, 0, -4);
       engine.AddActor(actor);

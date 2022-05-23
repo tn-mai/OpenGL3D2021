@@ -210,12 +210,12 @@ public:
 
   void SetFileBuffer(const GltfFileBufferPtr& p) { fileBuffer = p; }
   void SetFile(const GltfFilePtr& f, int sceneNo = 0);
-  bool Play(const GltfAnimationPtr& animation, bool isLoop = true);
-  bool Play(const std::string& name, bool isLoop = true);
-  bool Play(size_t index, bool isLoop = true);
+  bool SetAnimation(const GltfAnimationPtr& animation, bool isLoop = true);
+  bool SetAnimation(const std::string& name, bool isLoop = true);
+  bool SetAnimation(size_t index, bool isLoop = true);
+  bool Play();
   bool Stop();
   bool Pause();
-  bool Resume();
 
   const GltfFilePtr& GetFile() const { return file; }
   State GetState() const { return state; }
@@ -238,7 +238,7 @@ private:
   GltfFilePtr file;
   const GltfScene* scene = nullptr;
   GltfAnimationPtr animation;
-  std::vector<int> nonAnimatedNodeList;
+  std::vector<int> nonAnimatedNodes;
 
   struct Range {
     GLintptr offset;
