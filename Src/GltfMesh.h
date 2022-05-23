@@ -48,8 +48,6 @@ struct GltfChannel
   GltfInterpolation interpolation;        // 補間方法
   std::vector<GltfKeyframe<T>> keyframes; // キーフレーム配列
 };
-glm::vec3 Interporation(const GltfChannel<glm::vec3>& channel, float frame);
-glm::quat Interporation(const GltfChannel<glm::quat>& channel, float frame);
 
 /**
 * アニメーション
@@ -149,6 +147,13 @@ struct GltfFile
 };
 using GltfFilePtr = std::shared_ptr<GltfFile>;
 
+// アニメーション用座標変換行列の配列
+using GltfAnimationMatrices = std::vector<glm::mat4>;
+
+GltfAnimationMatrices CalcAnimationMatrices(const GltfFilePtr& file,
+  const GltfNode* meshNode, const GltfAnimation* animation,
+  const std::vector<int>& nonAnimatedNodes, float time);
+
 /**
 * メッシュを管理するクラス
 */
@@ -165,9 +170,8 @@ public:
   bool AddFromFile(const char* filename);
   GltfFilePtr GetFile(const char* filename) const;
 
-  using AnimationMatrices = std::vector<glm::mat4>;
   void ClearAnimationBuffer();
-  GLintptr AddAnimationData(const AnimationMatrices& matBones);
+  GLintptr AddAnimationMatrices(const GltfAnimationMatrices& matBones);
   void UploadAnimationBuffer();
   void BindAnimationBuffer(GLuint bindingPoint, GLintptr offset, GLsizeiptr size);
   void UnbindAnimationBuffer(GLuint bindingPoint);
@@ -183,7 +187,7 @@ private:
 
   // アニメーション行列用バッファ
   ShaderStorageBufferPtr ssbo;
-  std::vector<glm::mat4> dataBuffer;
+  GltfAnimationMatrices matrixBuffer;
 };
 using GltfFileBufferPtr = std::shared_ptr<GltfFileBuffer>;
 

@@ -5,137 +5,12 @@
 #include "ProgramPipeline.h"
 #include "Texture.h"
 #include "Actor.h"
+#include "GameEngine.h"
 #include "GltfMesh.h"
 #include "VertexArrayObject.h"
-#include "GameEngine.h"
-#include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <numeric>
 #include <algorithm>
-
-namespace /* unnamed */ {
-
-/**
-* アニメーション用の中間データ
-*/
-struct Transformation
-{
-  glm::mat4 m = glm::mat4(1);
-  bool isCalculated = false;
-};
-using TransformationList = std::vector<Transformation>;
-
-/**
-* ノードのグローバルモデル行列を計算する
-*/
-const glm::mat4& CalcGlobalTransform(const std::vector<GltfNode>& nodes,
-  const GltfNode& node, TransformationList& transList)
-{
-  const intptr_t currentNodeId = &node - &nodes[0];
-  Transformation& trans = transList[currentNodeId];
-  if (trans.isCalculated) {
-    return trans.m;
-  }
-
-  glm::mat4 matParent;
-  if (node.parent) {
-    matParent = CalcGlobalTransform(nodes, *node.parent, transList);
-  } else {
-    matParent = glm::mat4(1);
-  }
-  trans.m = matParent * trans.m;
-  trans.isCalculated = true;
-
-  return trans.m;
-}
-
-/**
-* アニメーション補間された座標変換行列を計算する
-*/
-TransformationList CalcAnimatedTransformations(const GltfFile& file,
-  const GltfAnimation& animation, const std::vector<int>& nonAnimatedNodeList,
-  float keyFrame)
-{
-  TransformationList transList;
-  transList.resize(file.nodes.size());
-  for (const auto e : nonAnimatedNodeList) {
-    transList[e].m = file.nodes[e].matLocal;
-  }
-
-  for (const auto& e : animation.translations) {
-    auto& trans = transList[e.targetNodeId];
-    const glm::vec3 translation = Interporation(e, keyFrame);
-    trans.m *= glm::translate(glm::mat4(1), translation);
-  }
-  for (const auto& e : animation.rotations) {
-    auto& trans = transList[e.targetNodeId];
-    const glm::quat rotation = Interporation(e, keyFrame);
-    trans.m *= glm::mat4_cast(rotation);
-  }
-  for (const auto& e : animation.scales) {
-    auto& trans = transList[e.targetNodeId];
-    const glm::vec3 scale = Interporation(e, keyFrame);
-    trans.m *= glm::scale(glm::mat4(1), scale);
-  }
-
-  for (auto& e : file.nodes) {
-    CalcGlobalTransform(file.nodes, e, transList);
-  }
-
-  return transList;
-}
-
-/**
-* アニメーションを適用した座標変換行列リストを計算する
-*
-* @param file      アニメーションとノードを所有するファイルオブジェクト
-* @param node      スキニング対象のノード
-* @param animation 計算の元になるアニメーション
-* @param time     アニメーションの再生位置
-*
-* @return アニメーションを適用した座標変換行列リスト
-*/
-GltfFileBuffer::AnimationMatrices CalculateTransform(const GltfFilePtr& file,
-  const GltfNode* meshNode, const GltfAnimation* animation,
-  const std::vector<int>& nonAnimatedNodeList, float time)
-{
-  GltfFileBuffer::AnimationMatrices matBones;
-  if (!file || !meshNode) {
-    return matBones;
-  }
-
-  if (animation) {
-    const TransformationList transList = CalcAnimatedTransformations(*file, *animation, nonAnimatedNodeList, time);
-    if (meshNode->skin >= 0) {
-      // アニメーションあり+スキンあり
-      // @note jointsにはノード番号が格納されているが、頂点データのJOINTS_nには
-      //       ノード番号ではなく「joints配列のインデックス」が格納されている。
-      //       つまり、ボーン行列配列をjointsの順番でSSBOに格納する必要がある。
-      const auto& joints = file->skins[meshNode->skin].joints;
-      matBones.resize(joints.size());
-      for (size_t i = 0; i < joints.size(); ++i) {
-        const auto& joint = joints[i];
-        matBones[i] = transList[joint.nodeId].m * joint.matInverseBindPose;
-      }
-    } else {
-      // アニメーションあり+スキンなし
-      const size_t nodeId = meshNode - &file->nodes[0];
-      matBones.push_back(transList[nodeId].m);
-    }
-  } else {
-    // アニメーションなし
-    if (meshNode->skin >= 0) {
-      // スキンあり
-      const auto& joints = file->skins[meshNode->skin].joints;
-      matBones.resize(joints.size(), meshNode->matGlobal);
-    } else {
-      matBones.push_back(meshNode->matGlobal);
-    }
-  }
-  return matBones;
-}
-
-} // unnamed namespace
 
 /**
 * クローンを作成する
@@ -548,11 +423,11 @@ void AnimatedMeshRenderer::PreDraw(const Actor& actor)
   const glm::mat4 matModel = actor.GetModelMatrix();
   ssboRangeList.clear();
   for (const auto e : scene->meshNodes) {
-    auto matBones = CalculateTransform(file, e, animation.get(), nonAnimatedNodeList, time);
+    auto matBones = CalcAnimationMatrices(file, e, animation.get(), nonAnimatedNodeList, time);
     for (auto& m : matBones) {
       m = matModel * m;
     }
-    const GLintptr offset = fileBuffer->AddAnimationData(matBones);
+    const GLintptr offset = fileBuffer->AddAnimationMatrices(matBones);
     const GLsizeiptr size = static_cast<GLsizeiptr>(matBones.size() * sizeof(glm::mat4));
     ssboRangeList.push_back({ offset, size });
   }

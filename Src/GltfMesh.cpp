@@ -11,6 +11,7 @@
 #include <fstream>
 #include <filesystem>
 #include <iostream>
+#include <algorithm>
 
 using namespace json11;
 
@@ -333,16 +334,99 @@ GltfChannel<T> MakeAnimationChannel(
   const GLfloat* pTimes, const void* pValues, size_t inputCount,
   int targetNodeId, GltfInterpolation interp, float* totalTime)
 {
-  GltfChannel<T> channel;
+  // 時刻と値の配列からキーフレーム配列を作成
   const T* pData = static_cast<const T*>(pValues);
+  GltfChannel<T> channel;
   channel.keyframes.resize(inputCount);
   for (int i = 0; i < inputCount; ++i) {
     *totalTime = std::max(*totalTime, pTimes[i]);
     channel.keyframes[i] = { pTimes[i], pData[i] };
   }
+
+  // 適用対象ノードIDと補間方法を設定
   channel.targetNodeId = targetNodeId;
   channel.interpolation = interp;
-  return channel;
+
+  return channel; // 作成したチャネルを返す
+}
+
+/**
+* チャネル上の指定した時刻の値を求める
+*
+* @param channel 対象のチャネル
+* @param time    値を求める時刻
+*
+* @return 時刻に対応する値
+*/
+template<typename T>
+T Interpolate(const GltfChannel<T>& channel, float time)
+{
+  // time以上の時刻を持つ、最初のキーフレームを検索
+  const auto curOrOver = std::lower_bound(
+    channel.keyframes.begin(), channel.keyframes.end(), time,
+    [](const GltfKeyframe<T>& keyFrame, float time) {
+      return keyFrame.time < time; });
+
+  // timeが先頭キーフレームの時刻と等しい場合、先頭キーフレームの値を返す
+  if (curOrOver == channel.keyframes.begin()) {
+    return channel.keyframes.front().value;
+  }
+
+  // timeが末尾キーフレームの時刻より大きい場合、末尾キーフレームの値を返す
+  if (curOrOver == channel.keyframes.end()) {
+    return channel.keyframes.back().value;
+  }
+
+  // timeが先頭と末尾の間だった場合...
+
+  // キーフレーム間の時間におけるtimeの比率を計算
+  const auto prev = curOrOver - 1; // time未満の時刻を持つキーフレーム
+  const float frameTime = curOrOver->time - prev->time;
+  const float ratio = glm::clamp((time - prev->time) / frameTime, 0.0f, 1.0f);
+
+  // 比率によって補間した値を返す
+  return glm::mix(prev->value, curOrOver->value, ratio);
+}
+
+/**
+* アニメーション計算用の中間データ型
+*/
+struct NodeMatrix
+{
+  glm::mat4 m = glm::mat4(1); // 姿勢行列
+  bool isCalculated = false;  // 計算済みフラグ
+};
+using NodeMatrices = std::vector<NodeMatrix>;
+
+/**
+* ノードのグローバル姿勢行列を計算する
+*/
+const glm::mat4& CalcGlobalNodeMatrix(const std::vector<GltfNode>& nodes,
+  const GltfNode& node, NodeMatrices& matrices)
+{
+  const intptr_t currentNodeId = &node - &nodes[0];
+  NodeMatrix& nodeMatrix = matrices[currentNodeId];
+
+  // 「計算済み」の場合は自分の姿勢行列を返す
+  if (nodeMatrix.isCalculated) {
+    return nodeMatrix.m;
+  }
+
+  // 「計算済みでない」場合、親の姿勢行列を合成する
+  if (node.parent) {
+    // 親の行列を取得(再帰呼び出し)
+    const glm::mat4& matParent =
+      CalcGlobalNodeMatrix(nodes, *node.parent, matrices);
+
+    // 親の姿勢行列を合成
+    nodeMatrix.m = matParent * nodeMatrix.m;
+  }
+
+  // 「計算済み」にする
+  nodeMatrix.isCalculated = true;
+
+  // 自分の姿勢行列を返す
+  return nodeMatrix.m;
 }
 
 // バインディングポイント
@@ -373,6 +457,94 @@ struct DefaultVertexData
 } // unnamed namespace
 
 /**
+* アニメーションを適用した姿勢行列を計算する
+*
+* @param file             meshNodeを所有するファイルオブジェクト
+* @param meshNode         メッシュを持つノード
+* @param animation        計算の元になるアニメーション
+* @param nonAnimatedNodes アニメーションしないノードIDの配列
+* @param time             アニメーションの再生位置
+*
+* @return アニメーションを適用した姿勢行列の配列
+*/
+GltfAnimationMatrices CalcAnimationMatrices(const GltfFilePtr& file,
+  const GltfNode* meshNode, const GltfAnimation* animation,
+  const std::vector<int>& nonAnimatedNodeList, float time)
+{
+  GltfAnimationMatrices matBones;
+  if (!file || !meshNode) {
+    return matBones;
+  }
+
+  // アニメーションが設定されていない場合
+  if (!animation) {
+    size_t size = 1;
+    if (meshNode->skin >= 0) {
+      size = file->skins[meshNode->skin].joints.size();
+    }
+    matBones.resize(size, meshNode->matGlobal);
+    return matBones;
+  }
+
+  // アニメーションが設定されている場合...
+
+  NodeMatrices matrices;
+  const auto& nodes = file->nodes;
+  matrices.resize(nodes.size());
+
+  // アニメーションしないノードのローカル姿勢行列を設定
+  for (const auto e : nonAnimatedNodeList) {
+    matrices[e].m = nodes[e].matLocal;
+  }
+
+  // アニメーションするノードのローカル姿勢行列を計算
+  for (const auto& e : animation->translations) {
+    NodeMatrix& nodeMatrix = matrices[e.targetNodeId];
+    const glm::vec3 translation = Interpolate(e, time);
+    nodeMatrix.m *= glm::translate(glm::mat4(1), translation);
+  }
+  for (const auto& e : animation->rotations) {
+    NodeMatrix& nodeMatrix = matrices[e.targetNodeId];
+    const glm::quat rotation = Interpolate(e, time);
+    nodeMatrix.m *= glm::mat4_cast(rotation);
+  }
+  for (const auto& e : animation->scales) {
+    NodeMatrix& nodeMatrix = matrices[e.targetNodeId];
+    const glm::vec3 scale = Interpolate(e, time);
+    nodeMatrix.m *= glm::scale(glm::mat4(1), scale);
+  }
+
+  // アニメーションを適用したグローバル姿勢行列を計算
+  if (meshNode->skin >= 0) {
+    for (const auto& joint : file->skins[meshNode->skin].joints) {
+      CalcGlobalNodeMatrix(nodes, nodes[joint.nodeId], matrices);
+    }
+  } else {
+    // ジョイントがないのでメッシュノードだけ計算
+    CalcGlobalNodeMatrix(nodes, *meshNode, matrices);
+  }
+
+  // 逆バインドポーズ行列を合成
+  if (meshNode->skin >= 0) {
+    // jointsにはノード番号が格納されているが、頂点データのJOINTS_nには
+    // ノード番号ではなく「joints配列のインデックス」が格納されている。
+    // つまり、姿勢行列をjoints配列の順番でSSBOに格納する必要がある。
+    const auto& joints = file->skins[meshNode->skin].joints;
+    matBones.resize(joints.size());
+    for (size_t i = 0; i < joints.size(); ++i) {
+      const auto& joint = joints[i];
+      matBones[i] = matrices[joint.nodeId].m * joint.matInverseBindPose;
+    }
+  } else {
+    // ジョイントがないので逆バインドポーズ行列も存在しない
+    const size_t nodeId = meshNode - &nodes[0];
+    matBones.resize(1, matrices[nodeId].m);
+  }
+
+  return matBones;
+}
+
+/**
 * コンストラクタ
 *
 * @param maxBufferSize メッシュ格納用バッファの最大バイト数
@@ -392,7 +564,7 @@ GltfFileBuffer::GltfFileBuffer(size_t maxBufferSize, size_t maxMatrixSize)
 
   // アニメーションメッシュ用のバッファを作成
   ssbo = std::make_shared<ShaderStorageBuffer>(maxMatrixSize * sizeof(glm::mat4));
-  dataBuffer.reserve(maxMatrixSize);
+  matrixBuffer.reserve(maxMatrixSize);
 }
 
 /**
@@ -843,22 +1015,22 @@ GltfFilePtr GltfFileBuffer::GetFile(const char* filename) const
 */
 void GltfFileBuffer::ClearAnimationBuffer()
 {
-  dataBuffer.clear();
+  matrixBuffer.clear();
 }
 
 /**
 * アニメーションメッシュの描画用データを追加
 */
-GLintptr GltfFileBuffer::AddAnimationData(const AnimationMatrices& matBones)
+GLintptr GltfFileBuffer::AddAnimationMatrices(const GltfAnimationMatrices& matBones)
 {
-  GLintptr offset = static_cast<GLintptr>(dataBuffer.size() * sizeof(glm::mat4));
-  dataBuffer.insert(dataBuffer.end(), matBones.begin(), matBones.end());
+  GLintptr offset = static_cast<GLintptr>(matrixBuffer.size() * sizeof(glm::mat4));
+  matrixBuffer.insert(matrixBuffer.end(), matBones.begin(), matBones.end());
 
   // SSBOのオフセットアライメント条件を満たすために、256バイト境界に配置する。
   // 256はOpenGL仕様で許される最大値(GeForce系がこの値を使っている)。
   // https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf
   // の表23.64を参照
-  dataBuffer.resize(((dataBuffer.size() + 3) / 4) * 4);
+  matrixBuffer.resize(((matrixBuffer.size() + 3) / 4) * 4);
   return offset;
 }
 
@@ -867,7 +1039,7 @@ GLintptr GltfFileBuffer::AddAnimationData(const AnimationMatrices& matBones)
 */
 void GltfFileBuffer::UploadAnimationBuffer()
 {
-  ssbo->BufferSubData(0, dataBuffer.size() * sizeof(glm::mat4), dataBuffer.data());
+  ssbo->BufferSubData(0, matrixBuffer.size() * sizeof(glm::mat4), matrixBuffer.data());
   ssbo->SwapBuffers();
 }
 
@@ -887,41 +1059,5 @@ void GltfFileBuffer::BindAnimationBuffer(GLuint bindingPoint, GLintptr offset, G
 void GltfFileBuffer::UnbindAnimationBuffer(GLuint bindingPoint)
 {
   ssbo->Unbind(bindingPoint);
-}
-
-/**
-* アニメーションタイムライン上の指定した時間の値を求める
-*/
-glm::vec3 Interporation(const GltfChannel<glm::vec3>& channel, float time)
-{
-  const auto maxFrame = std::lower_bound(channel.keyframes.begin(), channel.keyframes.end(), time,
-    [](const GltfKeyframe<glm::vec3>& keyFrame, float time) { return keyFrame.time < time; });
-  if (maxFrame == channel.keyframes.begin()) {
-    return channel.keyframes.front().value;
-  }
-  if (maxFrame == channel.keyframes.end()) {
-    return channel.keyframes.back().value;
-  }
-  const auto minFrame = maxFrame - 1;
-  const float ratio = glm::clamp((time - minFrame->time) / (maxFrame->time - minFrame->time), 0.0f, 1.0f);
-  return glm::mix(minFrame->value, maxFrame->value, ratio);
-}
-
-/**
-* アニメーションタイムライン上の指定した時間の値を求める
-*/
-glm::quat Interporation(const GltfChannel<glm::quat>& channel, float time)
-{
-  const auto maxFrame = std::lower_bound(channel.keyframes.begin(), channel.keyframes.end(), time,
-    [](const GltfKeyframe<glm::quat>& keyFrame, float time) { return keyFrame.time < time; });
-  if (maxFrame == channel.keyframes.begin()) {
-    return channel.keyframes.front().value;
-  }
-  if (maxFrame == channel.keyframes.end()) {
-    return channel.keyframes.back().value;
-  }
-  const auto minFrame = maxFrame - 1;
-  const float ratio = glm::clamp((time - minFrame->time) / (maxFrame->time - minFrame->time), 0.0f, 1.0f);
-  return glm::slerp(minFrame->value, maxFrame->value, ratio);
 }
 

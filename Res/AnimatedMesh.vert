@@ -23,7 +23,7 @@ layout(location=0) uniform mat4 matVP;
 //layout(location=1) uniform mat4 matModel;
 layout(location=10) uniform vec4 materialColor;
 
-layout(std430, binding=0) buffer MeshMatrixData
+layout(std430, binding=0) buffer AnimationMatrices
 {
   mat4 matBones[];
 };
@@ -34,6 +34,8 @@ void main()
   outColor = vColor * materialColor;
   outTexcoord = vTexcoord;
 
+  // 最初のウェイトが0以外なら「ジョイントデータあり」、
+  // 0の場合は「ジョイントデータなし」とみなす。
   mat4 matModel;
   if (vWeights.x != 0) {
     matModel =
