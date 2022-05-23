@@ -730,10 +730,10 @@ glTFでは、頂点データやインデックスデータはglTFとは別のバ
 +  // バッファビューから必要な情報を取得
 +  const Json bufferView = bufferViews[bufferViewId];
 +  const int bufferId = bufferView["buffer"].int_value();
-+  const int baesByteOffset = bufferView["byteOffset"].int_value();
++  const int baseByteOffset = bufferView["byteOffset"].int_value();
 +
 +  // オフセットを計算
-+  return binaryList[bufferId].offset + baesByteOffset + byteOffset;
++  return binaryList[bufferId].offset + baseByteOffset + byteOffset;
 +}
 
  // バインディングポイント
@@ -760,7 +760,7 @@ glTFでは、頂点データやインデックスデータはglTFとは別のバ
 
 ```diff
    // オフセットを計算
-   return binaryList[bufferId].offset + baesByteOffset + byteOffset;
+   return binaryList[bufferId].offset + baseByteOffset + byteOffset;
  }
 +
 +/**
@@ -2150,8 +2150,8 @@ glTFファイルをダウンロードしたら、`GameManager.cpp`を開き、`U
 +      engine.AddActor(actor);
 +    }
 
-    // 人間アクターを配置
-    engine.AddActor(std::make_shared<HumanActor>(
+     // 人間アクターを配置
+     engine.AddActor(std::make_shared<HumanActor>(
 ```
 
 プログラムが書けたらビルドして実行してください。自機の出現位置に「白い立方体」が表示されていたら成功です。
