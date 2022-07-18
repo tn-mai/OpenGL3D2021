@@ -1070,8 +1070,7 @@ void GameManager::SpawnEnemies()
     name += '0' + static_cast<char>(&pos - t34PosList);
     name += ']';
     std::shared_ptr<Actor> enemy(new T34TankActor{ name.c_str(),
-      engine.GetPrimitive("Res/tank/T34.obj"),
-      engine.LoadTexture("Res/tank/t-34.tga"),
+      engine.LoadMesh("Res/tank/T34.obj"),
       pos, glm::vec3(1), 0.0f, glm::vec3(-0.78f, 0, 1.0f), playerTank });
     //enemy->collider = CreateBoxCollider(glm::vec3(-1.5f, 0, -1.5f), glm::vec3(1.5f, 2.5f, 1.5f));
     enemy->collider = std::make_shared<Cylinder>(glm::vec3(0), 1.5f, 2.5f);

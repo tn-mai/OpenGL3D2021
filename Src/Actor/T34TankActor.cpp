@@ -20,14 +20,13 @@
 */
 T34TankActor::T34TankActor(
   const std::string& name,
-  const Primitive& prim,
-  std::shared_ptr<Texture> tex,
+  const MeshPtr& mesh,
   const glm::vec3& position,
   const glm::vec3& scale,
   float rotation,
   const glm::vec3& adjustment,
   const std::shared_ptr<Actor>& target) :
-  Actor(name, prim, tex, position, scale, rotation, adjustment), // 基底クラスを初期化
+  Actor(name, mesh, position, scale, rotation, adjustment), // 基底クラスを初期化
   target(target)
 {
 }

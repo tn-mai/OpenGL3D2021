@@ -13,8 +13,7 @@ class T34TankActor : public Actor
 public:
   T34TankActor(
     const std::string& name,
-    const Primitive& prim,
-    std::shared_ptr<Texture> tex,
+    const MeshPtr& mesh,
     const glm::vec3& position,
     const glm::vec3& scale,
     float rotation,
