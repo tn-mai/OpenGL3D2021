@@ -201,6 +201,18 @@
     <None Include="Res\AnimatedMesh.vert">
       <Filter>リソース ファイル</Filter>
     </None>
+    <None Include="Res\Downsample.frag">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\BrightnessFilter.frag">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\Upsample.frag">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\ScalableAmbientObscurance.frag">
+      <Filter>リソース ファイル</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\glad\include\glad\glad.h">
@@ -345,6 +357,9 @@
       <Filter>ソース ファイル\json11</Filter>
     </ClInclude>
     <ClInclude Include="Src\VertexArrayObject.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Light.h">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
   </ItemGroup>

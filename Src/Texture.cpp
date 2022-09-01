@@ -156,3 +156,16 @@ void Texture::Write(GLint x, GLint y, GLsizei width, GLsizei height,
   }
 }
 
+// テキスト未実装
+/**
+* テクスチャのバインドを解除する
+*/
+void UnbindTextures(GLuint start, GLsizei count)
+{
+  const size_t end = std::min(size_t(start + count), std::size(textureBindingArray));
+  for (GLuint i = start; i < end; ++i) {
+    textureBindingArray[i] = 0;
+  }
+  glBindTextures(start, count, nullptr);
+}
+

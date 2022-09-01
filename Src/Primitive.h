@@ -49,6 +49,10 @@ public:
     std::string name;               // マテリアル名
     glm::vec4 color = glm::vec4(1); // ディフューズ色
     std::shared_ptr<Texture> tex;   // テクスチャ
+    std::shared_ptr<Texture> texNormal; // 法線テクスチャ
+    float roughness = 0.5f;         // 表面の粗さ
+
+    float metalness = 0;    // 非金属=0, 金属=1
   };
 
   /**
@@ -139,9 +143,10 @@ bool CopyData(GLuint writeBuffer, GLsizei unitSize,
   GLsizei offsetCount, size_t count, const void* data);
 
 using TextureList = std::vector<std::shared_ptr<Texture>>;
-using TextureIndexList = std::vector<glm::uint>;
+using MaterialParameterList = std::vector<glm::vec4>;
 TextureList GetTextureList(const std::vector<Mesh::Material>& materials);
-TextureIndexList GetTextureIndexList(const std::vector<Mesh::Material>& materials,
-  const TextureList& textures);
+TextureList GetNormalTextureList(const std::vector<Mesh::Material>& materials);
+MaterialParameterList GetMaterialParameterList(const std::vector<Mesh::Material>& materials,
+  const TextureList& textures, const TextureList& texNormals);
 
 #endif // PRIMITIVE_H_INCLUDED

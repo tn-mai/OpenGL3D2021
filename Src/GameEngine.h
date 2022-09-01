@@ -11,6 +11,7 @@
 #include "Camera.h"
 #include "FramebufferObject.h"
 #include "Sprite.h"
+#include "Light.h"
 #include <GLFW/glfw3.h>
 #include <unordered_map>
 #include <random>
@@ -50,6 +51,8 @@ public:
   void RemoveDeadActors();
   void RenderDefault();
   void RenderSprite();
+  void RenderAmbientOcclusion();
+  void RenderPostEffect();
   void RenderUI();
   void PostRender();
 
@@ -165,7 +168,18 @@ public:
   Camera& GetCamera() { return mainCamera; }
   const Camera& GetCamera() const { return mainCamera; }
 
-  // 課題
+  // 平行光源の取得・設定
+  const DirectionalLight& GetDirectioalLight() const { return directionalLight; }
+  void SetDirectionalLight(const DirectionalLight& d) {
+    directionalLight.direction = glm::normalize(d.direction);
+    directionalLight.color = d.color;
+  }
+
+  // 環境光の取得・設定
+  const glm::vec3& GetAmbientLight() const { return ambientLight; }
+  void SetAmbientLight(const glm::vec3& a) { ambientLight = a; }
+
+  // 課題: コライダーの表示・非表示を切り替える
   void ShowCollider(bool flag) { showCollider = flag; }
 
   // TODO: テキスト未追加
@@ -212,9 +226,13 @@ private:
   std::shared_ptr<ProgramPipeline> pipeline;
   std::shared_ptr<ProgramPipeline> pipelineUI;
   std::shared_ptr<ProgramPipeline> pipelineDoF;
+  std::shared_ptr<ProgramPipeline> pipelineBrightnessFilter;
+  std::shared_ptr<ProgramPipeline> pipelineDownsample;
+  std::shared_ptr<ProgramPipeline> pipelineUpsample;
   std::shared_ptr<ProgramPipeline> pipelineInstancedMesh;
   std::shared_ptr<ProgramPipeline> pipelineStaticMesh;
   std::shared_ptr<ProgramPipeline> pipelineAnimatedMesh;
+  std::shared_ptr<ProgramPipeline> pipelineSAO;
   std::shared_ptr<Sampler> sampler;
   std::shared_ptr<Sampler> samplerUI;
   std::shared_ptr<Sampler> samplerDoF;
@@ -222,6 +240,11 @@ private:
   std::shared_ptr<FramebufferObject> fboColor0; // 等倍FBO
   std::shared_ptr<FramebufferObject> fboColor1; // 縮小用FBO
   std::shared_ptr<FramebufferObject> fboShadow; // 影描画用FBO
+  std::shared_ptr<FramebufferObject> fboBloom[7]; // ブルーム用FBO
+
+  // ライト
+  DirectionalLight directionalLight;
+  glm::vec3 ambientLight = { 0.3f, 0.2f, 0.4f }; // 環境光
 
   // 地面描画用
   glm::ivec2 mapSize = glm::ivec2(21, 21);

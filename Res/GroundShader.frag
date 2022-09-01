@@ -25,12 +25,9 @@ struct DirectionalLight {
   vec3 direction; // ライトの向き
   vec3 color;     // ライトの色(明るさ)
 };
-
-DirectionalLight light = {
-  { 0.08,-0.82,-0.57},
-  { 2.00, 1.88, 1.82},
-};
-vec3 ambientLight = { 0.10, 0.15, 0.20 };
+layout(location=110) uniform DirectionalLight light;
+// 環境光の色(明るさ)
+layout(location=112) uniform vec3 ambientLight;
 
 // 影をぼかすためのサンプリング座標.
 const int sampleCount = 4;

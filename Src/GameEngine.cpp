@@ -229,6 +229,25 @@ bool GameEngine::Initialize()
     engine->pipelineAnimatedMesh.reset(new ProgramPipeline(
       "Res/AnimatedMesh.vert", "Res/StaticMesh.frag"));
 
+    // ブルームエフェクト用のシェーダを初期化する
+    const struct {
+      std::shared_ptr<ProgramPipeline>& p;
+      const char* fragName;
+    } bloomShaders[] = {
+      { engine->pipelineBrightnessFilter, "Res/BrightnessFilter.frag" },
+      { engine->pipelineDownsample,  "Res/Downsample.frag" },
+      { engine->pipelineUpsample, "Res/Upsample.frag" },
+
+      { engine->pipelineSAO, "Res/ScalableAmbientObscurance.frag" },
+    };
+    for (const auto [p, fragName] : bloomShaders) {
+      p.reset(new ProgramPipeline("Res/Simple.vert", fragName));
+      // Plane.objの半径は-0.5～+0.5なので、2倍して-1～+1にする
+      glm::mat4 m = glm::mat4(1);
+      m[0][0] = m[1][1] = 2;
+      p->SetUniform(Renderer::locMatTRS, m);
+    }
+
     engine->sampler = std::shared_ptr<Sampler>(new Sampler(GL_REPEAT));
     engine->samplerUI.reset(new Sampler(GL_CLAMP_TO_EDGE));
     engine->samplerDoF.reset(new Sampler(GL_CLAMP_TO_EDGE));
@@ -279,6 +298,18 @@ bool GameEngine::Initialize()
       if (!p || !p->GetId()) {
         return false;
       }
+    }
+
+    // ブルーム用FBOを初期化する
+    int bloomW = w;
+    int bloomH = h;
+    for (auto& p : engine->fboBloom) {
+      p.reset(new FramebufferObject(bloomW, bloomH, FboType::color));
+      if (!p || !p->GetId()) {
+        return false;
+      }
+      bloomW /= 2;
+      bloomH /= 2;
     }
 
     // glTFファイル用バッファを初期化
@@ -619,16 +650,17 @@ void GameEngine::RenderDefault()
 
   // NOTE: テキスト未実装
 #ifdef SUPRESS_SHADOW_JITTERING
-  const float worldUnitPerTexel = 100.0f / static_cast<float>(fboShadow->GetWidth());
-  const float areaMin = std::floor(-50.0f / worldUnitPerTexel) * worldUnitPerTexel;
-  const float areaMax = std::floor(50.0f / worldUnitPerTexel) * worldUnitPerTexel;
+  const float S = 50;
+  const float worldUnitPerTexel = (S * 2) / static_cast<float>(fboShadow->GetWidth());
+  const float areaMin = std::floor(-S / worldUnitPerTexel) * worldUnitPerTexel;
+  const float areaMax = std::floor(S / worldUnitPerTexel) * worldUnitPerTexel;
 
   // 影用ビュープロジェクション行列を作成
   const glm::mat4& matShadowProj =
-    glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 200.0f);
+    glm::ortho(-S, S, -S, S, 1.0f, 400.0f);
 
   // 影描画時のカメラ座標を影テクスチャのピクセル幅に制限
-  const glm::vec3 viewFront = -glm::normalize(glm::vec3(0, 30, 30));
+  const glm::vec3 viewFront = directionalLight.direction;
   const glm::vec3 viewRight = glm::normalize(glm::cross(viewFront, glm::vec3(0, 1, 0)));
   const glm::vec3 viewUp = glm::normalize(glm::cross(viewRight, viewFront));
   glm::vec3 viewTarget = mainCamera.target;
@@ -639,10 +671,10 @@ void GameEngine::RenderDefault()
   // 影用ビュープロジェクション行列を作成
   const glm::mat4& matShadowProj =
     glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 200.0f);
-  const glm::vec3 viewFront = -glm::normalize(glm::vec3(0, 30, 30));
+  const glm::vec3 viewFront = directionalLight.direction;
   glm::vec3 viewTarget = mainCamera.target;
 #endif
-  const glm::vec3 viewPosition = viewTarget - viewFront * 30.0f;
+  const glm::vec3 viewPosition = viewTarget - directionalLight.direction * 100.0f;
   const glm::mat4 matShadowView =
     glm::lookAt(viewPosition, viewTarget, glm::vec3(0, 1, 0));
 
@@ -715,6 +747,27 @@ void GameEngine::RenderDefault()
   pipelineStaticMesh->SetUniform(locMatShadow, matShadow);
   fboShadow->BindDepthTexture(1);
 
+  // シェーダにライトを設定
+  const ProgramPipeline* pipelineListForLight[] = {
+    pipeline.get(),
+    pipelineGround.get(),
+    pipelineInstancedMesh.get(),
+    pipelineStaticMesh.get(),
+    pipelineAnimatedMesh.get(),
+  };
+  for (auto* e : pipelineListForLight) {
+    e->SetUniform(Renderer::locDirectionalLight + 0, directionalLight.direction);
+    e->SetUniform(Renderer::locDirectionalLight + 1, directionalLight.color);
+    e->SetUniform(Renderer::locAmbientLight, ambientLight);
+  }
+
+  // シェーダにカメラ座標を設定
+  const glm::vec4 cameraPosition(mainCamera.position, 1);
+  pipeline->SetUniform(Renderer::locCameraPosition, cameraPosition);
+  pipelineStaticMesh->SetUniform(Renderer::locCameraPosition, cameraPosition);
+  pipelineAnimatedMesh->SetUniform(Renderer::locCameraPosition, cameraPosition);
+  pipelineInstancedMesh->SetUniform(Renderer::locCameraPosition, cameraPosition);
+
   // アクターを描画する
   // 半透明メッシュ対策として、先に地面を描く
   const RenderingDataList renderingList = {
@@ -728,6 +781,8 @@ void GameEngine::RenderDefault()
 
   // 深度テクスチャの割り当てを解除する
   fboShadow->UnbindDepthTexture(1);
+
+  RenderAmbientOcclusion();
 
   // コライダーを表示する(デバッグ用)
   if (showCollider) {
@@ -793,15 +848,58 @@ void GameEngine::RenderSprite()
   const glm::mat4 matView = mainCamera.GetViewMatrix();
   spriteRenderer.Update(GetActors(Layer::Sprite), matView);
   spriteRenderer.Draw(pipelineUI, matProj * matView);
-
 }
 
 /**
-* UIアクターを描画する
+* アンビエントオクルージョンを描画する
 */
-void GameEngine::RenderUI()
+void GameEngine::RenderAmbientOcclusion()
+{
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  //glDisable(GL_BLEND);
+  glEnable(GL_BLEND);
+  glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+  glBlendFunc(GL_CONSTANT_COLOR, GL_ONE);
+  glBlendColor(ambientLight.r, ambientLight.g, ambientLight.b, 1);
+
+  primitiveBuffer->BindVertexArray();
+  pipelineSAO->Bind();
+  samplerUI->Bind(0);
+
+  // AO制御用パラメータをユニフォーム変数にコピー
+  const float radius = 1; // ワールド座標系におけるAOのサンプリング半径(メートル)
+  const float scale = 1; // 「深度値の取りうる範囲」、「AOを効かせたい距離」によって調整
+  const float intensity = 2; // AOの強さ
+  pipelineSAO->SetUniform(Renderer::locRadiusScaleIntensity,
+    glm::vec4(radius, mainCamera.zFar * scale, intensity / pow(radius, 6.0f), 0));
+
+  // カメラパラメータをユニフォーム変数にコピー
+  pipelineSAO->SetUniform(Renderer::locCamera,
+    glm::vec4(1.0f / mainCamera.screenSize, mainCamera.zNear, mainCamera.zFar));
+
+  // 逆プロジェクション行列をユニフォーム変数にコピー
+  const glm::mat4& matProj = mainCamera.GetProjectionMatrix();
+  pipelineSAO->SetUniform(Renderer::locMatInvProj, glm::inverse(matProj));
+
+  // AOを描画
+  fboColor0->BindDepthTexture(0); // 深度テクスチャをバインド
+  const Primitive& primPlane = GetPrimitive("Res/Plane.obj");
+  primPlane.Draw();
+
+  // ブレンド関数の設定をデフォルトに戻す
+  glBlendEquation(GL_FUNC_ADD);
+  glBlendColor(0, 0, 0, 1);
+}
+
+/**
+* ポストエフェクトを描画する
+*/
+void GameEngine::RenderPostEffect()
 {
   const Primitive& primPlane = GetPrimitive("Res/Plane.obj");
+
+  /* 被写界深度 */
 
   // 縮小画像を作成
   {
@@ -826,17 +924,11 @@ void GameEngine::RenderUI()
     primPlane.Draw();
   }
 
-  // 描画先をデフォルトのフレームバッファに戻す
-  fboColor0->Unbind();
-  glViewport(0, 0,
-    static_cast<GLsizei>(windowSize.x),
-    static_cast<GLsizei>(windowSize.y));
+  // 描画先を次のポストエフェクト用FBOに設定
+  fboBloom[0]->Bind();
+  glClear(GL_COLOR_BUFFER_BIT);
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
-
-  // FBOの内容を描画.
+  // 被写界深度付きでFBOの内容を描画
   {
     glDisable(GL_BLEND);
 
@@ -862,6 +954,75 @@ void GameEngine::RenderUI()
     samplerDoF->Unbind(0);
     pipelineDoF->Unbind();
   }
+
+  /* ブルームエフェクト */
+  {
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
+
+    samplerUI->Bind(0);
+
+    // 明るい部分を抽出
+    pipelineBrightnessFilter->Bind();
+    fboBloom[1]->Bind();
+    fboBloom[0]->BindColorTexture(0);
+    primPlane.Draw();
+
+    // 縮小画像を作成
+    pipelineDownsample->Bind();
+    for (size_t i = 1; i < std::size(fboBloom) - 1; ++i) {
+      fboBloom[i + 1]->Bind();
+      fboBloom[i]->BindColorTexture(0);
+      primPlane.Draw();
+    }
+
+    // 縮小画像を逆順で合成
+    pipelineUpsample->Bind();
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    for (size_t i = std::size(fboBloom) - 1; i > 1; --i) {
+      fboBloom[i - 1]->Bind();
+      fboBloom[i]->BindColorTexture(0);
+      primPlane.Draw();
+    }
+
+    // ブルームの明るさを調整して元サイズと合成
+    const float bloomScale = 1.0f;
+    glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
+    glBlendColor(0, 0, 0, bloomScale);
+    fboBloom[0]->Bind();
+    fboBloom[1]->BindColorTexture(0);
+    primPlane.Draw();
+
+    // 描画結果をデフォルトのフレームバッファに書き出す
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0,
+      static_cast<GLsizei>(windowSize.x),
+      static_cast<GLsizei>(windowSize.y));
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_BLEND);
+    pipelineUI->Bind();
+    fboBloom[0]->BindColorTexture(0);
+    primPlane.Draw();
+  } // ブルームエフェクト
+}
+
+/**
+* UIアクターを描画する
+*/
+void GameEngine::RenderUI()
+{
+  const Primitive& primPlane = GetPrimitive("Res/Plane.obj");
+
+  // 描画先をデフォルトのフレームバッファに戻す
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glViewport(0, 0,
+    static_cast<GLsizei>(windowSize.x),
+    static_cast<GLsizei>(windowSize.y));
+
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

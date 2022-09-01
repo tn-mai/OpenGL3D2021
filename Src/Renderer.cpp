@@ -42,9 +42,10 @@ void PrimitiveRenderer::Draw(const Actor& actor,
     pipeline.SetUniform(locMatModel, matModel);
 
     // マテリアルデータを設定
-    const glm::uint texture = 0;
+    const Mesh::Material mtl;
+    const glm::vec4 param(0, mtl.roughness, mtl.metalness, 0);
     pipeline.SetUniform(locMaterialColor, glm::vec4(1));
-    pipeline.SetUniform(locMaterialTexture, &texture, 1);
+    pipeline.SetUniform(locMaterialParameters, &param, 1);
 
     // グループ行列を設定
     constexpr glm::mat4 m[32] = {
@@ -63,6 +64,11 @@ void PrimitiveRenderer::Draw(const Actor& actor,
   if (tex) {
     tex->Bind(0); // テクスチャを割り当てる
   }
+
+  // 法線テクスチャにデフォルトテクスチャを割り当てる
+  UnbindTextures(normalBindingPoints[0], 1);
+  //glBindTextures(normalBindingPoints[0], 1, nullptr);
+
   prim.Draw();  // プリミティブを描画する
 }
 
@@ -102,7 +108,8 @@ void MeshRenderer::Draw(const Actor& actor,
       colors[i] = materials[i].color;
     }
     textures = GetTextureList(materials);
-    textureIndices = GetTextureIndexList(materials, textures);
+    texNormals = GetNormalTextureList(materials);
+    materialParameters = GetMaterialParameterList(materials, textures, texNormals);
   }
 
   // モデル行列とMVP行列をGPUメモリにコピーする
@@ -112,10 +119,9 @@ void MeshRenderer::Draw(const Actor& actor,
 
     // マテリアルデータを設定
     pipeline.SetUniform(locMaterialColor, colors.data(), colors.size());
-    pipeline.SetUniform(locMaterialTexture,
-      textureIndices.data(), textureIndices.size());
+    pipeline.SetUniform(locMaterialParameters,
+      materialParameters.data(), materialParameters.size());
 
-    // TODO: テキスト未追加
     // グループ行列を設定
     const std::vector<glm::mat4> m = CalcGroupMatirices();
     pipeline.SetUniform(locMatGroupModels, m.data(), m.size());
@@ -125,11 +131,31 @@ void MeshRenderer::Draw(const Actor& actor,
   const GLint locColor = 200;
   pipeline.SetUniform(locColor, actor.color);
 
-  const GLuint bindingPoints[] = { 0, 2, 3, 4, 5, 6, 7, 8 };
-  const size_t size = std::min(textures.size(), std::size(bindingPoints));
+  // カラーテクスチャをバインド
+  const size_t size = std::min(textures.size(), colorBindingPointSize);
   for (int i = 0; i < size; ++i) {
-    textures[i]->Bind(bindingPoints[i]);
+    textures[i]->Bind(colorBindingPoints[i]);
   }
+
+  // 法線テクスチャをバインド
+  //const size_t normalSize = std::min(texNormals.size(), normalBindingPointSize);
+  size_t normalSize = std::min(texNormals.size(), normalBindingPointSize);
+  if (GameEngine::Get().GetKey(GLFW_KEY_Q)) {
+    normalSize = 0;
+  }
+  for (int i = 0; i < normalSize; ++i) {
+    texNormals[i]->Bind(normalBindingPoints[i]);
+  }
+  // 使わない法線テクスチャユニットにはデフォルトテクスチャを割り当てる
+  if (normalSize < normalBindingPointSize) {
+    UnbindTextures(
+      static_cast<GLuint>(normalBindingPoints[0] + normalSize),
+      static_cast<GLsizei>(normalBindingPointSize - normalSize));
+    //glBindTextures(
+    //  static_cast<GLuint>(normalBindingPoints[0] + normalSize),
+    //  static_cast<GLsizei>(normalBindingPointSize - normalSize), nullptr);
+  }
+
   mesh->primitive.Draw();
 }
 
@@ -238,7 +264,8 @@ void InstancedMeshRenderer::Draw(const Actor& actor,
       colors[i] = materials[i].color;
     }
     textures = GetTextureList(materials);
-    textureIndices = GetTextureIndexList(materials, textures);
+    texNormals = GetNormalTextureList(materials);
+    materialParameters = GetMaterialParameterList(materials, textures, texNormals);
   }
 
   // モデル行列をGPUメモリにコピーする
@@ -246,8 +273,8 @@ void InstancedMeshRenderer::Draw(const Actor& actor,
   if (actor.layer == Layer::Default) {
     // マテリアルデータを設定
     pipeline.SetUniform(locMaterialColor, colors.data(), colors.size());
-    pipeline.SetUniform(locMaterialTexture,
-      textureIndices.data(), textureIndices.size());
+    pipeline.SetUniform(locMaterialParameters,
+      materialParameters.data(), materialParameters.size());
   }
 
   ssbo->Bind(0);
@@ -256,11 +283,26 @@ void InstancedMeshRenderer::Draw(const Actor& actor,
   const GLint locColor = 200;
   pipeline.SetUniform(locColor, actor.color);
 
-  const GLuint bindingPoints[] = { 0, 2, 3, 4, 5, 6, 7, 8 };
-  const size_t size = std::min(textures.size(), std::size(bindingPoints));
+  // カラーテクスチャをバインド
+  const size_t size = std::min(textures.size(), colorBindingPointSize);
   for (int i = 0; i < size; ++i) {
-    textures[i]->Bind(bindingPoints[i]);
+    textures[i]->Bind(colorBindingPoints[i]);
   }
+
+  // 法線テクスチャをバインド
+  const size_t normalSize = std::min(texNormals.size(), normalBindingPointSize);
+  for (int i = 0; i < normalSize; ++i) {
+    texNormals[i]->Bind(normalBindingPoints[i]);
+  }
+  // 使わない法線テクスチャユニットにはデフォルトテクスチャを割り当てる
+  if (normalSize < normalBindingPointSize) {
+    UnbindTextures(
+      static_cast<GLuint>(normalBindingPoints[0] + normalSize),
+      static_cast<GLsizei>(normalBindingPointSize - normalSize));
+    //glBindTextures(normalBindingPoints[0] + normalSize,
+    //  normalBindingPointSize - normalSize, nullptr);
+  }
+
   mesh->primitive.DrawInstanced(latestInstanceSize);
 
   ssbo->FenceSync();

@@ -15,7 +15,7 @@ FramebufferObject::FramebufferObject(int w, int h, FboType type)
 {
   // カラーテクスチャを作成
   if (static_cast<int>(type) & 1) {
-    texColor.reset(new Texture("FBO(Color)", w, h, nullptr, GL_RGBA, GL_UNSIGNED_BYTE));
+    texColor.reset(new Texture("FBO(Color)", w, h, nullptr, GL_RGBA, GL_HALF_FLOAT));
     if (!texColor || !texColor->GetId()) {
       std::cerr << "[エラー]" << __func__ <<
         ":フレームバッファ用カラーテクスチャの作成に失敗.\n";

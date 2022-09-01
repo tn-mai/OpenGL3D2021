@@ -200,6 +200,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Res\ScalableAmbientObscurance.frag" />
+    <None Include="Res\Upsample.frag" />
+    <None Include="Res\Downsample.frag" />
+    <None Include="Res\BrightnessFilter.frag" />
     <None Include="Res\DepthOfField.frag" />
     <None Include="Res\DepthOfField.vert" />
     <None Include="Res\FragmentLighting.frag" />
@@ -252,6 +256,7 @@
     <ClInclude Include="Src\imgui\imstb_textedit.h" />
     <ClInclude Include="Src\imgui\imstb_truetype.h" />
     <ClInclude Include="Src\json11\json11.hpp" />
+    <ClInclude Include="Src\Light.h" />
     <ClInclude Include="Src\MapEditor.h" />
     <ClInclude Include="Src\Primitive.h" />
     <ClInclude Include="Src\ProgramPipeline.h" />

@@ -99,6 +99,22 @@ bool ProgramPipeline::SetUniform(GLint location, const glm::mat4& data) const
 /**
 * ユニフォーム変数にデータをコピーする
 */
+bool ProgramPipeline::SetUniform(GLint location, const glm::vec3& data) const
+{
+  glGetError(); // エラー状態をリセット.
+
+  const GLuint program = GetProgram(location);
+  glProgramUniform3fv(program, location, 1, &data.x);
+  if (glGetError() != GL_NO_ERROR) {
+    std::cerr << "[エラー]" << __func__ << ":ユニフォーム変数の設定に失敗.\n";
+    return false;
+  }
+  return true;
+}
+
+/**
+* ユニフォーム変数にデータをコピーする
+*/
 bool ProgramPipeline::SetUniform(GLint location, const glm::vec4& data) const
 {
   glGetError(); // エラー状態をリセット.

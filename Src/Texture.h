@@ -55,4 +55,7 @@ private:
   GLsizei height = 0;
 };
 
+// テキスト未実装
+void UnbindTextures(GLuint start, GLsizei count);
+
 #endif // TEXTURE_H_INCLUDED

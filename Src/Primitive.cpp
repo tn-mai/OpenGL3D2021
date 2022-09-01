@@ -63,21 +63,50 @@ TextureList GetTextureList(
 }
 
 /**
-* マテリアルが使うテクスチャの番号一覧を取得する
+* マテリアルで使われている法線テクスチャの一覧を取得する
 */
-TextureIndexList GetTextureIndexList(
-  const std::vector<Mesh::Material>& materials, const TextureList& textures)
+TextureList GetNormalTextureList(
+  const std::vector<Mesh::Material>& materials)
 {
-  TextureIndexList indices(materials.size(), 0);
-  for (int m = 0; m < materials.size(); ++m) {
-    for (int i = 0; i < textures.size(); ++i) {
-      if (textures[i] == materials[m].tex) {
-        indices[m] = i;
-        break;
-      }
+  TextureList textures;
+  for (const auto& e : materials) {
+    if (!e.texNormal) {
+      continue;
+    }
+    const auto itr = std::find(textures.begin(), textures.end(), e.texNormal);
+    if (itr == textures.end()) {
+      textures.push_back(e.texNormal);
     }
   }
-  return indices;
+  return textures;
+}
+
+/**
+* マテリアルが使うテクスチャの番号一覧を取得する
+*/
+MaterialParameterList GetMaterialParameterList(
+  const std::vector<Mesh::Material>& materials, const TextureList& textures,
+  const TextureList& texNormals)
+{
+  MaterialParameterList parameterList(materials.size());
+  std::transform(materials.begin(), materials.end(), parameterList.begin(),
+    [&textures, &texNormals](const Mesh::Material& m) {
+      glm::vec4 param(0, m.roughness, m.metalness, 0);
+      for (int i = 0; i < textures.size(); ++i) {
+        if (textures[i] == m.tex) {
+          param.x = static_cast<float>(i);
+          break;
+        }
+      }
+      for (int i = 0; i < texNormals.size(); ++i) {
+        if (texNormals[i] == m.texNormal) {
+          param.w = static_cast<float>(i);
+          break;
+        }
+      }
+      return param;
+    });
+  return parameterList;
 }
 
 /**
@@ -145,6 +174,35 @@ std::vector<Mesh::Material> LoadMaterial(
       for (; *p == ' ' || *p == '\t'; ++p) {} // 先頭の空白を除去
       const std::string textureName = foldername + p;
       m.tex = engine.LoadTexture(textureName.c_str());
+    }
+    else if (strcmp(ctype, "map_bump") == 0 || strcmp(ctype, "bump") == 0) { // 法線テクスチャ
+      for (; *p == ' ' || *p == '\t'; ++p) {} // 先頭の空白を除去
+      const std::string textureName = foldername + p;
+      m.texNormal = engine.LoadTexture(textureName.c_str());
+    }
+    else if (strcmp(ctype, "Ns") == 0) { // 鏡面反射指数
+      float ns;
+      if (sscanf(p, " %f", &ns) != 1) {
+        std::cerr << "[警告]" << __func__ << ":鏡面反射指数の読み取りに失敗.\n" <<
+          "  " << mtlname << "(" << lineNo << "行目): " << line << "\n";
+      } else {
+        // Blinn-Phong鏡面反射の正規化係数を計算
+        // 半球積分するために1/πを掛けるが、鏡面反射ではさらにラフネスによる反射光量の低下を考慮する
+        // 一般にこのラフネス項は1/roughness^4とされる
+        // ラフネスと鏡面反射指数は相互変換できるため、例えば変換関数がpower=2 / roughness^4 - 2の場合は
+        // roughness^4 = 2 / (power + 2)
+        // となり、これを1/roughness^4に代入すると
+        // (power + 2) / 2
+        // となる
+        // ここに1/πをかけ合わせると、
+        // 1/π * (power + 2) / 2 = (power + 2) / 2π
+        // となる
+        // 逆変換: roughness = √√(2 / (power + 2)
+        // Blenderの式: power = (1-roughness)^2 * 1000
+        // Frostbiteの式: power = exp2(11 - 10 * roughness);
+        //m.roughness = std::max(std::min(1.1f - log2(ns) * 0.1f, 1.0f), 0.001f);
+        m.roughness = std::max(std::min(sqrt(sqrt(2 / (ns + 2))), 1.0f), 0.001f);
+      }
     }
   }
 

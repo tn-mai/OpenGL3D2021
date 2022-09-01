@@ -41,12 +41,26 @@ public:
   static const GLint locMatTRS = 0;
   static const GLint locMatModel = 1;
   static const GLint locMaterialColor = 10;
-  static const GLint locMaterialTexture = 20;
+  static const GLint locMaterialParameters = 20;
   static const GLint locMatGroupModels = 30;
   static const GLint locMatShadow = 100;
+  static const GLint locRadiusScaleIntensity = 100;
+  static const GLint locCameraPosition = 101;
   static const GLint locMapSize = 101;
+  static const GLint locMatInvProj = 101;
   static const GLint locCamera = 102;
+
+  static const GLint locDirectionalLight = 110;
+  static const GLint locAmbientLight = 112;
+
+  // テキスト未実装
   static const GLint locColor = 200;
+
+  static constexpr GLuint colorBindingPoints[] = { 0, 2, 3, 4, 5, 6, 7, 8 };
+  static constexpr size_t colorBindingPointSize = std::size(colorBindingPoints);
+  static constexpr GLuint shadowBindingPoint = 1;
+  static constexpr GLuint normalBindingPoints[] = { 9, 10, 11, 12, 13, 14, 15, 16 };
+  static constexpr size_t normalBindingPointSize = std::size(normalBindingPoints);
 
   Renderer() = default;
   virtual ~Renderer() = default;
@@ -123,7 +137,8 @@ protected:
 
   bool materialChanged = true;
   TextureList textures;
-  TextureIndexList textureIndices;
+  TextureList texNormals;
+  MaterialParameterList materialParameters;
   std::vector<glm::vec4> colors;
   std::vector<glm::mat4> matGroupModels; // グループ用の座標変換行列(2021_21で追加)
 };

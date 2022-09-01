@@ -20,6 +20,7 @@ public:
 
   // ユニフォーム変数の設定
   bool SetUniform(GLint, const glm::mat4&) const;
+  bool SetUniform(GLint, const glm::vec3&) const;
   bool SetUniform(GLint, const glm::vec4&) const;
 
   // TODO: テキスト未追加

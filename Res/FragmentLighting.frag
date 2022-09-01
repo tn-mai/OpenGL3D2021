@@ -1,11 +1,20 @@
 #version 450
 
+#define ENABLE_SPECULAR
+
 // 入力変数
 layout(location=0) in vec4 inColor;
 layout(location=1) in vec2 inTexcoord;
 layout(location=2) in vec3 inNormal;
 layout(location=3) in vec3 inPosition;
+#ifdef ENABLE_SPECULAR
+// x: テクスチャ番号
+// y: ラフネス
+// z: メタルネス(非金属=0, 金属=1)
+layout(location=4) in vec4 inMaterialParameters;
+#else
 layout(location=4) in flat uint inTextureNo;
+#endif // ENABLE_SPECULAR
 
 // 出力変数
 out vec4 fragColor;
@@ -14,8 +23,10 @@ out vec4 fragColor;
 layout(binding=0) uniform sampler2D texColor0;
 layout(binding=1) uniform sampler2D texShadow;
 layout(binding=2) uniform sampler2D texColor1_7[7];
+layout(binding=9) uniform sampler2D texNormal0_7[8];
 
 layout(location=100) uniform mat4 matShadow;
+layout(location=101) uniform vec4 cameraPosition;
 
 // TODO: テキスト未追加
 layout(location=200) uniform vec4 actorColor;
@@ -25,64 +36,9 @@ struct DirectionalLight {
   vec3 direction; // ライトの向き
   vec3 color;     // ライトの色(明るさ)
 };
-
-#define MORNING 0
-#define NOON    1
-#define SUNSET  2
-#define NIGHT   3
-#define CLOUD   4
-#define MOON    5
-
-#define SKY_SCENE NOON
-
-#if SKY_SCENE == MORNING
-DirectionalLight light = {
-  {-0.70,-0.59,-0.41},
-  { 1.94, 1.65, 1.24},
-};
+layout(location=110) uniform DirectionalLight light;
 // 環境光の色(明るさ)
-vec3 ambientLight = { 0.15, 0.10, 0.20 };
-#endif
-
-#if SKY_SCENE == NOON
-DirectionalLight light = {
-  { 0.08,-0.82,-0.57},
-  { 2.00, 1.88, 1.82},
-};
-vec3 ambientLight = { 0.10, 0.15, 0.20 };
-#endif
-
-#if SKY_SCENE == CLOUD
-DirectionalLight light = {
-  { 0.08,-0.82,-0.57},
-  { 1.00, 0.84, 0.81},
-};
-vec3 ambientLight = { 0.20, 0.30, 0.40 };
-#endif
-
-#if SKY_SCENE == SUNSET
-DirectionalLight light = {
-  { 0.65,-0.63,-0.43},
-  { 1.81, 1.16, 0.32},
-};
-vec3 ambientLight = { 0.15, 0.10, 0.20 };
-#endif
-
-#if SKY_SCENE == NIGHT
-DirectionalLight light = {
-  {-0.22,-0.80,-0.56},
-  { 0.33, 0.55, 0.69},
-};
-vec3 ambientLight = { 0.40, 0.20, 0.30 };
-#endif
-
-#if SKY_SCENE == MOON
-DirectionalLight light = {
-  {-0.22,-0.80,-0.56},
-  { 0.80, 0.94, 0.65},
-};
-vec3 ambientLight = { 0.25, 0.20, 0.30 };
-#endif
+layout(location=112) uniform vec3 ambientLight;
 
 // 影をぼかすためのサンプリング座標.
 #if 1
@@ -115,11 +71,63 @@ const vec2 poissonDisk[sampleCount] = {
 };
 #endif
 
+/**
+* 法線を計算する
+*
+* http://hacksoflife.blogspot.com/2009/11/per-pixel-tangent-space-normal-mapping.html
+* http://www.thetenthplanet.de/archives/1180
+*/
+vec3 ComputeWorldNormal(vec3 V)
+{
+  vec3 normal = vec3(0, 0, 1);
+  switch (uint(inMaterialParameters.w)) {
+  case 0:  normal = texture(texNormal0_7[0], inTexcoord).rgb; break;
+  case 1:  normal = texture(texNormal0_7[1], inTexcoord).rgb; break;
+  case 2:  normal = texture(texNormal0_7[2], inTexcoord).rgb; break;
+  case 3:  normal = texture(texNormal0_7[3], inTexcoord).rgb; break;
+  case 4:  normal = texture(texNormal0_7[4], inTexcoord).rgb; break;
+  case 5:  normal = texture(texNormal0_7[5], inTexcoord).rgb; break;
+  case 6:  normal = texture(texNormal0_7[6], inTexcoord).rgb; break;
+  case 7:  normal = texture(texNormal0_7[7], inTexcoord).rgb; break;
+  }
+
+  // 値が小さすぎる場合、法線テクスチャが設定されていないとみなして頂点法線を返す
+  vec3 N = normalize(inNormal);
+  if (dot(normal, normal) <= 0.0001) {
+    return N;
+  }
+
+  // 8bit値であることを考慮しつつ0～1を-1～+1に変換(127を0とみなす)
+  // 0-255 - 128 / 127
+  normal = normal * (255.0 / 127.0) - (128.0 / 127.0);
+
+  // 隣接ピクセル間のベクトルを取得
+  vec3 dp1 = dFdx(-V);
+  vec3 dp2 = dFdy(-V);
+  vec2 duv1 = dFdx(inTexcoord);
+  vec2 duv2 = dFdy(inTexcoord);
+
+  // タンジェント空間からワールド空間に変換する逆行列を計算
+  vec3 dp1perp = cross(N, dp1);
+  vec3 dp2perp = cross(dp2, N);
+  vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+  vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+  float invmax = inversesqrt(max(dot(T, T), dot(B, B)));
+  mat3 TBN = mat3(T * invmax, B * invmax, N);
+
+  // 法線テクスチャの値をワールド空間に変換
+  return normalize(TBN * normal);
+}
+
 // フラグメントシェーダプログラム
 void main()
 {
   vec4 tc = vec4(1.0, 1.0, 1.0, 1.0);
+#ifdef ENABLE_SPECULAR
+  switch (uint(inMaterialParameters.x)) {
+#else
   switch (inTextureNo) {
+#endif // ENABLE_SPECULAR
   case 0:  tc = texture(texColor0, inTexcoord); break;
   case 1:  tc = texture(texColor1_7[0], inTexcoord); break;
   case 2:  tc = texture(texColor1_7[1], inTexcoord); break;
@@ -136,8 +144,9 @@ void main()
     discard;
   }
 
-  // ワールド座標系の法線を正規化.
-  vec3 worldNormal = normalize(inNormal);
+  // ワールド座標系の法線を正規化
+  vec3 V = normalize(cameraPosition.xyz - inPosition);
+  vec3 worldNormal = ComputeWorldNormal(V);
 
   // 面が裏向きの場合、法線の向きを逆にする.
   if (gl_FrontFacing == false) {
@@ -173,10 +182,60 @@ void main()
   // 環境光を設定.
   vec3 lightColor = ambientLight;
 
-  // ランバート反射による明るさを計算.
+#ifdef ENABLE_SPECULAR
+  // Cook-Torranceモデルのパラメータ
+  float roughness = inMaterialParameters.y;
+  float metalness = inMaterialParameters.z;
+  float alpha = roughness * roughness;
+  //vec3 V = normalize(cameraPosition.xyz - inPosition); // 視線ベクトル
+  vec3 H = normalize(V + -light.direction); // 視線と光の向きのハーフベクトル
+
+  // 微小面分布関数(Blinn-Phong NDF)による明るさを計算
+  float p = 2 / (alpha * alpha) - 2;
+  float C = (p + 2) / (2 * 3.14159265);
+  float dotNH = max(dot(worldNormal, H), 0);
+  float D = C * pow(dotNH, p);
+
+  // Schlick-Beckman GSFによって幾何減衰項Dを計算
+  // k = roughness^2 * sqrt(2.0 / 3.14159265)
+  float k = alpha * 0.79788456;
+  float dotNL = max(dot(worldNormal, -light.direction), 0);
+  float dotNV = max(dot(worldNormal, V), 0);
+  float G1_l = dotNL / (dotNL * (1 - k) + k);
+  float G1_v = dotNV / (dotNV * (1 - k) + k);
+  float G = min(1, G1_l * G1_v);
+
+  // Schlick近似式によってフレネル項Fを計算
+  float dotVH = max(dot(V, H), 0);
+  vec3 F0 = mix(vec3(0.04), fragColor.rgb, metalness);
+  vec3 F = F0 + (1 - F0) * pow(1 - dotVH, 5);
+
+  // クックトランスモデルによる鏡面反射を計算
+  vec3 specularColor = (D * F * G) / (4 * dotNL * dotNV + 0.00001);
+
+  // ランバート反射による明るさを計算
+  float cosTheta = max(dot(worldNormal, -light.direction), 0);
+  if (metalness == 0) {
+    lightColor += light.color * cosTheta * (1.0 - shadow) * (1 - F);
+  }
+
+  fragColor.rgb *= lightColor;
+  fragColor.rgb += specularColor * (1.0 - shadow);
+#else
+  // ランバート反射による明るさを計算
   float cosTheta = max(dot(worldNormal, -light.direction), 0);
   lightColor += light.color * cosTheta * (1.0 - shadow);
 
   fragColor.rgb *= lightColor;
+
+  // 鏡面反射を計算
+  float specularExponent = 80;
+  float normalizationFactor = (specularExponent + 8) / (3.14159265 * 8);
+  vec3 V = normalize(cameraPosition.xyz - inPosition);
+  vec3 H = normalize(V + worldNormal);
+  float dotNH = max(dot(worldNormal, H), 0);
+  vec3 specularColor = light.color * normalizationFactor * pow(dotNH, specularExponent) * cosTheta * (1.0 - shadow);
+  fragColor.rgb += specularColor * 0.1;
+#endif // ENABLE_SPECULAR
 }
 

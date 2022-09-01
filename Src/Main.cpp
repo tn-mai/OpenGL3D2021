@@ -354,6 +354,7 @@ int main()
     //
     engine.RenderDefault();
     engine.RenderSprite();
+    engine.RenderPostEffect();
     engine.RenderUI();
     engine.PostRender();
     engine.SwapBuffers();

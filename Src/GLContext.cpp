@@ -326,6 +326,20 @@ GLuint CreateImage2D(GLsizei width, GLsizei height, const void* data,
     break;
   }
 
+  if (type == GL_HALF_FLOAT) {
+    switch (internalFormat) {
+    case GL_R8:    internalFormat = GL_R16F; break;
+    case GL_RGB8:  internalFormat = GL_RGB16F; break;
+    case GL_RGBA8: internalFormat = GL_RGBA16F; break;
+    }
+  } else if (type == GL_FLOAT) {
+    switch (internalFormat) {
+    case GL_R8:    internalFormat = GL_R32F; break;
+    case GL_RGB8:  internalFormat = GL_RGB32F; break;
+    case GL_RGBA8: internalFormat = GL_RGBA32F; break;
+    }
+  }
+
   // テクスチャ・オブジェクトを作成し、GPUメモリを確保する.
   glCreateTextures(GL_TEXTURE_2D, 1, &id);
   glTextureStorage2D(id, 1, internalFormat, width, height);

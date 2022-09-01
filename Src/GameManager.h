@@ -70,6 +70,9 @@ private:
   void UpdateEnding(float deltaTime);
   void UpdateEndingUI();
 
+  // テキスト未実装
+  void InitializeLight();
+
   State state = State::title; // 現在の動作状態
   std::shared_ptr<Actor> playerTank;
   std::vector<std::shared_ptr<Actor>> enemies;
