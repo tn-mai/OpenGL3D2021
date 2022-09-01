@@ -237,8 +237,7 @@ void MapEditor::InitActorList()
     case ActorType::t34tank:
       actor.reset(new T34TankActor(
         e.name,
-        engine.GetPrimitive(e.primitiveFilename),
-        engine.LoadTexture(e.textureFilename),
+        engine.LoadMesh(e.primitiveFilename),
         glm::vec3(0), e.scale, e.rotation, e.adjustment, nullptr));
       actor->collider = e.collider;
       actor->tag = ActorTag::enemy;
