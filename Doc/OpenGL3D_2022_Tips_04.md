@@ -1935,7 +1935,7 @@ OpenGLの仕様では、バインド時に指定するオフセットは特定�
 +void main()
 +{
 +  outColor = vColor * materialColor;
-+  outTexcoord = vTexcoord;
++  outTexcoord = vec2(vTexcoord.x, 1 - vTexcoord.y);
 +
 +  // 最初のウェイトが0以外なら「ジョイントデータあり」、
 +  // 0の場合は「ジョイントデータなし」とみなす。

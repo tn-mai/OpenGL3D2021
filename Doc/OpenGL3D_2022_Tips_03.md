@@ -1649,7 +1649,7 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 +void main()
 +{
 +  outColor = vColor * materialColor;
-+  outTexcoord = vTexcoord;
++  outTexcoord = vec2(vTexcoord.x, 1 - vTexcoord.y);
 +
 +  mat3 matNormal = transpose(inverse(mat3(matModel)));
 +  outNormal = normalize(matNormal * vNormal);
@@ -1660,6 +1660,8 @@ glTFファイルから作成したメッシュは、OBJファイルから作成�
 ```
 
 入出力などはこれまで作成してきたシェーダと大差ありません。グループ行列などのOBJファイル用ユニフォーム変数がなくなっているので、シンプルなシェーダとなっています。
+
+なお、テクスチャ座標の縦方向を反転させている理由は、歴史的経緯により、glTFのテクスチャ座標は左上原点となっているためです。
 
 ### 3.5 フラグメントシェーダを追加する
 
