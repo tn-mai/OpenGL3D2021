@@ -428,7 +428,7 @@ glTFでは「ボーン」のことを「ジョイント」と呼びます。ジ�
  enum BindingPoint
 ```
 
-glTFとGLMライブラリのクォータニオンでは、データの順序が異なる点に注意してください。glTFのクォータニオンの順番は`x, y, z, w`で、GLMの`quat`型では`w, x, y, z`です。
+glTFとGLMライブラリのクォータニオンコンストラクタでは、データの順序が異なる点に注意してください。glTFのクォータニオンの順番は`x, y, z, w`で、GLMの`quat`コンストラクタでは`w, x, y, z`です。
 
 `GetQuat`関数はこの違いを吸収するように作る必要があります。<br>
 そこで、配列の添字を`3, 0, 1, 2`としています。
@@ -1542,6 +1542,7 @@ glTFのアニメーションデータは、座標変換行列とバインドポ�
 +    // jointsにはノード番号が格納されているが、頂点データのJOINTS_n属性には
 +    // ノード番号ではなく「joints配列のインデックス」が格納されている。
 +    // つまり、姿勢行列をjoints配列の順番でSSBOに格納する必要がある。
++    const auto& joints = file->skins[meshNode->skin].joints;
 +    matBones.resize(joints.size());
 +    for (size_t i = 0; i < joints.size(); ++i) {
 +      const auto& joint = joints[i];
